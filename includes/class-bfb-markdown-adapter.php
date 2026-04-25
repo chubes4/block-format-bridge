@@ -2,17 +2,17 @@
 /**
  * Markdown format adapter.
  *
- * `to_blocks()` runs CommonMark + GFM via league/commonmark to convert
- * the markdown source to HTML, then routes the HTML through the
- * registered HTML adapter to land in block form.
+ * Write side (`to_blocks()`):
+ *   Runs CommonMark + GFM via league/commonmark to convert the markdown
+ *   source to HTML, then routes the HTML through the registered HTML
+ *   adapter to land in block form.
  *
- * The `BlockFormatBridge\Vendor` namespace is preferred (php-scoped
- * build distribution); the unprefixed `League\CommonMark` namespace is
- * used in development mode when the package is installed via
- * `composer install` without running the build script.
- *
- * `from_blocks()` is reserved for Phase 2 (read side) — see the design
- * doc at `projects/block-format-bridge-bidirectional-content-format-plugin-design`.
+ * Read side (`from_blocks()`):
+ *   Renders blocks → HTML via `do_blocks()`, then converts HTML → markdown
+ *   via league/html-to-markdown. Both libraries are vendor-prefixed under
+ *   the `BlockFormatBridge\Vendor` namespace by the build pipeline; the
+ *   adapter prefers the prefixed namespace and falls back to unprefixed
+ *   (dev-mode `composer install` without the build step).
  *
  * @package BlockFormatBridge
  */
@@ -57,18 +57,52 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 	/**
 	 * @inheritDoc
 	 *
-	 * Phase 2 will route through roots/post-content-to-markdown (or a
-	 * direct league/html-to-markdown integration). Phase 1 returns an
-	 * empty string — the read side is intentionally out of scope until
-	 * the dependency choice is finalised.
+	 * Renders blocks → HTML (via `do_blocks()` + `serialize_blocks()`)
+	 * and converts the resulting HTML to markdown via
+	 * league/html-to-markdown.
+	 *
+	 * Dynamic blocks render through their PHP callback, so server-side
+	 * blocks (latest-posts, navigation, query loop, etc.) appear in the
+	 * markdown as their rendered HTML output rather than block-comment
+	 * markup.
+	 *
+	 * @param array $blocks Block array (parse_blocks() shape).
+	 * @return string Markdown representation. Empty string on failure.
 	 */
 	public function from_blocks( array $blocks ): string {
-		// TODO(phase-2): convert blocks → HTML (do_blocks) → markdown
-		// using roots/post-content-to-markdown or a direct
-		// league/html-to-markdown integration. See the design doc:
-		// projects/block-format-bridge-bidirectional-content-format-plugin-design
-		unset( $blocks );
-		return '';
+		if ( empty( $blocks ) ) {
+			return '';
+		}
+
+		// Render dynamic blocks through their server-side callbacks, then
+		// serialise. We pass the rendered HTML straight to the html-to-md
+		// converter so dynamic content shows up as resolved HTML.
+		$html = '';
+		foreach ( $blocks as $block ) {
+			$html .= render_block( $block );
+		}
+
+		if ( '' === trim( $html ) ) {
+			return '';
+		}
+
+		$markdown = $this->html_to_markdown( $html );
+
+		/**
+		 * Filters the markdown output produced by the markdown adapter.
+		 *
+		 * Mirrors `roots/post-content-to-markdown`'s
+		 * `post_content_to_markdown/markdown_output` filter so consumers
+		 * can swap in a richer implementation without changing the
+		 * bridge contract.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @param string $markdown Markdown produced by the converter.
+		 * @param string $html     Source HTML that was converted.
+		 * @param array  $blocks   Original block array.
+		 */
+		return (string) apply_filters( 'bfb_markdown_output', $markdown, $html, $blocks );
 	}
 
 	/**
@@ -111,6 +145,68 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 			return (string) $result;
 		} catch ( \Throwable $e ) {
 			error_log( sprintf( '[Block Format Bridge] CommonMark conversion failed: %s', $e->getMessage() ) );
+			return '';
+		}
+	}
+
+	/**
+	 * Convert HTML to markdown using league/html-to-markdown.
+	 *
+	 * Picks the prefixed namespace from the build distribution when
+	 * available, falling back to the unprefixed namespace for dev mode.
+	 *
+	 * Default converter options:
+	 *   - header_style: 'atx'    (`#` prefix instead of underline)
+	 *   - strip_tags:   true     drop unsupported HTML
+	 *   - remove_nodes: 'script style'
+	 *   - hard_break:   true     `<br>` → newline
+	 *
+	 * Filterable via `bfb_html_to_markdown_options`.
+	 *
+	 * @param string $html Source HTML.
+	 * @return string Markdown. Empty string on failure.
+	 */
+	protected function html_to_markdown( string $html ): string {
+		$prefixed   = '\\BlockFormatBridge\\Vendor\\League\\HTMLToMarkdown\\HtmlConverter';
+		$unprefixed = '\\League\\HTMLToMarkdown\\HtmlConverter';
+
+		$class = null;
+		if ( class_exists( $prefixed ) ) {
+			$class = $prefixed;
+		} elseif ( class_exists( $unprefixed ) ) {
+			$class = $unprefixed;
+		}
+
+		if ( null === $class ) {
+			error_log( '[Block Format Bridge] league/html-to-markdown is not loaded; HTML→markdown conversion unavailable.' );
+			return '';
+		}
+
+		$defaults = array(
+			'header_style' => 'atx',
+			'strip_tags'   => true,
+			'remove_nodes' => 'script style',
+			'hard_break'   => true,
+		);
+
+		/**
+		 * Filters the option array passed to league/html-to-markdown.
+		 *
+		 * Mirrors `roots/post-content-to-markdown`'s
+		 * `post_content_to_markdown/converter_options`.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @param array  $options Converter options.
+		 * @param string $html    Source HTML.
+		 */
+		$options = (array) apply_filters( 'bfb_html_to_markdown_options', $defaults, $html );
+
+		try {
+			$converter = new $class( $options );
+			return (string) $converter->convert( $html );
+		} catch ( \Throwable $e ) {
+			error_log( sprintf( '[Block Format Bridge] HTML→markdown conversion failed: %s', $e->getMessage() ) );
 			return '';
 		}
 	}

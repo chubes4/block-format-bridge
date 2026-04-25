@@ -8,11 +8,20 @@
  *   studio wp eval-file ~/Developer/block-format-bridge/tools/smoke-test.php
  *
  * Verifies:
- *   1. Markdown → blocks conversion produces serialised block markup with
- *      a heading and paragraph.
- *   2. HTML → blocks conversion produces equivalent shape.
- *   3. The bfb_default_format filter routes a wp_insert_post() through
- *      markdown conversion when the post type opts in.
+ *   Phase 1 (write side):
+ *     1. Markdown → blocks conversion produces serialised block markup
+ *        with a heading and paragraph.
+ *     2. HTML → blocks conversion produces equivalent shape.
+ *     3. The bfb_default_format filter routes a wp_insert_post()
+ *        through markdown conversion when the post type opts in.
+ *   Phase 2 (read side):
+ *     4. Markdown adapter from_blocks() round-trips a heading +
+ *        formatted paragraph back to clean GFM.
+ *     5. HTML adapter from_blocks() renders dynamic blocks via
+ *        do_blocks().
+ *     6. bfb_render_post() returns markdown / html for a stored post.
+ *     7. REST GET /wp/v2/posts/{id}?content_format=markdown adds
+ *        content.formatted without disturbing content.rendered.
  *
  * @package BlockFormatBridge
  */
@@ -117,6 +126,116 @@ if ( is_wp_error( $post_id ) ) {
 		'stored: ' . substr( $saved, 0, 200 )
 	);
 	wp_delete_post( $post_id, true );
+}
+
+// --- Test 4: Markdown adapter from_blocks() round-trips ---
+$md_adapter = bfb_get_adapter( 'markdown' );
+assert_true( 'markdown adapter resolves', $md_adapter instanceof BFB_Format_Adapter );
+
+$source_blocks = parse_blocks(
+	'<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Title</h1><!-- /wp:heading -->'
+	. '<!-- wp:paragraph --><p>Body with <strong>bold</strong> and <em>italic</em>.</p><!-- /wp:paragraph -->'
+);
+
+$round_md = $md_adapter ? $md_adapter->from_blocks( $source_blocks ) : '';
+assert_true(
+	'markdown from_blocks() emits ATX heading',
+	false !== strpos( $round_md, '# Title' ),
+	'got: ' . substr( $round_md, 0, 200 )
+);
+assert_true(
+	'markdown from_blocks() preserves bold (**) and italic (*)',
+	false !== strpos( $round_md, '**bold**' ) && false !== strpos( $round_md, '*italic*' ),
+	'got: ' . substr( $round_md, 0, 200 )
+);
+
+// --- Test 5: HTML adapter from_blocks() renders blocks ---
+$html_adapter = bfb_get_adapter( 'html' );
+$rendered     = $html_adapter ? $html_adapter->from_blocks( $source_blocks ) : '';
+assert_true(
+	'html from_blocks() renders heading',
+	false !== strpos( $rendered, '<h1' ) && false !== strpos( $rendered, 'Title' ),
+	'got: ' . substr( $rendered, 0, 200 )
+);
+assert_true(
+	'html from_blocks() does NOT contain block-comment markup (it is rendered HTML)',
+	false === strpos( $rendered, '<!-- wp:' ),
+	'got: ' . substr( $rendered, 0, 200 )
+);
+
+// --- Test 6: bfb_render_post() ---
+$render_post_id = wp_insert_post(
+	array(
+		'post_type'    => 'post',
+		'post_status'  => 'draft',
+		'post_title'   => 'Render Smoke',
+		'post_content' => '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">Render</h2><!-- /wp:heading -->'
+			. '<!-- wp:paragraph --><p>Para.</p><!-- /wp:paragraph -->',
+	),
+	true
+);
+if ( is_wp_error( $render_post_id ) ) {
+	assert_true( 'render-test post inserted', false, $render_post_id->get_error_message() );
+} else {
+	$rendered_html = bfb_render_post( $render_post_id, 'html' );
+	$rendered_md   = bfb_render_post( $render_post_id, 'markdown' );
+
+	assert_true(
+		'bfb_render_post(html) returns rendered HTML (no block-comments)',
+		false !== strpos( $rendered_html, '<h2' ) && false === strpos( $rendered_html, '<!-- wp:' ),
+		'got: ' . substr( $rendered_html, 0, 200 )
+	);
+	assert_true(
+		'bfb_render_post(markdown) returns clean GFM',
+		false !== strpos( $rendered_md, '## Render' ) && false !== strpos( $rendered_md, 'Para.' ),
+		'got: ' . substr( $rendered_md, 0, 200 )
+	);
+	wp_delete_post( $render_post_id, true );
+}
+
+// --- Test 7: REST ?content_format=markdown ---
+$rest_post_id = wp_insert_post(
+	array(
+		'post_type'    => 'post',
+		'post_status'  => 'publish',
+		'post_title'   => 'REST Smoke',
+		'post_content' => '<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">REST</h1><!-- /wp:heading -->'
+			. '<!-- wp:paragraph --><p>Body.</p><!-- /wp:paragraph -->',
+	),
+	true
+);
+if ( is_wp_error( $rest_post_id ) ) {
+	assert_true( 'rest-test post inserted', false, $rest_post_id->get_error_message() );
+} else {
+	$req = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $rest_post_id );
+	$req->set_param( 'content_format', 'markdown' );
+	$resp = rest_do_request( $req );
+	$data = $resp->get_data();
+
+	assert_true(
+		'REST adds content.formatted when content_format=markdown',
+		isset( $data['content']['formatted'] ) && '' !== $data['content']['formatted'],
+		isset( $data['content']['formatted'] ) ? 'got: ' . substr( $data['content']['formatted'], 0, 200 ) : 'missing'
+	);
+	assert_true(
+		'REST sets content.format = markdown',
+		( $data['content']['format'] ?? '' ) === 'markdown'
+	);
+	assert_true(
+		'REST leaves content.rendered intact',
+		isset( $data['content']['rendered'] ) && false !== strpos( $data['content']['rendered'], '<h1' )
+	);
+
+	$req2  = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $rest_post_id );
+	$resp2 = rest_do_request( $req2 );
+	$data2 = $resp2->get_data();
+
+	assert_true(
+		'REST does NOT add content.formatted when no query param given',
+		! isset( $data2['content']['formatted'] )
+	);
+
+	wp_delete_post( $rest_post_id, true );
 }
 
 // --- Summary ---

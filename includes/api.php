@@ -84,3 +84,36 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 		return $to_adapter->from_blocks( $blocks );
 	}
 }
+
+if ( ! function_exists( 'bfb_render_post' ) ) {
+	/**
+	 * Render a post's `post_content` in the requested format.
+	 *
+	 * Reads the raw `post_content` and routes it through `bfb_convert`
+	 * with `'blocks'` as the source format (so dynamic blocks render
+	 * via their server-side callbacks).
+	 *
+	 * Returns an empty string when the post is missing, the post type
+	 * does not support content, or the requested format is unknown.
+	 *
+	 * @param int|WP_Post $post   Post ID or WP_Post.
+	 * @param string      $format Target format slug (e.g. 'html', 'markdown').
+	 * @return string Rendered content. Empty string on failure.
+	 */
+	function bfb_render_post( $post, string $format ): string {
+		$post_obj = get_post( $post );
+		if ( ! $post_obj ) {
+			return '';
+		}
+
+		$content = (string) $post_obj->post_content;
+		if ( '' === $content ) {
+			return '';
+		}
+
+		// post_content is always serialised block markup (or raw HTML on
+		// pre-Gutenberg installs); route through the 'blocks' source so
+		// dynamic blocks resolve.
+		return bfb_convert( $content, 'blocks', $format );
+	}
+}
