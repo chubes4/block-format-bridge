@@ -1,0 +1,14 @@
+{
+  "auto_cleanup": false,
+  "extensions": {
+    "wordpress": {}
+  },
+  "id": "block-format-bridge",
+  "remote_path": "wp-content/plugins/block-format-bridge",
+  "version_targets": [
+    {
+      "file": "block-format-bridge.php",
+      "pattern": "(?m)^\\s*\\*?\\s*Version:\\s*([0-9.]+)"
+    }
+  ]
+}

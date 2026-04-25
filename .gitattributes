@@ -1,0 +1,9 @@
+# Build artefacts that shouldn't ship in the released zip but should still
+# build from a fresh `composer install && composer build`.
+/tools             export-ignore
+/build.sh          export-ignore
+/scoper.inc.php    export-ignore
+/composer.lock     export-ignore
+/.gitattributes    export-ignore
+/.gitignore        export-ignore
+/homeboy.json      export-ignore
