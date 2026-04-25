@@ -15,7 +15,8 @@
     },
     "require": {
         "php": "^8.1",
-        "league/commonmark": "^2.5"
+        "league/commonmark": "^2.5",
+        "league/html-to-markdown": "^5.1"
     },
     "require-dev": {
         "humbug/php-scoper": "^0.18.19"

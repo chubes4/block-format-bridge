@@ -23,6 +23,7 @@ return [
 			->name( [ '*.php', 'composer.json', 'LICENSE*' ] )
 			->in(
 				[
+					// league/commonmark + transitive deps (Markdown → HTML).
 					'vendor/league/commonmark',
 					'vendor/league/config',
 					'vendor/dflydev/dot-access-data',
@@ -31,6 +32,8 @@ return [
 					'vendor/psr/event-dispatcher',
 					'vendor/symfony/deprecation-contracts',
 					'vendor/symfony/polyfill-php80',
+					// league/html-to-markdown (HTML → Markdown). No further composer deps.
+					'vendor/league/html-to-markdown',
 				]
 			),
 	],

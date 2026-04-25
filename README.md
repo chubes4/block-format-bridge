@@ -3,34 +3,28 @@
 A WordPress plugin that orchestrates bidirectional content format conversion (HTML, Blocks, Markdown) through a unified
 adapter API.
 
-The bridge owns no parsing logic of its own. It composes existing tools — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
-WordPress core's `serialize_blocks()` / `do_blocks()`, and [`league/commonmark`](https://github.com/thephpleague/commonmark) — behind one
-contract. New formats become available by registering a new adapter; the bridge core never grows.
+The bridge owns no parsing logic of its own. It composes existing libraries — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
+WordPress core's `serialize_blocks()` / `do_blocks()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
+and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown) — behind one contract. New formats
+become available by registering a new adapter; the bridge core never grows.
 
-> **Status:** Phase 1 (write side). Markdown → Blocks and HTML → Blocks both work end-to-end. The read side
-> (Blocks → Markdown) is Phase 2.
+> **Status (v0.2.0):** Phase 2 read side ships. Both write (HTML/Markdown → Blocks) and read (Blocks → HTML/Markdown)
+> directions work end-to-end, plus a `?content_format=` REST query param.
 
 ## What it does
 
-| Conversion direction | Underlying tool                       |
-|----------------------|---------------------------------------|
-| HTML → Blocks        | `chubes4/html-to-blocks-converter`    |
-| Blocks → HTML        | `serialize_blocks()` (core)           |
-| Markdown → HTML      | `league/commonmark` (vendor-prefixed) |
-| Markdown → Blocks    | composition: Markdown → HTML → Blocks |
-| Blocks → Markdown    | _Phase 2 — not yet implemented_       |
-| HTML → Markdown      | _Phase 2 — not yet implemented_       |
+| Conversion direction | Underlying tool                        |
+|----------------------|----------------------------------------|
+| HTML → Blocks        | `chubes4/html-to-blocks-converter`     |
+| Blocks → HTML        | `do_blocks()` (WordPress core)         |
+| Markdown → HTML      | `league/commonmark` (vendor-prefixed)  |
+| Markdown → Blocks    | composition: Markdown → HTML → Blocks  |
+| Blocks → Markdown    | `do_blocks()` + `league/html-to-markdown` (vendor-prefixed) |
+| HTML → Markdown      | composition: HTML → Blocks → Markdown  |
 
 ## Architecture
 
-Two adapters ship in v0.1.0:
-
-- **`BFB_HTML_Adapter`** — delegates `to_blocks()` to `html_to_blocks_raw_handler()` from `html-to-blocks-converter`,
-  and `from_blocks()` to `serialize_blocks()`.
-- **`BFB_Markdown_Adapter`** — runs CommonMark + GFM via `league/commonmark`, then routes the resulting HTML through
-  the HTML adapter to land in block form. `from_blocks()` is a no-op until Phase 2.
-
-Both implement the `BFB_Format_Adapter` interface:
+Every adapter implements the `BFB_Format_Adapter` contract:
 
 ```php
 interface BFB_Format_Adapter {
@@ -41,7 +35,14 @@ interface BFB_Format_Adapter {
 }
 ```
 
-Every cross-format conversion routes through the block array pivot:
+Two adapters ship in v0.2.0:
+
+- **`BFB_HTML_Adapter`** — `to_blocks()` delegates to `html_to_blocks_raw_handler()` from `html-to-blocks-converter`;
+  `from_blocks()` returns rendered HTML via `render_block()` (so dynamic blocks resolve to their server-side output).
+- **`BFB_Markdown_Adapter`** — `to_blocks()` runs CommonMark + GFM and routes the resulting HTML through the HTML
+  adapter. `from_blocks()` renders blocks via `render_block()` and pipes the HTML through league/html-to-markdown.
+
+Every cross-format conversion routes through the block-array pivot:
 
 ```
 $blocks = $from_adapter->to_blocks( $content );
@@ -67,14 +68,14 @@ present, but you'll get much better block fidelity with it active.
 git clone https://github.com/chubes4/block-format-bridge.git
 cd block-format-bridge
 composer install
-composer build  # runs php-scoper to vendor-prefix league/commonmark into vendor_prefixed/
+composer build  # runs php-scoper to vendor-prefix league/commonmark + league/html-to-markdown
 ```
 
 ## Usage
 
 ### `bfb_convert( $content, $from, $to ): string`
 
-Universal conversion. Routes through the block pivot via the adapter registry.
+Universal conversion. Routes through the block-array pivot via the adapter registry.
 
 ```php
 // Markdown → blocks (serialised block markup)
@@ -83,32 +84,77 @@ $blocks = bfb_convert( "# Hello\n\nWorld", 'markdown', 'blocks' );
 // HTML → blocks
 $blocks = bfb_convert( '<h1>Hello</h1><p>World</p>', 'html', 'blocks' );
 
-// Blocks → HTML
+// Blocks → HTML (rendered through do_blocks())
 $html = bfb_convert( $serialised_blocks, 'blocks', 'html' );
+
+// Blocks → markdown
+$md = bfb_convert( $serialised_blocks, 'blocks', 'markdown' );
+
+// HTML → markdown (composes via blocks)
+$md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
 ```
+
+### `bfb_render_post( $post, $format ): string`
+
+Read a post's `post_content` in the requested format. Routes through `bfb_convert()` with `'blocks'` as the source.
+
+```php
+$html = bfb_render_post( $post_id, 'html' );      // do_blocks() output
+$md   = bfb_render_post( $post_id, 'markdown' );  // GFM
+```
+
+### REST: `?content_format=<slug>`
+
+Every REST-enabled post type accepts a `content_format` query parameter. When present, the response gains a sibling
+`content.formatted` field rendered via `bfb_render_post()`. The existing `content.raw` and `content.rendered` fields
+are left untouched.
+
+```bash
+curl 'https://example.com/wp-json/wp/v2/posts/123?content_format=markdown'
+```
+
+```json
+{
+  "content": {
+    "raw": "<!-- wp:heading ...",
+    "rendered": "<h1 class=\"wp-block-heading\">...</h1>",
+    "format": "markdown",
+    "formatted": "# Hello\n\nBody."
+  }
+}
+```
+
+Full HTTP content negotiation (`Accept: text/markdown`, `.md` URL suffix, q-values, 406 Not Acceptable) is intentionally
+out of scope here — that's the job of [`roots/post-content-to-markdown`](https://github.com/roots/post-content-to-markdown)
+when active. The bridge surface is the simpler, programmatic query-param form.
 
 ### `bfb_get_adapter( $slug ): ?BFB_Format_Adapter`
 
-Look up a registered adapter directly. Useful when you want to skip the universal router and do block-array work
+Resolve a registered adapter directly. Useful when you want to skip the universal router and operate on block arrays
 without re-serialising.
 
-### `bfb_default_format` filter
+### Filters
 
-Declare which format a post type writes in by default. Hooks into `wp_insert_post_data` so any code path that calls
-`wp_insert_post()` — REST, WP-CLI, code abilities, plugin internals — gets the same conversion behaviour.
+- **`bfb_default_format( $format, $post_type, $content ): string`** — declares which format a CPT writes in by default.
+  Hooks into `wp_insert_post_data` so any code path that calls `wp_insert_post()` (REST, WP-CLI, abilities, plugin
+  internals) gets the same conversion behaviour.
 
-```php
-add_filter( 'bfb_default_format', function ( $format, $post_type, $content ) {
-    if ( $post_type === 'wiki' ) {
-        return 'markdown';
-    }
-    return $format;
-}, 10, 3 );
-```
+  ```php
+  add_filter( 'bfb_default_format', function ( $format, $post_type ) {
+      return $post_type === 'wiki' ? 'markdown' : $format;
+  }, 10, 2 );
+  ```
 
-### `_bfb_format` per-call hint
+- **`bfb_register_format_adapter( $adapter, $slug ): ?BFB_Format_Adapter`** — lazy adapter registration.
+- **`bfb_rest_supported_post_types( $post_types ): array`** — restricts which CPTs honour `?content_format=`.
+- **`bfb_html_to_markdown_options( $options, $html ): array`** — option array passed to league/html-to-markdown
+  (mirrors `roots/post-content-to-markdown`'s `converter_options`).
+- **`bfb_markdown_output( $markdown, $html, $blocks ): string`** — final filter on the markdown produced by
+  `from_blocks()`.
 
-Bypass the filter for a single insert by setting the `_bfb_format` key on the `$postarr` argument:
+### Per-call hint: `_bfb_format` on `$postarr`
+
+Bypass the filter for a single insert by setting the `_bfb_format` key:
 
 ```php
 wp_insert_post( array(
@@ -140,11 +186,20 @@ add_filter( 'bfb_register_format_adapter', function ( $adapter, $slug ) {
 }, 10, 2 );
 ```
 
+## Known limitations
+
+- **Code-fence language hints round-trip lossily.** `\`\`\`php` becomes `\`\`\`` after Blocks → Markdown. The block
+  carries `className: language-php` but league/html-to-markdown doesn't reconstruct the fence info string. Track in
+  follow-up issue.
+- **Tables degrade through Blocks → Markdown.** `<wp:table>` blocks render to HTML tables that league/html-to-markdown
+  collapses to inline text. Custom converters (or swap-in `roots/post-content-to-markdown`) are the v0.3.0 candidate
+  fix.
+- **Custom blocks without sensible HTML rendering produce garbage markdown.** Out of bridge scope; document in your
+  block.
+
 ## Design
 
-The full architectural rationale — including why DM stays substrate-agnostic, why the bridge is a separate plugin
-instead of a feature of `html-to-blocks-converter`, and the prior-art evaluation for each conversion direction — lives
-in the design doc on the author's personal wiki under
+The full architectural rationale lives on the author's personal wiki at
 `projects/block-format-bridge-bidirectional-content-format-plugin-design`.
 
 ## License

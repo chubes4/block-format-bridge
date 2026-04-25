@@ -5,12 +5,11 @@
  * `to_blocks()` delegates to `html_to_blocks_raw_handler()` from the
  * `chubes4/html-to-blocks-converter` plugin, which must be installed
  * and active for HTML conversion to work. If the function is missing,
- * the adapter falls back to `parse_blocks()` so the system fails soft
- * (returning a single core/freeform block) rather than hard.
+ * the adapter falls back to a `core/freeform` block so the system
+ * fails soft rather than hard.
  *
- * `from_blocks()` returns serialized block markup. Phase 1 does not
- * call `do_blocks()`; that is reserved for the read-side API in
- * Phase 2.
+ * `from_blocks()` renders blocks through `do_blocks()` so dynamic
+ * blocks resolve to their server-side HTML output.
  *
  * @package BlockFormatBridge
  */
@@ -65,13 +64,21 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 
 	/**
 	 * @inheritDoc
+	 *
+	 * Renders each block through `render_block()` so dynamic blocks
+	 * resolve to their server-side HTML output. Static blocks pass
+	 * through their inner HTML untouched.
 	 */
 	public function from_blocks( array $blocks ): string {
 		if ( empty( $blocks ) ) {
 			return '';
 		}
 
-		return serialize_blocks( $blocks );
+		$html = '';
+		foreach ( $blocks as $block ) {
+			$html .= render_block( $block );
+		}
+		return $html;
 	}
 
 	/**
