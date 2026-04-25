@@ -2,11 +2,10 @@
 /**
  * HTML format adapter.
  *
- * `to_blocks()` delegates to `html_to_blocks_raw_handler()` from the
- * `chubes4/html-to-blocks-converter` plugin, which must be installed
- * and active for HTML conversion to work. If the function is missing,
- * the adapter falls back to a `core/freeform` block so the system
- * fails soft rather than hard.
+ * `to_blocks()` delegates to `html_to_blocks_raw_handler()` from
+ * `chubes4/html-to-blocks-converter`, which BFB bundles as a Composer
+ * dependency. Built distributions call the vendor-prefixed function;
+ * dev-mode/plugin installs can still call the unprefixed global.
  *
  * `from_blocks()` renders blocks through `do_blocks()` so dynamic
  * blocks resolve to their server-side HTML output.
@@ -44,13 +43,20 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return is_array( $parsed ) ? $parsed : array();
 		}
 
+		if ( function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ) ) {
+			$blocks = \BlockFormatBridge\Vendor\html_to_blocks_raw_handler( array( 'HTML' => $content ) );
+			return is_array( $blocks ) ? $blocks : array();
+		}
+
 		if ( function_exists( 'html_to_blocks_raw_handler' ) ) {
 			$blocks = html_to_blocks_raw_handler( array( 'HTML' => $content ) );
 			return is_array( $blocks ) ? $blocks : array();
 		}
 
-		// html-to-blocks-converter is not installed; fail soft by
-		// returning a single freeform block carrying the raw HTML.
+		// Should only happen in a broken build: BFB requires
+		// chubes4/html-to-blocks-converter and built distributions ship
+		// the prefixed function above.
+		error_log( '[Block Format Bridge] html-to-blocks-converter is unavailable; falling back to a freeform block.' );
 		return array(
 			array(
 				'blockName'    => 'core/freeform',

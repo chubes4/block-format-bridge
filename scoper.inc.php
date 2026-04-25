@@ -17,12 +17,23 @@ use Isolated\Symfony\Component\Finder\Finder;
 return [
 	'prefix'     => 'BlockFormatBridge\\Vendor',
 	'output-dir' => 'vendor_prefixed',
+	'exclude-classes' => [
+		'WP_Block_Type',
+		'WP_Block_Type_Registry',
+		'WP_HTML_Processor',
+		'WP_HTML_Tag_Processor',
+		'WP_Post',
+		'WP_REST_Request',
+		'WP_REST_Response',
+	],
 	'finders'    => [
 		Finder::create()
 			->files()
 			->name( [ '*.php', 'composer.json', 'LICENSE*' ] )
 			->in(
 				[
+					// chubes4/html-to-blocks-converter (HTML → Blocks).
+					'vendor/chubes4/html-to-blocks-converter',
 					// league/commonmark + transitive deps (Markdown → HTML).
 					'vendor/league/commonmark',
 					'vendor/league/config',

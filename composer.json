@@ -19,6 +19,7 @@
         ]
     },
     "require": {
+        "chubes4/html-to-blocks-converter": "dev-main",
         "php": "^8.1",
         "league/commonmark": "^2.5",
         "league/html-to-markdown": "^5.1"
@@ -32,11 +33,12 @@
         {
             "type": "composer",
             "url": "https://wp-packages.org"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/chubes4/html-to-blocks-converter"
         }
     ],
-    "suggest": {
-        "chubes4/html-to-blocks-converter": "Required at runtime for HTML → Blocks conversion. Install as a separate WordPress plugin via wp-packages.org."
-    },
     "config": {
         "allow-plugins": {
             "composer/installers": true
