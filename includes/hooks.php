@@ -8,10 +8,10 @@
  *     wp_insert_post_data.
  *   - `bfb_default_format` filter declares which format a CPT writes
  *     in by default. Defaults to 'html'.
- *   - Runs at priority 5 — BEFORE the standalone html-to-blocks-converter
- *     plugin (which fires at priority 10) — so every supported format is
- *     normalised to block markup first, then html-to-blocks-converter sees
- *     nothing to do (its `<!-- wp:` short-circuit triggers).
+ *   - Runs at priority 5 — BEFORE html-to-blocks-converter (which
+ *     fires at priority 10) — so non-HTML formats are normalised to
+ *     block markup first, then html-to-blocks-converter sees nothing
+ *     to do (its `<!-- wp:` short-circuit triggers).
  *
  * @package BlockFormatBridge
  */
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Resolution order:
  *   1. `_bfb_format` key on $postarr (per-call override)
  *   2. `bfb_default_format` filter result for the post type
- *   3. 'html' (default source format)
+ *   3. 'html' (default — no conversion needed)
  *
  * @param array $data    Sanitized post data destined for wp_posts.
  * @param array $postarr Original post-insert array.
@@ -45,7 +45,7 @@ function bfb_resolve_format_for_insert( array $data, array $postarr ): string {
 	 *
 	 * Return one of the registered adapter slugs ('html', 'markdown',
 	 * or any third-party registered slug). Return 'html' (or skip the
-	 * filter) for the default HTML source format.
+	 * filter) for no-op conversion.
 	 *
 	 * @since 0.1.0
 	 *
@@ -59,30 +59,13 @@ function bfb_resolve_format_for_insert( array $data, array $postarr ): string {
 }
 
 /**
- * Check whether automatic HTML → blocks conversion should run for a post type.
- *
- * Mirrors html-to-blocks-converter's standalone plugin support policy so BFB's
- * bundled package mode has the same default write behavior without loading
- * h2bc's hook file.
- *
- * @param string $post_type Post type slug.
- * @return bool Whether the post type is supported for automatic HTML writes.
- */
-function bfb_html_insert_supported_post_type( string $post_type ): bool {
-	$default_types   = array_keys( get_post_types( array( 'show_in_rest' => true, 'public' => true ) ) );
-	$supported_types = apply_filters( 'html_to_blocks_supported_post_types', $default_types );
-
-	return in_array( $post_type, (array) $supported_types, true );
-}
-
-/**
- * Convert post_content from the resolved source format to serialised block
- * markup before WordPress writes it.
+ * Convert post_content from a non-HTML source format to serialised
+ * block markup before WordPress writes it.
  *
  * Skips when:
  *   - post_content is empty
- *   - the resolved format is 'html' and the post type is not supported by
- *     html-to-blocks-converter's automatic write policy
+ *   - the resolved format is 'html' (existing html-to-blocks-converter
+ *     handles HTML→blocks at priority 10)
  *   - post_content is already block markup (`<!-- wp:`)
  *   - no adapter is registered for the resolved format
  *
@@ -99,10 +82,10 @@ function bfb_convert_on_insert( $data, $postarr ) {
 		return $data;
 	}
 
-	$format    = bfb_resolve_format_for_insert( $data, $postarr );
-	$post_type = isset( $data['post_type'] ) ? (string) $data['post_type'] : 'post';
-
-	if ( 'html' === $format && ! bfb_html_insert_supported_post_type( $post_type ) ) {
+	$format = bfb_resolve_format_for_insert( $data, $postarr );
+	if ( 'html' === $format ) {
+		// HTML is the no-op format; let html-to-blocks-converter handle it
+		// at its own priority.
 		return $data;
 	}
 
