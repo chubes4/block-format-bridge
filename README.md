@@ -1,15 +1,15 @@
 # Block Format Bridge
 
-A WordPress plugin that orchestrates bidirectional content format conversion (HTML, Blocks, Markdown) through a unified
-adapter API.
+A WordPress plugin **and Composer package** that orchestrates bidirectional content format conversion (HTML, Blocks,
+Markdown) through a unified adapter API.
 
 The bridge owns no parsing logic of its own. It composes existing libraries — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
 WordPress core's `serialize_blocks()` / `do_blocks()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
 and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown) — behind one contract. New formats
 become available by registering a new adapter; the bridge core never grows.
 
-> **Status (v0.2.0):** Phase 2 read side ships. Both write (HTML/Markdown → Blocks) and read (Blocks → HTML/Markdown)
-> directions work end-to-end, plus a `?content_format=` REST query param.
+> **Status:** Both write (HTML/Markdown → Blocks) and read (Blocks → HTML/Markdown) directions work end-to-end, plus
+> a `?content_format=` REST query param.
 
 ## What it does
 
@@ -51,12 +51,19 @@ return    $to_adapter->from_blocks( $blocks );
 
 ## Install
 
-The plugin is distributed via [wp-packages.org](https://wp-packages.org). Add it to a Composer-managed WordPress site:
+Install it as a standalone plugin, or bundle it as a Composer package.
+
+The package is distributed via [wp-packages.org](https://wp-packages.org). Add it to a Composer-managed WordPress site:
 
 ```bash
 composer config repositories.wp-packages composer https://wp-packages.org
 composer require chubes4/block-format-bridge
 ```
+
+Composer autoloads `library.php`, which registers the bridge through an Action-Scheduler-style version registry.
+Package mode loads the full bridge service: adapters, `bfb_convert()`, `bfb_render_post()`, the write-side
+`wp_insert_post_data` integration, and the REST `?content_format=` integration. If multiple plugins bundle BFB while
+the standalone plugin is also active, the registry initializes the highest loaded version once.
 
 For full HTML → Blocks support you also need [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
 installed and active alongside the bridge. The bridge fails soft (returns a `core/freeform` block) when it isn't

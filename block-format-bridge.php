@@ -19,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BFB_VERSION', '0.3.0' );
-define( 'BFB_PATH', plugin_dir_path( __FILE__ ) );
-define( 'BFB_FILE', __FILE__ );
-define( 'BFB_MIN_WP', '6.4' );
-define( 'BFB_MIN_PHP', '8.1' );
+if ( ! defined( 'BFB_PLUGIN_PATH' ) ) {
+	define( 'BFB_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+}
+if ( ! defined( 'BFB_MIN_WP' ) ) {
+	define( 'BFB_MIN_WP', '6.4' );
+}
+if ( ! defined( 'BFB_MIN_PHP' ) ) {
+	define( 'BFB_MIN_PHP', '8.1' );
+}
 
 if ( version_compare( get_bloginfo( 'version' ), BFB_MIN_WP, '<' ) ) {
 	add_action(
@@ -57,39 +61,4 @@ if ( version_compare( PHP_VERSION, BFB_MIN_PHP, '<' ) ) {
 	return;
 }
 
-// Load the prefixed CommonMark autoloader if present (built distribution),
-// otherwise fall back to the dev-mode unscoped autoloader.
-if ( file_exists( BFB_PATH . 'vendor_prefixed/autoload.php' ) ) {
-	require_once BFB_PATH . 'vendor_prefixed/autoload.php';
-} elseif ( file_exists( BFB_PATH . 'vendor/autoload.php' ) ) {
-	require_once BFB_PATH . 'vendor/autoload.php';
-}
-
-require_once BFB_PATH . 'includes/interface-bfb-format-adapter.php';
-require_once BFB_PATH . 'includes/class-bfb-adapter-registry.php';
-require_once BFB_PATH . 'includes/class-bfb-html-adapter.php';
-require_once BFB_PATH . 'includes/class-bfb-markdown-adapter.php';
-require_once BFB_PATH . 'includes/api.php';
-require_once BFB_PATH . 'includes/hooks.php';
-require_once BFB_PATH . 'includes/rest.php';
-
-/**
- * Registers the built-in adapters at plugin load.
- *
- * Other plugins can register additional adapters by hooking into
- * the `bfb_register_format_adapter` filter, which fires for each
- * lookup in the registry.
- */
-function bfb_bootstrap() {
-	BFB_Adapter_Registry::register( new BFB_HTML_Adapter() );
-	BFB_Adapter_Registry::register( new BFB_Markdown_Adapter() );
-
-	/**
-	 * Fires after the built-in adapters are registered, so consumers
-	 * can register additional format adapters.
-	 *
-	 * @since 0.1.0
-	 */
-	do_action( 'bfb_adapters_registered' );
-}
-add_action( 'plugins_loaded', 'bfb_bootstrap', 5 );
+require_once BFB_PLUGIN_PATH . 'library.php';
