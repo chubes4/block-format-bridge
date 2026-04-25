@@ -41,6 +41,19 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 			return array();
 		}
 
+		/**
+		 * Pre-process raw markdown before it reaches CommonMark.
+		 *
+		 * Useful for opinionated transformations that the bridge should
+		 * not encode itself (e.g. linkifying bare domain URLs to
+		 * `https://`, normalising smart quotes, etc.).
+		 *
+		 * @since 0.3.0
+		 *
+		 * @param string $markdown Markdown source.
+		 */
+		$content = (string) apply_filters( 'bfb_markdown_input', $content );
+
 		$html = $this->markdown_to_html( $content );
 		if ( '' === $html ) {
 			return array();
@@ -75,8 +88,7 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		}
 
 		// Render dynamic blocks through their server-side callbacks, then
-		// serialise. We pass the rendered HTML straight to the html-to-md
-		// converter so dynamic content shows up as resolved HTML.
+		// pass the rendered HTML to the html-to-md converter.
 		$html = '';
 		foreach ( $blocks as $block ) {
 			$html .= render_block( $block );
@@ -86,7 +98,22 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 			return '';
 		}
 
+		// Flatten <pre> blocks so syntax-highlighter wrapper markup
+		// (Prism, highlight.js, etc.) doesn't leak into the code fence.
+		// Mirrors the approach in roots/post-content-to-markdown.
+		$html = (string) preg_replace_callback(
+			'#<pre\b[^>]*>(.*?)</pre>#is',
+			static function ( array $match ): string {
+				$inner = html_entity_decode( strip_tags( $match[1] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				return '<pre><code>' . htmlspecialchars( $inner, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) . '</code></pre>';
+			},
+			$html
+		);
+
 		$markdown = $this->html_to_markdown( $html );
+
+		// Collapse runs of 3+ newlines (league emits them on nested lists).
+		$markdown = trim( (string) preg_replace( "/\n{3,}/", "\n\n", $markdown ) );
 
 		/**
 		 * Filters the markdown output produced by the markdown adapter.
@@ -204,10 +231,66 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 
 		try {
 			$converter = new $class( $options );
+
+			// Register the league/html-to-markdown TableConverter — it
+			// ships with the library but isn't enabled by default. Without
+			// it, <table> blocks collapse to inline text.
+			$this->register_table_converter( $converter );
+
+			/**
+			 * Fires after the html-to-markdown converter has been built but
+			 * before it runs. Allows consumers to register additional
+			 * league/html-to-markdown Converter implementations on the
+			 * converter's environment.
+			 *
+			 * The converter is the prefixed `HtmlConverter` instance;
+			 * consumers should pull `getEnvironment()` and call
+			 * `addConverter()` with prefixed Converter classes if they
+			 * ship under the same namespace.
+			 *
+			 * @since 0.3.0
+			 *
+			 * @param object $converter HtmlConverter instance.
+			 */
+			do_action( 'bfb_html_to_markdown_converter', $converter );
+
 			return (string) $converter->convert( $html );
 		} catch ( \Throwable $e ) {
 			error_log( sprintf( '[Block Format Bridge] HTML→markdown conversion failed: %s', $e->getMessage() ) );
 			return '';
+		}
+	}
+
+	/**
+	 * Register league/html-to-markdown's TableConverter on the converter's
+	 * environment.
+	 *
+	 * Picks the prefixed class first, then unprefixed dev-mode fallback.
+	 * Silent no-op if neither class is present (older library versions).
+	 *
+	 * @param object $converter HtmlConverter instance.
+	 * @return void
+	 */
+	protected function register_table_converter( $converter ): void {
+		$prefixed   = '\\BlockFormatBridge\\Vendor\\League\\HTMLToMarkdown\\Converter\\TableConverter';
+		$unprefixed = '\\League\\HTMLToMarkdown\\Converter\\TableConverter';
+
+		$class = null;
+		if ( class_exists( $prefixed ) ) {
+			$class = $prefixed;
+		} elseif ( class_exists( $unprefixed ) ) {
+			$class = $unprefixed;
+		}
+
+		if ( null === $class ) {
+			return;
+		}
+
+		try {
+			$env = $converter->getEnvironment();
+			$env->addConverter( new $class() );
+		} catch ( \Throwable $e ) {
+			error_log( sprintf( '[Block Format Bridge] TableConverter registration failed: %s', $e->getMessage() ) );
 		}
 	}
 }

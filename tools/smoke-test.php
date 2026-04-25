@@ -193,7 +193,29 @@ if ( is_wp_error( $render_post_id ) ) {
 	wp_delete_post( $render_post_id, true );
 }
 
-// --- Test 7: REST ?content_format=markdown ---
+// --- Test 7a: TableConverter round-trips GFM tables ---
+$table_md       = "| col1 | col2 |\n| --- | --- |\n| a | b |\n";
+$table_round    = bfb_convert( bfb_convert( $table_md, 'markdown', 'blocks' ), 'blocks', 'markdown' );
+assert_true(
+	'Tables round-trip through markdown→blocks→markdown',
+	false !== strpos( $table_round, '| col1 | col2 |' ),
+	'got: ' . $table_round
+);
+
+// --- Test 7b: bfb_markdown_input filter pre-processes raw markdown ---
+$linkify = static function ( string $md ): string {
+	return preg_replace( '#(?<![:/])(?<![a-zA-Z0-9])(example\.com)#', 'https://$1', $md );
+};
+add_filter( 'bfb_markdown_input', $linkify );
+$linkified_blocks = bfb_convert( 'See example.com for details.', 'markdown', 'blocks' );
+remove_filter( 'bfb_markdown_input', $linkify );
+assert_true(
+	'bfb_markdown_input filter linkified bare URL',
+	false !== strpos( $linkified_blocks, 'href="https://example.com"' ),
+	'got: ' . substr( $linkified_blocks, 0, 200 )
+);
+
+// --- Test 8: REST ?content_format=markdown ---
 $rest_post_id = wp_insert_post(
 	array(
 		'post_type'    => 'post',

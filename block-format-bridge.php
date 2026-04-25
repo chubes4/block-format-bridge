@@ -3,7 +3,7 @@
  * Plugin Name: Block Format Bridge
  * Plugin URI: https://github.com/chubes4/block-format-bridge
  * Description: Orchestrates bidirectional content format conversion (HTML, Blocks, Markdown) via a unified adapter API. Composes existing plugins/libraries — owns no parsing logic of its own.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: Chris Huber
  * Author URI: https://chubes.net
  * License: GPL-2.0-or-later
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BFB_VERSION', '0.2.0' );
+define( 'BFB_VERSION', '0.3.0' );
 define( 'BFB_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BFB_FILE', __FILE__ );
 define( 'BFB_MIN_WP', '6.4' );
