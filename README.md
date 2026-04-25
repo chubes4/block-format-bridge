@@ -65,9 +65,9 @@ Package mode loads the full bridge service: adapters, `bfb_convert()`, `bfb_rend
 `wp_insert_post_data` integration, and the REST `?content_format=` integration. If multiple plugins bundle BFB while
 the standalone plugin is also active, the registry initializes the highest loaded version once.
 
-For full HTML → Blocks support you also need [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
-installed and active alongside the bridge. The bridge fails soft (returns a `core/freeform` block) when it isn't
-present, but you'll get much better block fidelity with it active.
+HTML → Blocks support is bundled via [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
+as a Composer package. You do **not** need the standalone html-to-blocks-converter plugin active for BFB to convert
+HTML/Markdown into block markup.
 
 ### Build from source
 

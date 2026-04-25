@@ -14,17 +14,39 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	return;
 }
 
 $bfb_library_path    = __DIR__;
 $bfb_library_version = '0.3.0';
+
+// Load Composer/php-scoper dependencies as soon as the bridge package is
+// included, not when the winning BFB version initializes on
+// `plugins_loaded:1`. Some dependencies (notably html-to-blocks-converter)
+// register their own Action-Scheduler-style version callbacks at
+// `plugins_loaded:0`; loading them from BFB's initializer would be too late.
+if ( file_exists( $bfb_library_path . '/vendor_prefixed/autoload.php' ) ) {
+	require_once $bfb_library_path . '/vendor_prefixed/autoload.php';
+} elseif ( file_exists( $bfb_library_path . '/vendor/autoload.php' ) ) {
+	require_once $bfb_library_path . '/vendor/autoload.php';
+}
 
 if ( ! class_exists( 'BFB_Versions', false ) ) {
 	require_once $bfb_library_path . '/includes/class-bfb-versions.php';
 }
 
 $bfb_initializer = static function () use ( $bfb_library_path, $bfb_library_version ): void {
+	// BFB bundles html-to-blocks-converter as a package. Its library
+	// registers with its own version registry when Composer autoload runs;
+	// initialize that registry now so BFB's HTML adapter can call the
+	// raw-handler during this same request even when the standalone h2bc
+	// plugin is inactive.
+	if ( class_exists( '\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions' ) ) {
+		\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions::initialize_latest_version();
+	} elseif ( class_exists( 'HTML_To_Blocks_Versions' ) ) {
+		HTML_To_Blocks_Versions::initialize_latest_version();
+	}
+
 	if ( ! defined( 'BFB_VERSION' ) ) {
 		define( 'BFB_VERSION', $bfb_library_version );
 	}
@@ -40,14 +62,6 @@ $bfb_initializer = static function () use ( $bfb_library_path, $bfb_library_vers
 	}
 	if ( ! defined( 'BFB_MIN_PHP' ) ) {
 		define( 'BFB_MIN_PHP', '8.1' );
-	}
-
-	// Load the prefixed dependency autoloader if present (built
-	// distribution), otherwise fall back to dev-mode Composer autoload.
-	if ( file_exists( $bfb_library_path . '/vendor_prefixed/autoload.php' ) ) {
-		require_once $bfb_library_path . '/vendor_prefixed/autoload.php';
-	} elseif ( file_exists( $bfb_library_path . '/vendor/autoload.php' ) ) {
-		require_once $bfb_library_path . '/vendor/autoload.php';
 	}
 
 	require_once $bfb_library_path . '/includes/interface-bfb-format-adapter.php';
