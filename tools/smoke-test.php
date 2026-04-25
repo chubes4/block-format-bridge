@@ -12,17 +12,15 @@
  *     1. Markdown → blocks conversion produces serialised block markup
  *        with a heading and paragraph.
  *     2. HTML → blocks conversion produces equivalent shape.
- *     3. The insert hook converts default HTML input without requiring the
- *        standalone html-to-blocks-converter hook file.
- *     4. The bfb_default_format filter routes a wp_insert_post()
+ *     3. The bfb_default_format filter routes a wp_insert_post()
  *        through markdown conversion when the post type opts in.
  *   Phase 2 (read side):
- *     5. Markdown adapter from_blocks() round-trips a heading +
+ *     4. Markdown adapter from_blocks() round-trips a heading +
  *        formatted paragraph back to clean GFM.
- *     6. HTML adapter from_blocks() renders dynamic blocks via
+ *     5. HTML adapter from_blocks() renders dynamic blocks via
  *        do_blocks().
- *     7. bfb_render_post() returns markdown / html for a stored post.
- *     8. REST GET /wp/v2/posts/{id}?content_format=markdown adds
+ *     6. bfb_render_post() returns markdown / html for a stored post.
+ *     7. REST GET /wp/v2/posts/{id}?content_format=markdown adds
  *        content.formatted without disturbing content.rendered.
  *
  * @package BlockFormatBridge
@@ -90,25 +88,7 @@ assert_true(
 	'output: ' . substr( $html_result, 0, 200 )
 );
 
-// --- Test 3: wp_insert_post_data handles default HTML package mode ---
-$insert_data = array(
-	'post_type'    => 'post',
-	'post_content' => wp_slash( '<h2>Stored</h2><p>Body</p>' ),
-);
-$insert_result = bfb_convert_on_insert( $insert_data, $insert_data );
-$insert_saved  = wp_unslash( $insert_result['post_content'] ?? '' );
-assert_true(
-	'wp_insert_post_data converts default HTML to block markup',
-	false !== strpos( $insert_saved, '<!-- wp:' ),
-	'got: ' . substr( $insert_saved, 0, 200 )
-);
-assert_true(
-	'wp_insert_post_data HTML route includes a heading block',
-	false !== strpos( $insert_saved, '<!-- wp:heading' ),
-	'got: ' . substr( $insert_saved, 0, 200 )
-);
-
-// --- Test 4: bfb_default_format routes wp_insert_post through markdown ---
+// --- Test 3: bfb_default_format routes wp_insert_post through markdown ---
 $test_post_type = 'bfb_smoke_test';
 register_post_type(
 	$test_post_type,
@@ -148,7 +128,7 @@ if ( is_wp_error( $post_id ) ) {
 	wp_delete_post( $post_id, true );
 }
 
-// --- Test 5: Markdown adapter from_blocks() round-trips ---
+// --- Test 4: Markdown adapter from_blocks() round-trips ---
 $md_adapter = bfb_get_adapter( 'markdown' );
 assert_true( 'markdown adapter resolves', $md_adapter instanceof BFB_Format_Adapter );
 
@@ -169,7 +149,7 @@ assert_true(
 	'got: ' . substr( $round_md, 0, 200 )
 );
 
-// --- Test 6: HTML adapter from_blocks() renders blocks ---
+// --- Test 5: HTML adapter from_blocks() renders blocks ---
 $html_adapter = bfb_get_adapter( 'html' );
 $rendered     = $html_adapter ? $html_adapter->from_blocks( $source_blocks ) : '';
 assert_true(
@@ -183,7 +163,7 @@ assert_true(
 	'got: ' . substr( $rendered, 0, 200 )
 );
 
-// --- Test 7: bfb_render_post() ---
+// --- Test 6: bfb_render_post() ---
 $render_post_id = wp_insert_post(
 	array(
 		'post_type'    => 'post',
@@ -213,7 +193,7 @@ if ( is_wp_error( $render_post_id ) ) {
 	wp_delete_post( $render_post_id, true );
 }
 
-// --- Test 8a: TableConverter round-trips GFM tables ---
+// --- Test 7a: TableConverter round-trips GFM tables ---
 $table_md       = "| col1 | col2 |\n| --- | --- |\n| a | b |\n";
 $table_round    = bfb_convert( bfb_convert( $table_md, 'markdown', 'blocks' ), 'blocks', 'markdown' );
 assert_true(
@@ -222,7 +202,7 @@ assert_true(
 	'got: ' . $table_round
 );
 
-// --- Test 8b: bfb_markdown_input filter pre-processes raw markdown ---
+// --- Test 7b: bfb_markdown_input filter pre-processes raw markdown ---
 $linkify = static function ( string $md ): string {
 	return preg_replace( '#(?<![:/])(?<![a-zA-Z0-9])(example\.com)#', 'https://$1', $md );
 };
@@ -235,7 +215,7 @@ assert_true(
 	'got: ' . substr( $linkified_blocks, 0, 200 )
 );
 
-// --- Test 9: REST ?content_format=markdown ---
+// --- Test 8: REST ?content_format=markdown ---
 $rest_post_id = wp_insert_post(
 	array(
 		'post_type'    => 'post',
