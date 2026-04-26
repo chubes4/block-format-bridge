@@ -9,7 +9,8 @@ and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown
 become available by registering a new adapter; the bridge core never grows.
 
 > **Status:** Both write (HTML/Markdown → Blocks) and read (Blocks → HTML/Markdown) directions work end-to-end, plus
-> a `?content_format=` REST query param.
+> a `?content_format=` REST query param. The documented `bfb_convert()` directions below are covered by
+> Playground-backed PHPUnit tests via `homeboy test`.
 
 ## What it does
 
@@ -100,6 +101,9 @@ $md = bfb_convert( $serialised_blocks, 'blocks', 'markdown' );
 
 // HTML → markdown (composes via blocks)
 $md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
+
+// Markdown → HTML (composes via blocks)
+$html = bfb_convert( '# X', 'markdown', 'html' );
 ```
 
 ### `bfb_render_post( $post, $format ): string`
@@ -199,11 +203,19 @@ add_filter( 'bfb_register_format_adapter', function ( $adapter, $slug ) {
 - **Code-fence language hints round-trip lossily.** `\`\`\`php` becomes `\`\`\`` after Blocks → Markdown. The block
   carries `className: language-php` but league/html-to-markdown doesn't reconstruct the fence info string. Track in
   follow-up issue.
-- **Tables degrade through Blocks → Markdown.** `<wp:table>` blocks render to HTML tables that league/html-to-markdown
-  collapses to inline text. Custom converters (or swap-in `roots/post-content-to-markdown`) are the v0.3.0 candidate
-  fix.
 - **Custom blocks without sensible HTML rendering produce garbage markdown.** Out of bridge scope; document in your
   block.
+
+## Tests
+
+Run the conversion smoke suite through Homeboy:
+
+```bash
+homeboy test block-format-bridge
+```
+
+The suite runs inside WordPress Playground and covers every documented `bfb_convert()` direction: HTML → Blocks,
+Blocks → HTML, Markdown → HTML, Markdown → Blocks, Blocks → Markdown, and HTML → Markdown.
 
 ## Design
 
