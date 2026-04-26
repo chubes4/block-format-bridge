@@ -107,7 +107,8 @@ function html_to_blocks_convert($html)
         } else {
             $transform_fn = $raw_transform['transform'] ?? null;
             if ($transform_fn && \is_callable($transform_fn)) {
-                $block = \call_user_func($transform_fn, $element, 'html_to_blocks_raw_handler');
+                $raw_handler_callback = __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_raw_handler' : 'html_to_blocks_raw_handler';
+                $block = \call_user_func($transform_fn, $element, $raw_handler_callback);
                 if ($element->has_attribute('class')) {
                     $existing_class = $block['attrs']['className'] ?? '';
                     $node_class = $element->get_attribute('class');

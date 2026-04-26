@@ -37,7 +37,8 @@ $html_to_blocks_initializer = static function () use ($html_to_blocks_library_pa
     if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Transform_Registry', \false)) {
         require_once $html_to_blocks_library_path . '/includes/class-transform-registry.php';
     }
-    if (!\function_exists('BlockFormatBridge\Vendor\html_to_blocks_raw_handler')) {
+    $html_to_blocks_raw_handler_callback = __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_raw_handler' : 'html_to_blocks_raw_handler';
+    if (!\function_exists($html_to_blocks_raw_handler_callback)) {
         require_once $html_to_blocks_library_path . '/raw-handler.php';
     }
     require_once $html_to_blocks_library_path . '/includes/hooks.php';
