@@ -53,11 +53,12 @@ return    $to_adapter->from_blocks( $blocks );
 
 Install it as a standalone plugin, or bundle it as a Composer package.
 
-The package is distributed via [wp-packages.org](https://wp-packages.org). Add it to a Composer-managed WordPress site:
+The package is not yet published to a Composer mirror, so today the install path is a VCS repository pointing at
+GitHub:
 
 ```bash
-composer config repositories.wp-packages composer https://wp-packages.org
-composer require chubes4/block-format-bridge
+composer config repositories.bfb vcs https://github.com/chubes4/block-format-bridge
+composer require chubes4/block-format-bridge:dev-main
 ```
 
 Composer autoloads `library.php`, which registers the bridge through an Action-Scheduler-style version registry.
