@@ -217,11 +217,6 @@ homeboy test block-format-bridge
 The suite runs inside WordPress Playground and covers every documented `bfb_convert()` direction: HTML → Blocks,
 Blocks → HTML, Markdown → HTML, Markdown → Blocks, Blocks → Markdown, and HTML → Markdown.
 
-## Design
-
-The full architectural rationale lives on the author's personal wiki at
-`projects/block-format-bridge-bidirectional-content-format-plugin-design`.
-
 ## License
 
 GPL-2.0-or-later.
