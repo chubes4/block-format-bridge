@@ -22,9 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Runtime support starts at PHP 8.1, but the dev/build toolchain
-        # currently includes humbug/php-scoper 0.18.19, which requires PHP 8.2.
-        php-version: ['8.2', '8.3']
+        # Runtime support starts at PHP 8.1, but the dev/build toolchain currently
+        # requires PHP 8.2. Test the supported build floor plus newer runtimes.
+        php-version: ['8.2', '8.3', '8.4', '8.5']
 
     steps:
       - uses: actions/checkout@v4
