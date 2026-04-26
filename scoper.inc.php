@@ -26,6 +26,37 @@ return [
 		'WP_REST_Request',
 		'WP_REST_Response',
 	],
+	// Disable php-scoper's default class_alias emission so the build does
+	// NOT write `\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_*',
+	// 'HTML_To_Blocks_*', false)` shims back to the bare global names.
+	//
+	// Bundling via vendor_prefixed/ is meant to insulate BFB's bundled
+	// copies of html-to-blocks-converter, league/commonmark, etc. from
+	// every other plugin on the site. The default global aliases re-couple
+	// the bundled copies to the global symbol surface — when two BFB
+	// consumers (e.g. Intelligence + MDI) ship their own vendor_prefixed/,
+	// both try to register the same `class_alias HTML_To_Blocks_*` lines
+	// and the second-loaded copy fatals with "Cannot declare class".
+	//
+	// BFB itself never references the bare global names; library.php and
+	// includes/class-bfb-html-adapter.php both call the scoped FQNs
+	// (`\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions`,
+	// `\BlockFormatBridge\Vendor\html_to_blocks_raw_handler`) and only
+	// fall through to the bare names when the standalone h2bc plugin is
+	// the source of truth (i.e. BFB has no vendor_prefixed/ build).
+	//
+	// We only flip `expose-global-classes` — leaving `expose-global-functions`
+	// and `expose-global-constants` at their `true` defaults so scoper still
+	// knows global functions/constants like `defined()`, `function_exists()`,
+	// `'ABSPATH'`, etc. are global references, not symbols belonging to the
+	// prefix. Flipping all three at once mis-prefixes the `defined('ABSPATH')`
+	// guard in vendored library files (the string scalar gets rewritten to
+	// `'BlockFormatBridge\Vendor\ABSPATH'`, an unreachable constant), which
+	// makes those library.php entrypoints early-return and silently disables
+	// the bundled package.
+	//
+	// See: https://github.com/chubes4/block-format-bridge/issues/10
+	'expose-global-classes' => false,
 	'finders'    => [
 		Finder::create()
 			->files()

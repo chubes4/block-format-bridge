@@ -504,4 +504,3 @@ class HTML_To_Blocks_Transform_Registry
         }]];
     }
 }
-\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_Transform_Registry', 'HTML_To_Blocks_Transform_Registry', \false);

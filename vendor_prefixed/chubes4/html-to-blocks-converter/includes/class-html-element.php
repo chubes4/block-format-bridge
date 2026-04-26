@@ -473,4 +473,3 @@ class HTML_To_Blocks_HTML_Element
         return null;
     }
 }
-\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_HTML_Element', 'HTML_To_Blocks_HTML_Element', \false);
