@@ -294,4 +294,3 @@ class HTML_To_Blocks_Block_Factory
         return '';
     }
 }
-\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_Block_Factory', 'HTML_To_Blocks_Block_Factory', \false);

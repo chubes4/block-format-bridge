@@ -120,8 +120,4 @@ if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Versions', \false)) 
             do_action('html_to_blocks_loaded', $version);
         }
     }
-    /**
-     * Tracks loaded html-to-blocks-converter versions and initializes one.
-     */
-    \class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_Versions', 'HTML_To_Blocks_Versions', \false);
 }

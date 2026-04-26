@@ -364,4 +364,3 @@ class HTML_To_Blocks_Attribute_Parser
         return \true;
     }
 }
-\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_Attribute_Parser', 'HTML_To_Blocks_Attribute_Parser', \false);
