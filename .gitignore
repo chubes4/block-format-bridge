@@ -25,6 +25,4 @@ Thumbs.db
 *.log
 debug.log
 
-# Lock files
-composer.lock
 package-lock.json
