@@ -128,6 +128,54 @@ if ( is_wp_error( $post_id ) ) {
 	wp_delete_post( $post_id, true );
 }
 
+// --- Test 3b: bfb_skip_insert_conversion vetoes the conversion ---
+// Storage layers that own the canonical post_content shape (e.g. MDI in
+// any mode wants markdown to stay as markdown) hook this filter to
+// short-circuit the insert-time conversion. The filter receives the
+// resolved format so consumers can scope the veto by source format.
+add_filter( 'bfb_default_format', $filter, 10, 2 );
+
+$skip_seen_format = null;
+$skip_filter      = function ( $skip, $data, $postarr, $format ) use ( $test_post_type, &$skip_seen_format ) {
+	if ( ( $data['post_type'] ?? '' ) === $test_post_type ) {
+		$skip_seen_format = $format;
+		return true;
+	}
+	return $skip;
+};
+add_filter( 'bfb_skip_insert_conversion', $skip_filter, 10, 4 );
+
+$skip_post_id = wp_insert_post(
+	array(
+		'post_type'    => $test_post_type,
+		'post_status'  => 'draft',
+		'post_title'   => 'BFB Skip',
+		'post_content' => "# Test\n\nBody",
+	),
+	true
+);
+
+remove_filter( 'bfb_skip_insert_conversion', $skip_filter, 10 );
+remove_filter( 'bfb_default_format', $filter, 10 );
+
+if ( is_wp_error( $skip_post_id ) ) {
+	assert_true( 'wp_insert_post (skip path) succeeded', false, $skip_post_id->get_error_message() );
+} else {
+	$skipped_saved = get_post_field( 'post_content', $skip_post_id );
+	assert_true(
+		'bfb_skip_insert_conversion=true leaves post_content untouched',
+		false === strpos( $skipped_saved, '<!-- wp:' )
+			&& false !== strpos( $skipped_saved, '# Test' ),
+		'stored: ' . substr( $skipped_saved, 0, 200 )
+	);
+	assert_true(
+		'bfb_skip_insert_conversion receives the resolved format slug',
+		'markdown' === $skip_seen_format,
+		'got: ' . var_export( $skip_seen_format, true )
+	);
+	wp_delete_post( $skip_post_id, true );
+}
+
 // --- Test 4: Markdown adapter from_blocks() round-trips ---
 $md_adapter = bfb_get_adapter( 'markdown' );
 assert_true( 'markdown adapter resolves', $md_adapter instanceof BFB_Format_Adapter );

@@ -68,6 +68,9 @@ function bfb_resolve_format_for_insert( array $data, array $postarr ): string {
  *     handles HTML→blocks at priority 10)
  *   - post_content is already block markup (`<!-- wp:`)
  *   - no adapter is registered for the resolved format
+ *   - a `bfb_skip_insert_conversion` filter callback returns true
+ *     (consumer veto for storage layers that own their own
+ *     post_content shape — see the filter docblock below)
  *
  * @param array $data    Sanitized post data.
  * @param array $postarr Original post-insert array.
@@ -86,6 +89,39 @@ function bfb_convert_on_insert( $data, $postarr ) {
 	if ( 'html' === $format ) {
 		// HTML is the no-op format; let html-to-blocks-converter handle it
 		// at its own priority.
+		return $data;
+	}
+
+	/**
+	 * Filters whether the bridge should skip its insert-time conversion
+	 * for this `wp_insert_post_data` call.
+	 *
+	 * Storage layers that own the canonical shape of `post_content`
+	 * (e.g. a markdown-on-disk store that wants `post_content` to stay
+	 * as raw markdown) hook this filter to opt out of the
+	 * markdown-/format-→blocks normalisation that happens by default.
+	 *
+	 * Returning `true` short-circuits the conversion; `post_content` is
+	 * passed through to WordPress untouched. The bridge stays unaware of
+	 * any specific consumer — the filter is the seam consumers hook.
+	 *
+	 * Use cases:
+	 *   - markdown-database-integration in any mode: post_content is
+	 *     authoritative markdown; conversion to blocks would force a
+	 *     lossy blocks→markdown round-trip on the disk-write side.
+	 *   - any future "post_content holds raw <X>" storage layer.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @param bool   $skip    Whether to skip insert-time conversion.
+	 *                        Default false.
+	 * @param array  $data    Sanitized post data destined for wp_posts.
+	 * @param array  $postarr Original `wp_insert_post()` array.
+	 * @param string $format  Resolved source format slug
+	 *                        (e.g. 'markdown'). Never 'html'.
+	 */
+	$skip = (bool) apply_filters( 'bfb_skip_insert_conversion', false, $data, $postarr, $format );
+	if ( $skip ) {
 		return $data;
 	}
 
