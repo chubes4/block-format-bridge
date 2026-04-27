@@ -51,5 +51,5 @@ if (did_action('plugins_loaded') && !doing_action('plugins_loaded')) {
     $html_to_blocks_register();
     HTML_To_Blocks_Versions::initialize_latest_version();
 } else {
-    add_action('plugins_loaded', $html_to_blocks_register, 0);
+    \add_action('plugins_loaded', $html_to_blocks_register, 0);
 }

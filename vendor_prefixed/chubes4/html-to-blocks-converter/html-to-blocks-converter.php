@@ -24,7 +24,7 @@ if (!\defined('HTML_TO_BLOCKS_CONVERTER_MIN_WP')) {
     \define('HTML_TO_BLOCKS_CONVERTER_MIN_WP', '6.4');
 }
 if (\version_compare(get_bloginfo('version'), \HTML_TO_BLOCKS_CONVERTER_MIN_WP, '<')) {
-    add_action('admin_notices', function () {
+    \add_action('admin_notices', function () {
         echo '<div class="notice notice-error"><p>';
         \printf(
             /* translators: %s: minimum WordPress version */
