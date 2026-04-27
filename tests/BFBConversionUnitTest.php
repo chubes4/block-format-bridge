@@ -59,6 +59,48 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * HTML input should delegate to BFB's bundled, vendor-prefixed h2bc copy.
+	 */
+	public function test_html_to_blocks_delegates_to_bundled_h2bc_for_representative_fixtures(): void {
+		$this->assertTrue(
+			function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ),
+			'BFB package mode should expose the vendor-prefixed h2bc raw handler.'
+		);
+
+		$fixtures = array(
+			'heading paragraph baseline' => array(
+				'html'   => '<h2>Delegated Heading</h2><p>Delegated paragraph.</p>',
+				'blocks' => array( 'core/heading', 'core/paragraph' ),
+			),
+			'recursive nested transforms' => array(
+				'html'   => '<ul><li>One<ul><li>Nested</li></ul></li></ul>'
+					. '<blockquote><p>Quoted</p></blockquote>'
+					. '<table><tbody><tr><td>Cell</td></tr></tbody></table>',
+				'blocks' => array( 'core/list', 'core/list-item', 'core/quote', 'core/paragraph', 'core/table' ),
+			),
+			'image code separator transforms' => array(
+				'html'   => '<figure><img src="https://example.com/image.jpg" alt="Example"><figcaption>Caption</figcaption></figure>'
+					. '<pre><code class="language-php">echo "hi";</code></pre>'
+					. '<hr class="is-style-wide">',
+				'blocks' => array( 'core/image', 'core/code', 'core/separator' ),
+			),
+			'unsupported safe fallback' => array(
+				'html'   => '<iframe src="https://example.com/embed"></iframe>',
+				'blocks' => array( 'core/html' ),
+			),
+		);
+
+		foreach ( $fixtures as $label => $fixture ) {
+			$blocks = $this->blocks_from( $fixture['html'], 'html' );
+			$flat   = $this->flatten_blocks( $blocks );
+
+			foreach ( $fixture['blocks'] as $block_name ) {
+				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
+			}
+		}
+	}
+
+	/**
 	 * Markdown input should use CommonMark/GFM, then the same HTML adapter path.
 	 */
 	public function test_markdown_to_blocks_covers_commonmark_and_gfm_paths(): void {
