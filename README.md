@@ -202,8 +202,11 @@ helpers and CLI shape are documented in [`docs/fse-compiler-surface.md`](docs/fs
 - **`bfb_rest_supported_post_types( $post_types ): array`** — restricts which CPTs honour `?content_format=`.
 - **`bfb_html_to_markdown_options( $options, $html ): array`** — option array passed to league/html-to-markdown
   (mirrors `roots/post-content-to-markdown`'s `converter_options`).
+- **`bfb_html_to_markdown_converter( $converter ): void`** — action fired after the html-to-markdown converter is built
+  and before it runs, so consumers can register additional league/html-to-markdown converters.
 - **`bfb_markdown_output( $markdown, $html, $blocks ): string`** — final filter on the markdown produced by
   `from_blocks()`.
+- **`bfb_loaded( $version ): void`** — action fired after the winning BFB package/plugin version initializes.
 
 ### Per-call hint: `_bfb_format` on `$postarr`
 
