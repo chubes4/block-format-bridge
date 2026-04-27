@@ -45,8 +45,8 @@ if (!\function_exists($html_to_blocks_insert_callback)) {
         return $data;
     }
 }
-if (\function_exists('BlockFormatBridge\Vendor\add_filter') && (!\function_exists('BlockFormatBridge\Vendor\has_filter') || \false === has_filter('wp_insert_post_data', $html_to_blocks_insert_callback))) {
-    add_filter('wp_insert_post_data', $html_to_blocks_insert_callback, 10, 2);
+if (\function_exists('add_filter') && (!\function_exists('has_filter') || \false === \has_filter('wp_insert_post_data', $html_to_blocks_insert_callback))) {
+    \add_filter('wp_insert_post_data', $html_to_blocks_insert_callback, 10, 2);
 }
 // ---------------------------------------------------------------------------
 // Read path: convert HTML → blocks in REST API responses for the editor.
@@ -70,8 +70,8 @@ if (!\function_exists($html_to_blocks_register_rest_callback)) {
         $default_types = \array_keys(get_post_types(array('show_in_rest' => \true, 'public' => \true)));
         $supported_types = apply_filters('html_to_blocks_supported_post_types', $default_types);
         foreach ($supported_types as $post_type) {
-            if (!\function_exists('BlockFormatBridge\Vendor\has_filter') || \false === has_filter("rest_prepare_{$post_type}", $html_to_blocks_convert_rest_callback)) {
-                add_filter("rest_prepare_{$post_type}", $html_to_blocks_convert_rest_callback, 10, 3);
+            if (!\function_exists('has_filter') || \false === \has_filter("rest_prepare_{$post_type}", $html_to_blocks_convert_rest_callback)) {
+                \add_filter("rest_prepare_{$post_type}", $html_to_blocks_convert_rest_callback, 10, 3);
             }
         }
     }
@@ -80,8 +80,8 @@ if (!\function_exists($html_to_blocks_register_rest_callback)) {
 // at the default init priority (10). Without this, CPTs registered by other
 // plugins (e.g. Intelligence's wiki post type) won't exist yet when
 // get_post_types() is called, and their REST response filter won't be added.
-if (\function_exists('BlockFormatBridge\Vendor\add_action') && (!\function_exists('BlockFormatBridge\Vendor\has_action') || \false === has_action('init', $html_to_blocks_register_rest_callback))) {
-    add_action('init', $html_to_blocks_register_rest_callback, 20);
+if (\function_exists('add_action') && (!\function_exists('has_action') || \false === \has_action('init', $html_to_blocks_register_rest_callback))) {
+    \add_action('init', $html_to_blocks_register_rest_callback, 20);
 }
 /**
  * Convert HTML to blocks in REST API responses.

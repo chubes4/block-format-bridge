@@ -22,7 +22,7 @@ class RawHandlerFixturesUnitTest extends WP_UnitTestCase
             $listener = static function (string $html, array $context, array $block) use (&$fallbacks): void {
                 $fallbacks[] = array('html' => $html, 'context' => $context, 'block' => $block);
             };
-            add_action('html_to_blocks_unsupported_html_fallback', $listener, 10, 3);
+            \add_action('html_to_blocks_unsupported_html_fallback', $listener, 10, 3);
             try {
                 $blocks = html_to_blocks_raw_handler(array('HTML' => $fixture['html']));
             } finally {
@@ -46,7 +46,7 @@ class RawHandlerFixturesUnitTest extends WP_UnitTestCase
             $listener = static function (string $html, array $context, array $block) use (&$fallbacks): void {
                 $fallbacks[] = array('html' => $html, 'context' => $context, 'block' => $block);
             };
-            add_action('html_to_blocks_unsupported_html_fallback', $listener, 10, 3);
+            \add_action('html_to_blocks_unsupported_html_fallback', $listener, 10, 3);
             try {
                 $blocks = html_to_blocks_raw_handler(array('HTML' => $fixture['html']));
             } finally {

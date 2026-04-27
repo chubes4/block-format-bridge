@@ -68,10 +68,10 @@ if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Versions', \false)) 
          */
         public static function register_hooks(): void
         {
-            if (self::$hooked || !\function_exists('BlockFormatBridge\Vendor\add_action')) {
+            if (self::$hooked || !\function_exists('add_action')) {
                 return;
             }
-            add_action('plugins_loaded', array(__CLASS__, 'initialize_latest_version'), 1);
+            \add_action('plugins_loaded', array(__CLASS__, 'initialize_latest_version'), 1);
             self::$hooked = \true;
         }
         /**

@@ -27,7 +27,28 @@ return [
 		'WP_REST_Response',
 	],
 	'exclude-functions' => [
+		'add_action',
+		'add_filter',
 		'do_action',
+		'has_action',
+		'has_filter',
+	],
+	'patchers' => [
+		static function ( string $file_path, string $prefix, string $contents ): string {
+			if ( ! str_contains( $file_path, 'html-to-blocks-converter' ) ) {
+				return $contents;
+			}
+
+			foreach ( array( 'add_action', 'add_filter', 'do_action', 'has_action', 'has_filter' ) as $function_name ) {
+				$contents = str_replace(
+					" && !\\function_exists('{$prefix}\\{$function_name}')",
+					'',
+					$contents
+				);
+			}
+
+			return $contents;
+		},
 	],
 	// Disable php-scoper's default class_alias emission so the build does
 	// NOT write `\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_*',

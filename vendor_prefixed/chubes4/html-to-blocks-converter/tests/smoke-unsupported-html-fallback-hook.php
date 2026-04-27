@@ -30,7 +30,7 @@ if (!\class_exists('WP_Block_Type_Registry', \false)) {
     \class_alias('BlockFormatBridge\Vendor\WP_Block_Type_Registry', 'WP_Block_Type_Registry', \false);
 }
 $html_to_blocks_smoke_actions = [];
-if (!\function_exists('do_action') && !\function_exists('BlockFormatBridge\Vendor\do_action')) {
+if (!\function_exists('do_action')) {
     function do_action($hook_name, ...$args)
     {
         global $html_to_blocks_smoke_actions;
