@@ -176,6 +176,12 @@ when active. The bridge surface is the simpler, programmatic query-param form.
 Resolve a registered adapter directly. Useful when you want to skip the universal router and operate on block arrays
 without re-serialising.
 
+### FSE / Site Compiler Consumers
+
+Future static HTML/CSS to block-theme compiler work should treat BFB as the format-conversion substrate, not the layer
+that infers FSE intent. The current stable surface is `bfb_convert()` plus the adapter registry. Proposed compiler-facing
+helpers and CLI shape are documented in [`docs/fse-compiler-surface.md`](docs/fse-compiler-surface.md).
+
 ### Filters
 
 - **`bfb_default_format( $format, $post_type, $content ): string`** — declares which format a CPT writes in by default.
