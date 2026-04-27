@@ -4,7 +4,7 @@ A WordPress plugin **and Composer package** that orchestrates bidirectional cont
 Markdown) through a unified adapter API.
 
 The bridge owns no parsing logic of its own. It composes existing libraries — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
-WordPress core's `serialize_blocks()` / `do_blocks()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
+WordPress core's `serialize_blocks()` / `parse_blocks()` / `render_block()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
 and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown) — behind one contract. New formats
 become available by registering a new adapter; the bridge core never grows.
 
@@ -17,10 +17,10 @@ become available by registering a new adapter; the bridge core never grows.
 | Conversion direction | Underlying tool                        |
 |----------------------|----------------------------------------|
 | HTML → Blocks        | `chubes4/html-to-blocks-converter`     |
-| Blocks → HTML        | `do_blocks()` (WordPress core)         |
+| Blocks → HTML        | `parse_blocks()` + `render_block()` (WordPress core) |
 | Markdown → HTML      | `league/commonmark` (vendor-prefixed)  |
 | Markdown → Blocks    | composition: Markdown → HTML → Blocks  |
-| Blocks → Markdown    | `do_blocks()` + `league/html-to-markdown` (vendor-prefixed) |
+| Blocks → Markdown    | `parse_blocks()` + `render_block()` + `league/html-to-markdown` (vendor-prefixed) |
 | HTML → Markdown      | composition: HTML → Blocks → Markdown  |
 
 ## Architecture
@@ -36,7 +36,7 @@ interface BFB_Format_Adapter {
 }
 ```
 
-Two adapters ship in v0.2.0:
+Two built-in adapters ship today:
 
 - **`BFB_HTML_Adapter`** — `to_blocks()` delegates to `html_to_blocks_raw_handler()` from `html-to-blocks-converter`;
   `from_blocks()` returns rendered HTML via `render_block()` (so dynamic blocks resolve to their server-side output).
@@ -108,7 +108,7 @@ HTML/Markdown into block markup.
 git clone https://github.com/chubes4/block-format-bridge.git
 cd block-format-bridge
 composer install
-composer build  # runs php-scoper to vendor-prefix league/commonmark + league/html-to-markdown
+composer build  # runs php-scoper to vendor-prefix h2bc + markdown dependencies
 ```
 
 ## Usage
@@ -124,7 +124,7 @@ $blocks = bfb_convert( "# Hello\n\nWorld", 'markdown', 'blocks' );
 // HTML → blocks
 $blocks = bfb_convert( '<h1>Hello</h1><p>World</p>', 'html', 'blocks' );
 
-// Blocks → HTML (rendered through do_blocks())
+// Blocks → HTML (rendered through render_block())
 $html = bfb_convert( $serialised_blocks, 'blocks', 'html' );
 
 // Blocks → markdown
@@ -142,7 +142,7 @@ $html = bfb_convert( '# X', 'markdown', 'html' );
 Read a post's `post_content` in the requested format. Routes through `bfb_convert()` with `'blocks'` as the source.
 
 ```php
-$html = bfb_render_post( $post_id, 'html' );      // do_blocks() output
+$html = bfb_render_post( $post_id, 'html' );      // rendered block HTML
 $md   = bfb_render_post( $post_id, 'markdown' );  // GFM
 ```
 
@@ -194,12 +194,19 @@ helpers and CLI shape are documented in [`docs/fse-compiler-surface.md`](docs/fs
   }, 10, 2 );
   ```
 
+- **`bfb_skip_insert_conversion( $skip, $data, $postarr, $format ): bool`** — lets storage layers veto BFB's
+  insert-time format → blocks normalisation after the source format is resolved. Use this when another plugin owns the
+  canonical `post_content` shape, such as a markdown-on-disk store that needs raw markdown to remain raw markdown.
+- **`bfb_markdown_input( $markdown ): string`** — pre-processes Markdown before CommonMark runs.
 - **`bfb_register_format_adapter( $adapter, $slug ): ?BFB_Format_Adapter`** — lazy adapter registration.
 - **`bfb_rest_supported_post_types( $post_types ): array`** — restricts which CPTs honour `?content_format=`.
 - **`bfb_html_to_markdown_options( $options, $html ): array`** — option array passed to league/html-to-markdown
   (mirrors `roots/post-content-to-markdown`'s `converter_options`).
+- **`bfb_html_to_markdown_converter( $converter ): void`** — action fired after the html-to-markdown converter is built
+  and before it runs, so consumers can register additional league/html-to-markdown converters.
 - **`bfb_markdown_output( $markdown, $html, $blocks ): string`** — final filter on the markdown produced by
   `from_blocks()`.
+- **`bfb_loaded( $version ): void`** — action fired after the winning BFB package/plugin version initializes.
 
 ### Per-call hint: `_bfb_format` on `$postarr`
 
