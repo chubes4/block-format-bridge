@@ -50,6 +50,37 @@ $blocks = $from_adapter->to_blocks( $content );
 return    $to_adapter->from_blocks( $blocks );
 ```
 
+### BFB and h2bc responsibility split
+
+BFB owns format routing and orchestration. It decides which adapter handles a source format, normalises non-block
+formats through the block-array pivot, and exposes one public API for callers that do not want to know which lower-level
+library performs a specific conversion. It does **not** own per-block raw transforms.
+
+HTML → core block transforms belong to [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
+(h2bc). BFB inherits h2bc support through `BFB_HTML_Adapter::to_blocks()`, so new h2bc transforms become available to
+BFB after the bundled dependency is updated and rebuilt.
+
+The explicit API path is:
+
+```php
+bfb_convert( $html, 'html', 'blocks' )
+    -> BFB_HTML_Adapter::to_blocks()
+    -> html_to_blocks_raw_handler();
+```
+
+The insert/update hook path is split by source format:
+
+- **BFB priority 5:** `wp_insert_post_data` handles non-HTML source formats, such as Markdown, before WordPress stores
+  the post. The adapter path normalises those formats to block markup.
+- **h2bc priority 10:** `wp_insert_post_data` handles HTML source content and converts it to core block markup.
+
+Both paths are server-side and deterministic. There is no AI conversion pass in BFB or h2bc.
+
+FSE and template blocks are a higher-level concern. Raw HTML can describe markup, but it often cannot encode intent such
+as template areas, patterns, block locking, global style relationships, or theme-specific structure. When that intent is
+required, use a compiler or generation layer above BFB/h2bc, then pass the resulting block markup through the normal
+storage/rendering path.
+
 ## Install
 
 Install it as a standalone plugin, or bundle it as a Composer package.
