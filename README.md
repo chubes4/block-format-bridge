@@ -4,7 +4,7 @@ A WordPress plugin **and Composer package** that orchestrates bidirectional cont
 Markdown) through a unified adapter API.
 
 The bridge owns no parsing logic of its own. It composes existing libraries — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
-WordPress core's `serialize_blocks()` / `do_blocks()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
+WordPress core's `serialize_blocks()` / `parse_blocks()` / `render_block()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
 and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown) — behind one contract. New formats
 become available by registering a new adapter; the bridge core never grows.
 
@@ -17,10 +17,10 @@ become available by registering a new adapter; the bridge core never grows.
 | Conversion direction | Underlying tool                        |
 |----------------------|----------------------------------------|
 | HTML → Blocks        | `chubes4/html-to-blocks-converter`     |
-| Blocks → HTML        | `do_blocks()` (WordPress core)         |
+| Blocks → HTML        | `parse_blocks()` + `render_block()` (WordPress core) |
 | Markdown → HTML      | `league/commonmark` (vendor-prefixed)  |
 | Markdown → Blocks    | composition: Markdown → HTML → Blocks  |
-| Blocks → Markdown    | `do_blocks()` + `league/html-to-markdown` (vendor-prefixed) |
+| Blocks → Markdown    | `parse_blocks()` + `render_block()` + `league/html-to-markdown` (vendor-prefixed) |
 | HTML → Markdown      | composition: HTML → Blocks → Markdown  |
 
 ## Architecture
@@ -124,7 +124,7 @@ $blocks = bfb_convert( "# Hello\n\nWorld", 'markdown', 'blocks' );
 // HTML → blocks
 $blocks = bfb_convert( '<h1>Hello</h1><p>World</p>', 'html', 'blocks' );
 
-// Blocks → HTML (rendered through do_blocks())
+// Blocks → HTML (rendered through render_block())
 $html = bfb_convert( $serialised_blocks, 'blocks', 'html' );
 
 // Blocks → markdown
@@ -142,7 +142,7 @@ $html = bfb_convert( '# X', 'markdown', 'html' );
 Read a post's `post_content` in the requested format. Routes through `bfb_convert()` with `'blocks'` as the source.
 
 ```php
-$html = bfb_render_post( $post_id, 'html' );      // do_blocks() output
+$html = bfb_render_post( $post_id, 'html' );      // rendered block HTML
 $md   = bfb_render_post( $post_id, 'markdown' );  // GFM
 ```
 
