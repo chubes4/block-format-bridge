@@ -993,7 +993,10 @@ class HTML_To_Blocks_Transform_Registry
         if ($tag === 'SECTION') {
             return \true;
         }
-        if (!\in_array($tag, ['DIV', 'MAIN', 'ARTICLE', 'ASIDE', 'HEADER', 'FOOTER'], \true)) {
+        if (\in_array($tag, ['MAIN', 'ARTICLE', 'ASIDE', 'HEADER', 'FOOTER', 'NAV'], \true)) {
+            return \true;
+        }
+        if ($tag !== 'DIV') {
             return \false;
         }
         return self::class_matches($element, '/(?:^|[-_\s])(group|section|container|wrapper|content|main|article|aside|header|footer)(?:$|[-_\s])/i');
