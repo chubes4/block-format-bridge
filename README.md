@@ -36,7 +36,7 @@ interface BFB_Format_Adapter {
 }
 ```
 
-Two adapters ship in v0.2.0:
+Two built-in adapters ship today:
 
 - **`BFB_HTML_Adapter`** — `to_blocks()` delegates to `html_to_blocks_raw_handler()` from `html-to-blocks-converter`;
   `from_blocks()` returns rendered HTML via `render_block()` (so dynamic blocks resolve to their server-side output).
@@ -108,7 +108,7 @@ HTML/Markdown into block markup.
 git clone https://github.com/chubes4/block-format-bridge.git
 cd block-format-bridge
 composer install
-composer build  # runs php-scoper to vendor-prefix league/commonmark + league/html-to-markdown
+composer build  # runs php-scoper to vendor-prefix h2bc + markdown dependencies
 ```
 
 ## Usage
@@ -194,6 +194,10 @@ helpers and CLI shape are documented in [`docs/fse-compiler-surface.md`](docs/fs
   }, 10, 2 );
   ```
 
+- **`bfb_skip_insert_conversion( $skip, $data, $postarr, $format ): bool`** — lets storage layers veto BFB's
+  insert-time format → blocks normalisation after the source format is resolved. Use this when another plugin owns the
+  canonical `post_content` shape, such as a markdown-on-disk store that needs raw markdown to remain raw markdown.
+- **`bfb_markdown_input( $markdown ): string`** — pre-processes Markdown before CommonMark runs.
 - **`bfb_register_format_adapter( $adapter, $slug ): ?BFB_Format_Adapter`** — lazy adapter registration.
 - **`bfb_rest_supported_post_types( $post_types ): array`** — restricts which CPTs honour `?content_format=`.
 - **`bfb_html_to_markdown_options( $options, $html ): array`** — option array passed to league/html-to-markdown
