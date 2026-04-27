@@ -101,6 +101,104 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * BFB should expose h2bc's expanded layout transforms through bfb_convert().
+	 */
+	public function test_html_to_blocks_covers_expanded_layout_transforms(): void {
+		$fixtures = array(
+			'group'   => array( '<section id="intro" class="intro-section"><h2>Intro</h2><p>Hello</p></section>', array( 'core/group' ) ),
+			'columns' => array( '<div class="row"><div class="col-md-6"><p>Left</p></div><div class="col-md-6"><p>Right</p></div></div>', array( 'core/columns', 'core/column' ) ),
+			'cover'   => array( '<section id="hero" class="hero" style="background-image: url(/hero.jpg); background-color: #123456;"><h1>Launch</h1></section>', array( 'core/cover' ) ),
+			'spacer'  => array( '<div class="spacer" style="height: 48px"></div>', array( 'core/spacer' ) ),
+		);
+
+		foreach ( $fixtures as $label => $fixture ) {
+			$flat = $this->flatten_blocks( $this->blocks_from( $fixture[0], 'html' ) );
+			foreach ( $fixture[1] as $block_name ) {
+				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
+			}
+		}
+	}
+
+	/**
+	 * BFB should expose h2bc's expanded action and text transforms through bfb_convert().
+	 */
+	public function test_html_to_blocks_covers_expanded_action_text_transforms(): void {
+		$fixtures = array(
+			'button'    => array( '<a class="wp-block-button__link" href="/signup">Sign up</a>', array( 'core/buttons', 'core/button' ) ),
+			'details'   => array( '<details><summary>More <strong>info</strong></summary><p>Nested copy</p></details>', array( 'core/details' ) ),
+			'pullquote' => array( '<blockquote class="wp-block-pullquote"><p>Big line</p><cite>Author</cite></blockquote>', array( 'core/pullquote' ) ),
+			'verse'     => array( "<pre class=\"wp-block-verse\">Line 1\nLine 2<br>Line 3</pre>", array( 'core/verse' ) ),
+		);
+
+		foreach ( $fixtures as $label => $fixture ) {
+			$flat = $this->flatten_blocks( $this->blocks_from( $fixture[0], 'html' ) );
+			foreach ( $fixture[1] as $block_name ) {
+				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
+			}
+		}
+	}
+
+	/**
+	 * BFB should expose h2bc's expanded media and embed transforms through bfb_convert().
+	 */
+	public function test_html_to_blocks_covers_expanded_media_embed_transforms(): void {
+		$fixtures = array(
+			'video'     => array( '<video src="movie.mp4" poster="poster.jpg" controls></video>', array( 'core/video' ) ),
+			'audio'     => array( '<audio><source src="clip.mp3"></audio>', array( 'core/audio' ) ),
+			'gallery'   => array( '<div class="gallery columns-2"><figure><img src="a.jpg" alt="A" class="wp-image-10"><figcaption>Caption A</figcaption></figure><figure><img src="b.jpg" alt="B"><figcaption>Caption B</figcaption></figure></div>', array( 'core/gallery' ) ),
+			'mediaText' => array( '<div class="wp-block-media-text"><figure><img src="hero.jpg" alt="Hero"></figure><div class="wp-block-media-text__content"><p>Copy</p></div></div>', array( 'core/media-text' ) ),
+			'file'      => array( '<a href="https://example.com/report.pdf">Download report</a>', array( 'core/file' ) ),
+			'embed'     => array( '<iframe src="https://www.youtube.com/embed/abc123"></iframe>', array( 'core/embed' ) ),
+		);
+
+		foreach ( $fixtures as $label => $fixture ) {
+			$flat = $this->flatten_blocks( $this->blocks_from( $fixture[0], 'html' ) );
+			foreach ( $fixture[1] as $block_name ) {
+				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
+			}
+		}
+	}
+
+	/**
+	 * Unsupported embeds should stay observable and preserve their HTML fallback.
+	 */
+	public function test_html_to_blocks_emits_unsupported_fallback_hook(): void {
+		$this->ensure_block_registered( 'core/html' );
+
+		$fallbacks = array();
+		$listener  = static function ( string $html, array $context, array $block ) use ( &$fallbacks ): void {
+			$fallbacks[] = array(
+				'html'    => $html,
+				'context' => $context,
+				'block'   => $block,
+			);
+		};
+
+		add_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10, 3 );
+		try {
+			$blocks = $this->blocks_from( '<iframe src="https://example.com/widget"></iframe>', 'html' );
+		} finally {
+			remove_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10 );
+		}
+
+		$this->assertSame( 'core/html', $blocks[0]['blockName'] ?? null );
+		$this->assertNotEmpty( $fallbacks, 'Unsupported fallback hook should fire.' );
+		$this->assertSame( 'core/html', $fallbacks[0]['block']['blockName'] ?? null );
+		$this->assertStringContainsString( 'https://example.com/widget', $fallbacks[0]['html'] ?? '' );
+	}
+
+	/**
+	 * The bundled artifact should include h2bc's file-link transform.
+	 */
+	public function test_bundled_h2bc_artifact_includes_file_transform(): void {
+		$registry_source = file_get_contents( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/includes/class-transform-registry.php' );
+
+		$this->assertIsString( $registry_source );
+		$this->assertStringContainsString( "'blockName' => 'core/file'", $registry_source );
+		$this->assertStringContainsString( 'is_file_link', $registry_source );
+	}
+
+	/**
 	 * Markdown input should use CommonMark/GFM, then the same HTML adapter path.
 	 */
 	public function test_markdown_to_blocks_covers_commonmark_and_gfm_paths(): void {
@@ -242,5 +340,19 @@ MARKDOWN;
 		}
 
 		return $names;
+	}
+
+	/**
+	 * Ensure optional core blocks exist in the minimal Playground test registry.
+	 *
+	 * @param string $name Block name.
+	 */
+	private function ensure_block_registered( string $name ): void {
+		$registry = WP_Block_Type_Registry::get_instance();
+		if ( $registry->is_registered( $name ) ) {
+			return;
+		}
+
+		register_block_type( $name, array() );
 	}
 }

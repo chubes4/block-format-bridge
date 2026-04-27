@@ -98,12 +98,12 @@ function html_to_blocks_convert($html)
         }
         $element = HTML_To_Blocks_HTML_Element::from_html($element_html);
         if (!$element) {
-            $blocks[] = HTML_To_Blocks_Block_Factory::create_block('core/html', ['content' => $element_html]);
+            $blocks[] = html_to_blocks_create_unsupported_html_fallback_block($element_html, ['reason' => 'element_parse_failed', 'tag_name' => $tag_name, 'occurrence' => $occurrence]);
             continue;
         }
         $raw_transform = html_to_blocks_find_transform($element, $transforms);
         if (!$raw_transform) {
-            $blocks[] = HTML_To_Blocks_Block_Factory::create_block('core/html', ['content' => $element_html]);
+            $blocks[] = html_to_blocks_create_unsupported_html_fallback_block($element_html, ['reason' => 'no_transform', 'tag_name' => $element->get_tag_name(), 'occurrence' => $occurrence]);
         } else {
             $transform_fn = $raw_transform['transform'] ?? null;
             if ($transform_fn && \is_callable($transform_fn)) {
@@ -138,6 +138,28 @@ function html_to_blocks_convert($html)
         \error_log(\sprintf('[HTML to Blocks] Significant content loss detected | Input: %d chars | Output: %d chars | Blocks: %d | Processor error: %s | Preview: %s', $original_html_length, $output_content_length, \count($blocks), $last_error ?? 'none', \substr($html, 0, 500)));
     }
     return $blocks;
+}
+/**
+ * Creates the core/html fallback block and emits an observability hook.
+ *
+ * @param string $element_html Unsupported HTML fragment.
+ * @param array  $context      Fallback context such as reason, tag_name, and occurrence.
+ * @return array Block array.
+ */
+function html_to_blocks_create_unsupported_html_fallback_block(string $element_html, array $context = []): array
+{
+    $block = HTML_To_Blocks_Block_Factory::create_block('core/html', ['content' => $element_html]);
+    if (\function_exists('do_action')) {
+        /**
+         * Fires when h2bc falls back to core/html because no supported transform exists.
+         *
+         * @param string $element_html Unsupported HTML fragment.
+         * @param array  $context      Context including reason, tag_name, and occurrence when available.
+         * @param array  $block        The generated core/html fallback block.
+         */
+        \do_action('html_to_blocks_unsupported_html_fallback', $element_html, $context, $block);
+    }
+    return $block;
 }
 /**
  * Finds all positions of a tag's opening tags in HTML

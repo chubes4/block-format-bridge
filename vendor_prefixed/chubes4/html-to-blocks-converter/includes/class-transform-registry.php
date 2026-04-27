@@ -25,11 +25,275 @@ class HTML_To_Blocks_Transform_Registry
         if (self::$transforms !== null) {
             return self::$transforms;
         }
-        self::$transforms = \array_merge(self::get_heading_transforms(), self::get_list_transforms(), self::get_image_transforms(), self::get_quote_transforms(), self::get_code_transforms(), self::get_preformatted_transforms(), self::get_separator_transforms(), self::get_table_transforms(), self::get_paragraph_transforms());
+        self::$transforms = \array_merge(self::get_heading_transforms(), self::get_list_transforms(), self::get_button_transforms(), self::get_media_transforms(), self::get_image_transforms(), self::get_details_transforms(), self::get_pullquote_transforms(), self::get_quote_transforms(), self::get_code_transforms(), self::get_verse_transforms(), self::get_preformatted_transforms(), self::get_separator_transforms(), self::get_table_transforms(), self::get_layout_transforms(), self::get_paragraph_transforms());
         \usort(self::$transforms, function ($a, $b) {
             return ($a['priority'] ?? 10) - ($b['priority'] ?? 10);
         });
         return self::$transforms;
+    }
+    /**
+     * Media and embed transforms for high-confidence static HTML patterns.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_media_transforms()
+    {
+        return [['blockName' => 'core/gallery', 'priority' => 8, 'isMatch' => function ($element) {
+            return self::is_gallery_element($element);
+        }, 'transform' => function ($element) {
+            return self::create_gallery_block($element);
+        }], ['blockName' => 'core/media-text', 'priority' => 8, 'isMatch' => function ($element) {
+            $class = $element->has_attribute('class') ? $element->get_attribute('class') : '';
+            return \preg_match('/(?:^|\s)(?:wp-block-media-text|media-text)(?:$|\s)/i', $class) === 1 && ($element->query_selector('img') || $element->query_selector('video'));
+        }, 'transform' => function ($element, $handler) {
+            return self::create_media_text_block($element, $handler);
+        }], ['blockName' => 'core/video', 'priority' => 9, 'isMatch' => function ($element) {
+            $video = $element->get_tag_name() === 'VIDEO' ? $element : $element->query_selector('video');
+            return $video && self::get_media_src($video) !== '';
+        }, 'transform' => function ($element) {
+            $video = $element->get_tag_name() === 'VIDEO' ? $element : $element->query_selector('video');
+            $attributes = self::get_media_attributes($video, ['src', 'poster', 'preload', 'autoplay', 'controls', 'loop', 'muted', 'playsInline']);
+            if ($element->get_tag_name() === 'FIGURE') {
+                $caption = $element->query_selector('figcaption');
+                if ($caption) {
+                    $attributes['caption'] = $caption->get_inner_html();
+                }
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/video', $attributes);
+        }], ['blockName' => 'core/audio', 'priority' => 9, 'isMatch' => function ($element) {
+            $audio = $element->get_tag_name() === 'AUDIO' ? $element : $element->query_selector('audio');
+            return $audio && self::get_media_src($audio) !== '';
+        }, 'transform' => function ($element) {
+            $audio = $element->get_tag_name() === 'AUDIO' ? $element : $element->query_selector('audio');
+            $attributes = self::get_media_attributes($audio, ['src', 'preload', 'autoplay', 'loop']);
+            if ($element->get_tag_name() === 'FIGURE') {
+                $caption = $element->query_selector('figcaption');
+                if ($caption) {
+                    $attributes['caption'] = $caption->get_inner_html();
+                }
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/audio', $attributes);
+        }], ['blockName' => 'core/file', 'priority' => 9, 'isMatch' => function ($element) {
+            return $element->get_tag_name() === 'A' && $element->has_attribute('href') && self::is_file_link($element);
+        }, 'transform' => function ($element) {
+            return self::create_file_block_from_anchor($element);
+        }], ['blockName' => 'core/file', 'priority' => 9, 'isMatch' => function ($element) {
+            $anchor = $element->get_tag_name() === 'P' ? $element->query_selector('a') : null;
+            return $anchor && self::is_file_link($anchor) && \trim($element->get_inner_html()) === \trim($anchor->get_outer_html());
+        }, 'transform' => function ($element) {
+            return self::create_file_block_from_anchor($element->query_selector('a'));
+        }], ['blockName' => 'core/embed', 'priority' => 9, 'isMatch' => function ($element) {
+            return $element->get_tag_name() === 'IFRAME' && $element->has_attribute('src') && self::get_embed_provider_slug($element->get_attribute('src')) !== '';
+        }, 'transform' => function ($element) {
+            $src = $element->get_attribute('src');
+            $attributes = ['url' => self::normalise_embed_url($src), 'type' => 'rich', 'providerNameSlug' => self::get_embed_provider_slug($src), 'responsive' => \true];
+            return HTML_To_Blocks_Block_Factory::create_block('core/embed', $attributes);
+        }]];
+    }
+    /**
+     * Checks whether an element is a high-confidence gallery wrapper.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Element to inspect.
+     * @return bool
+     */
+    private static function is_gallery_element($element): bool
+    {
+        $class = $element->has_attribute('class') ? $element->get_attribute('class') : '';
+        if (\preg_match('/(?:^|\s)(?:wp-block-gallery|blocks-gallery-grid|gallery|image-grid)(?:$|\s)/i', $class) !== 1) {
+            return \false;
+        }
+        return \count($element->query_selector_all('img')) > 1;
+    }
+    /**
+     * Creates a gallery block containing image inner blocks.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Gallery wrapper.
+     * @return array Block array.
+     */
+    private static function create_gallery_block($element): array
+    {
+        $images = $element->query_selector_all('img');
+        $captions = $element->query_selector_all('figcaption');
+        $inner_blocks = [];
+        $ids = [];
+        foreach ($images as $index => $img) {
+            $caption = isset($captions[$index]) ? $captions[$index]->get_inner_html() : '';
+            $image_block = self::create_image_block_from_img($img, $caption);
+            $inner_blocks[] = $image_block;
+            if (isset($image_block['attrs']['id'])) {
+                $ids[] = $image_block['attrs']['id'];
+            }
+        }
+        $attributes = [];
+        if (!empty($ids)) {
+            $attributes['ids'] = $ids;
+        }
+        if (\preg_match('/(?:^|\s)columns-(\d+)(?:$|\s)/', $element->get_attribute('class') ?? '', $matches)) {
+            $attributes['columns'] = \min(8, \max(1, (int) $matches[1]));
+        }
+        return HTML_To_Blocks_Block_Factory::create_block('core/gallery', $attributes, $inner_blocks);
+    }
+    /**
+     * Creates an image block from an img element.
+     *
+     * @param HTML_To_Blocks_HTML_Element $img     Image element.
+     * @param string                      $caption Optional caption HTML.
+     * @return array Block array.
+     */
+    private static function create_image_block_from_img($img, string $caption = ''): array
+    {
+        $attributes = ['url' => $img->get_attribute('src') ?? ''];
+        if ($img->has_attribute('alt')) {
+            $attributes['alt'] = $img->get_attribute('alt');
+        }
+        if ($caption !== '') {
+            $attributes['caption'] = $caption;
+        }
+        if ($img->has_attribute('class') && \preg_match('/(?:^|\s)wp-image-(\d+)(?:$|\s)/', $img->get_attribute('class'), $matches)) {
+            $attributes['id'] = (int) $matches[1];
+        }
+        return HTML_To_Blocks_Block_Factory::create_block('core/image', $attributes);
+    }
+    /**
+     * Creates a media-text block from a recognized two-column wrapper.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Media-text wrapper.
+     * @param callable                    $handler Recursive raw handler.
+     * @return array Block array.
+     */
+    private static function create_media_text_block($element, $handler): array
+    {
+        $media = $element->query_selector('img') ?: $element->query_selector('video');
+        $content = $element->query_selector('.wp-block-media-text__content');
+        $media_type = $media && $media->get_tag_name() === 'VIDEO' ? 'video' : 'image';
+        $attributes = ['mediaUrl' => self::get_media_src($media), 'mediaType' => $media_type, 'mediaPosition' => 'left', 'mediaWidth' => 50, 'isStackedOnMobile' => \true];
+        if ($media && $media->has_attribute('alt')) {
+            $attributes['mediaAlt'] = $media->get_attribute('alt');
+        }
+        if ($media && $media->has_attribute('class') && \preg_match('/(?:^|\s)wp-image-(\d+)(?:$|\s)/', $media->get_attribute('class'), $matches)) {
+            $attributes['mediaId'] = (int) $matches[1];
+        }
+        if (\preg_match('/(?:^|\s)has-media-on-the-right(?:$|\s)/', $element->get_attribute('class') ?? '')) {
+            $attributes['mediaPosition'] = 'right';
+        }
+        if (!$content) {
+            $children = $element->get_child_elements();
+            foreach ($children as $child) {
+                if (!$child->query_selector('img') && !$child->query_selector('video')) {
+                    $content = $child;
+                    break;
+                }
+            }
+        }
+        $inner_blocks = $content ? $handler(['HTML' => $content->get_inner_html()]) : [];
+        return HTML_To_Blocks_Block_Factory::create_block('core/media-text', $attributes, $inner_blocks);
+    }
+    /**
+     * Extracts the best media source from src or nested source tags.
+     *
+     * @param HTML_To_Blocks_HTML_Element|null $element Media element.
+     * @return string
+     */
+    private static function get_media_src($element): string
+    {
+        if (!$element) {
+            return '';
+        }
+        if ($element->has_attribute('src') && $element->get_attribute('src') !== '') {
+            return $element->get_attribute('src');
+        }
+        $source = $element->query_selector('source');
+        if ($source && $source->has_attribute('src')) {
+            return $source->get_attribute('src');
+        }
+        return '';
+    }
+    /**
+     * Extracts media attributes from a video/audio element.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Media element.
+     * @param array                       $keys    Allowed attributes.
+     * @return array
+     */
+    private static function get_media_attributes($element, array $keys): array
+    {
+        $attributes = ['src' => self::get_media_src($element)];
+        foreach ($keys as $key) {
+            $html_key = $key === 'playsInline' ? 'playsinline' : $key;
+            if ($key === 'src' || !$element->has_attribute($html_key)) {
+                continue;
+            }
+            $value = $element->get_attribute($html_key);
+            if (\in_array($key, ['autoplay', 'controls', 'loop', 'muted', 'playsInline'], \true)) {
+                $attributes[$key] = \true;
+            } else {
+                $attributes[$key] = $value;
+            }
+        }
+        return $attributes;
+    }
+    /**
+     * Checks whether a link points to a document/archive download.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Link element.
+     * @return bool
+     */
+    private static function is_file_link($element): bool
+    {
+        $href = \strtolower(\strtok($element->get_attribute('href'), '?#'));
+        if (\preg_match('/\.(?:pdf|docx?|pptx?|xlsx?|zip|rar|7z|txt|csv|ics|epub)$/', $href)) {
+            return \true;
+        }
+        $class = $element->has_attribute('class') ? $element->get_attribute('class') : '';
+        return $element->has_attribute('download') && \preg_match('/(?:^|\s)(?:download|file)(?:$|\s)/i', $class) === 1;
+    }
+    /**
+     * Creates a file block from a downloadable anchor.
+     *
+     * @param HTML_To_Blocks_HTML_Element $anchor Link element.
+     * @return array Block array.
+     */
+    private static function create_file_block_from_anchor($anchor): array
+    {
+        $attributes = ['href' => $anchor->get_attribute('href'), 'textLinkHref' => $anchor->get_attribute('href'), 'fileName' => $anchor->get_inner_html(), 'showDownloadButton' => \true];
+        if ($anchor->has_attribute('target')) {
+            $attributes['textLinkTarget'] = $anchor->get_attribute('target');
+        }
+        return HTML_To_Blocks_Block_Factory::create_block('core/file', $attributes);
+    }
+    /**
+     * Infers a conservative core/embed provider slug from a URL.
+     *
+     * @param string $url Embed URL.
+     * @return string
+     */
+    private static function get_embed_provider_slug(string $url): string
+    {
+        $host = \parse_url($url, \PHP_URL_HOST);
+        $host = $host ? \strtolower(\preg_replace('/^www\./', '', $host)) : '';
+        $providers = ['youtube.com' => 'youtube', 'youtu.be' => 'youtube', 'vimeo.com' => 'vimeo', 'soundcloud.com' => 'soundcloud', 'spotify.com' => 'spotify', 'twitter.com' => 'twitter', 'x.com' => 'twitter', 'instagram.com' => 'instagram', 'tiktok.com' => 'tiktok'];
+        foreach ($providers as $needle => $slug) {
+            if ($host === $needle || \substr($host, -\strlen('.' . $needle)) === '.' . $needle) {
+                return $slug;
+            }
+        }
+        return '';
+    }
+    /**
+     * Converts common iframe embed URLs back to their public oEmbed URL.
+     *
+     * @param string $url Iframe URL.
+     * @return string
+     */
+    private static function normalise_embed_url(string $url): string
+    {
+        if (\preg_match('#youtube\.com/embed/([^?&/]+)#i', $url, $matches)) {
+            return 'https://www.youtube.com/watch?v=' . $matches[1];
+        }
+        if (\preg_match('#player\.vimeo\.com/video/(\d+)#i', $url, $matches)) {
+            return 'https://vimeo.com/' . $matches[1];
+        }
+        return $url;
     }
     /**
      * core/heading transforms - h1-h6 elements
@@ -196,6 +460,108 @@ class HTML_To_Blocks_Transform_Registry
         return null;
     }
     /**
+     * core/buttons and core/button transforms - explicit button-like anchors.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_button_transforms()
+    {
+        return [['blockName' => 'core/buttons', 'priority' => 9, 'selector' => 'a', 'isMatch' => function ($element) {
+            return $element->get_tag_name() === 'A' && self::is_button_like_anchor($element);
+        }, 'transform' => function ($element) {
+            return self::create_buttons_block_from_anchor($element);
+        }], ['blockName' => 'core/buttons', 'priority' => 9, 'selector' => 'p', 'isMatch' => function ($element) {
+            $anchor = self::get_single_anchor_from_html($element->get_inner_html());
+            return $element->get_tag_name() === 'P' && $anchor && self::is_button_like_anchor($anchor);
+        }, 'transform' => function ($element) {
+            $anchor = self::get_single_anchor_from_html($element->get_inner_html());
+            return self::create_buttons_block_from_anchor($anchor);
+        }]];
+    }
+    /**
+     * Gets a single anchor element when the HTML is only one anchor.
+     *
+     * @param string $html Inner HTML to inspect.
+     * @return HTML_To_Blocks_HTML_Element|null Anchor element or null.
+     */
+    private static function get_single_anchor_from_html(string $html): ?HTML_To_Blocks_HTML_Element
+    {
+        $html = \trim($html);
+        if (!\preg_match('/^<a\s([^>]*)>(.*)<\/a>$/is', $html, $matches)) {
+            return null;
+        }
+        $attributes = self::parse_attribute_string($matches[1]);
+        return new HTML_To_Blocks_HTML_Element('a', $attributes, $html, \trim($matches[2]));
+    }
+    /**
+     * Parses an HTML attribute string into an associative array.
+     *
+     * @param string $attribute_string Raw attribute string.
+     * @return array Parsed attributes.
+     */
+    private static function parse_attribute_string(string $attribute_string): array
+    {
+        $attributes = [];
+        if (\preg_match_all('/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s"\'>]+))/', $attribute_string, $matches, \PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $attributes[\strtolower($match[1])] = \html_entity_decode($match[3] !== '' ? $match[3] : ($match[4] !== '' ? $match[4] : $match[5]), \ENT_QUOTES, 'UTF-8');
+            }
+        }
+        return $attributes;
+    }
+    /**
+     * Checks if an anchor explicitly carries button intent.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Anchor element.
+     * @return bool True when the anchor is button-like.
+     */
+    private static function is_button_like_anchor($element): bool
+    {
+        if (!$element || $element->get_tag_name() !== 'A') {
+            return \false;
+        }
+        $class_name = $element->get_attribute('class') ?? '';
+        return \preg_match('/(?:^|\s)(?:button|btn|wp-block-button__link|wp-element-button)(?:$|\s|-)/i', $class_name) === 1;
+    }
+    /**
+     * Creates a buttons wrapper with one button child from an anchor.
+     *
+     * @param HTML_To_Blocks_HTML_Element $anchor Anchor element.
+     * @return array Block array.
+     */
+    private static function create_buttons_block_from_anchor($anchor): array
+    {
+        $attributes = ['text' => $anchor->get_inner_html()];
+        if ($anchor->has_attribute('href')) {
+            $attributes['url'] = $anchor->get_attribute('href');
+        }
+        if ($anchor->has_attribute('target')) {
+            $attributes['linkTarget'] = $anchor->get_attribute('target');
+        }
+        if ($anchor->has_attribute('rel')) {
+            $attributes['rel'] = $anchor->get_attribute('rel');
+        }
+        if ($anchor->has_attribute('class')) {
+            $attributes['className'] = self::button_block_class_name($anchor->get_attribute('class'));
+        }
+        $button = HTML_To_Blocks_Block_Factory::create_block('core/button', $attributes);
+        return HTML_To_Blocks_Block_Factory::create_block('core/buttons', [], [$button]);
+    }
+    /**
+     * Converts anchor classes to button block classes.
+     *
+     * @param string $class_name Anchor class attribute.
+     * @return string Button block class name.
+     */
+    private static function button_block_class_name(string $class_name): string
+    {
+        $classes = \preg_split('/\s+/', \trim($class_name));
+        $classes = \array_filter($classes, function ($class) {
+            return !\in_array($class, ['wp-block-button__link', 'wp-element-button'], \true);
+        });
+        return \trim(\implode(' ', $classes));
+    }
+    /**
      * core/image transforms - figure with img
      *
      * @return array Transform definitions
@@ -271,6 +637,52 @@ class HTML_To_Blocks_Transform_Registry
         }]];
     }
     /**
+     * core/details transforms - details elements with a summary.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_details_transforms()
+    {
+        return [['blockName' => 'core/details', 'priority' => 10, 'selector' => 'details', 'isMatch' => function ($element) {
+            return $element->get_tag_name() === 'DETAILS' && \preg_match('/<summary(?:\s[^>]*)?>.*?<\/summary>/is', $element->get_inner_html()) === 1;
+        }, 'transform' => function ($element, $handler) {
+            $inner_html = $element->get_inner_html();
+            \preg_match('/<summary(?:\s[^>]*)?>(.*?)<\/summary>/is', $inner_html, $summary_matches);
+            $summary = \trim($summary_matches[1] ?? '');
+            $content_html = \trim(\preg_replace('/<summary(?:\s[^>]*)?>.*?<\/summary>/is', '', $inner_html, 1));
+            $inner_blocks = $content_html !== '' ? $handler(['HTML' => $content_html]) : [];
+            $attributes = ['summary' => $summary];
+            return HTML_To_Blocks_Block_Factory::create_block('core/details', $attributes, $inner_blocks);
+        }]];
+    }
+    /**
+     * core/pullquote transforms - explicit pullquote blockquotes.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_pullquote_transforms()
+    {
+        return [['blockName' => 'core/pullquote', 'priority' => 9, 'selector' => 'blockquote', 'isMatch' => function ($element) {
+            if ($element->get_tag_name() !== 'BLOCKQUOTE' || !$element->has_attribute('class')) {
+                return \false;
+            }
+            $class_name = $element->get_attribute('class');
+            return \preg_match('/(?:^|\s)(?:wp-block-pullquote|pullquote|is-style-pullquote)(?:$|\s)/i', $class_name) === 1;
+        }, 'transform' => function ($element) {
+            $value = \trim($element->get_inner_html());
+            $citation = '';
+            if (\preg_match('/<cite(?:\s[^>]*)?>(.*?)<\/cite>/is', $value, $matches)) {
+                $citation = \trim($matches[1]);
+                $value = \trim(\preg_replace('/<cite(?:\s[^>]*)?>.*?<\/cite>/is', '', $value, 1));
+            }
+            $attributes = ['value' => $value];
+            if ($citation !== '') {
+                $attributes['citation'] = $citation;
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/pullquote', $attributes);
+        }]];
+    }
+    /**
      * core/quote transforms - blockquote elements
      *
      * @return array Transform definitions
@@ -320,6 +732,23 @@ class HTML_To_Blocks_Transform_Registry
                 }
             }
             return HTML_To_Blocks_Block_Factory::create_block('core/code', $attributes);
+        }]];
+    }
+    /**
+     * core/verse transforms - explicit verse/preformatted poetry classes.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_verse_transforms()
+    {
+        return [['blockName' => 'core/verse', 'priority' => 10, 'selector' => 'pre', 'isMatch' => function ($element) {
+            if ($element->get_tag_name() !== 'PRE' || !$element->has_attribute('class')) {
+                return \false;
+            }
+            $class_name = $element->get_attribute('class');
+            return \preg_match('/(?:^|\s)(?:wp-block-verse|verse)(?:$|\s)/i', $class_name) === 1;
+        }, 'transform' => function ($element) {
+            return HTML_To_Blocks_Block_Factory::create_block('core/verse', ['content' => $element->get_inner_html()]);
         }]];
     }
     /**
@@ -476,6 +905,207 @@ class HTML_To_Blocks_Transform_Registry
             $inner_html = \substr($content, 0, $close_pos);
             $offset += $matches[0][1] + \strlen($matches[0][0]) - \strlen($content) + $close_pos + \strlen($close_tag);
             return \trim($inner_html);
+        }
+        return '';
+    }
+    /**
+     * Layout transforms - conservative wrappers only.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_layout_transforms()
+    {
+        return [['blockName' => 'core/spacer', 'priority' => 11, 'isMatch' => function ($element) {
+            return self::is_spacer_element($element);
+        }, 'transform' => function ($element) {
+            $attributes = [];
+            $height = self::extract_height_value($element);
+            if ($height !== '') {
+                $attributes['height'] = $height;
+            }
+            if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
+                $attributes['anchor'] = $element->get_attribute('id');
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/spacer', $attributes);
+        }], ['blockName' => 'core/cover', 'priority' => 12, 'isMatch' => function ($element) {
+            return self::is_cover_element($element);
+        }, 'transform' => function ($element, $handler) {
+            $attributes = self::get_common_layout_attributes($element);
+            $style = $element->has_attribute('style') ? $element->get_attribute('style') : '';
+            $inner_blocks = $handler(['HTML' => $element->get_inner_html()]);
+            if (\preg_match('/background-image:\s*url\((["\']?)([^)"\']+)\1\)/i', $style, $matches)) {
+                $attributes['url'] = \trim($matches[2]);
+            }
+            $background_color = self::extract_background_color($style);
+            if ($background_color !== '') {
+                $attributes['customOverlayColor'] = $background_color;
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/cover', $attributes, $inner_blocks);
+        }], ['blockName' => 'core/columns', 'priority' => 13, 'isMatch' => function ($element) {
+            return self::is_columns_element($element);
+        }, 'transform' => function ($element, $handler) {
+            $inner_blocks = [];
+            foreach ($element->get_child_elements() as $child) {
+                if (!self::is_column_element($child)) {
+                    continue;
+                }
+                $column_attributes = self::get_common_layout_attributes($child);
+                $column_blocks = $handler(['HTML' => $child->get_inner_html()]);
+                $inner_blocks[] = HTML_To_Blocks_Block_Factory::create_block('core/column', $column_attributes, $column_blocks);
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/columns', self::get_common_layout_attributes($element), $inner_blocks);
+        }], ['blockName' => 'core/column', 'priority' => 14, 'isMatch' => function ($element) {
+            return self::is_column_element($element);
+        }, 'transform' => function ($element, $handler) {
+            return HTML_To_Blocks_Block_Factory::create_block('core/column', self::get_common_layout_attributes($element), $handler(['HTML' => $element->get_inner_html()]));
+        }], ['blockName' => 'core/group', 'priority' => 15, 'isMatch' => function ($element) {
+            return self::is_group_element($element);
+        }, 'transform' => function ($element, $handler) {
+            return HTML_To_Blocks_Block_Factory::create_block('core/group', self::get_common_layout_attributes($element), $handler(['HTML' => $element->get_inner_html()]));
+        }]];
+    }
+    /**
+     * Gets attributes shared by layout blocks.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return array Block attributes.
+     */
+    private static function get_common_layout_attributes($element): array
+    {
+        $attributes = [];
+        if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
+            $attributes['anchor'] = $element->get_attribute('id');
+        }
+        if ($element->has_attribute('class') && $element->get_attribute('class') !== '') {
+            $attributes['className'] = $element->get_attribute('class');
+        }
+        return $attributes;
+    }
+    /**
+     * Checks whether an element is a safe group wrapper.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return bool True when the element should become core/group.
+     */
+    private static function is_group_element($element): bool
+    {
+        $tag = $element->get_tag_name();
+        if ($tag === 'SECTION') {
+            return \true;
+        }
+        if (!\in_array($tag, ['DIV', 'MAIN', 'ARTICLE', 'ASIDE', 'HEADER', 'FOOTER'], \true)) {
+            return \false;
+        }
+        return self::class_matches($element, '/(?:^|[-_\s])(group|section|container|wrapper|content|main|article|aside|header|footer)(?:$|[-_\s])/i');
+    }
+    /**
+     * Checks whether an element is a cover/hero wrapper.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return bool True when the element should become core/cover.
+     */
+    private static function is_cover_element($element): bool
+    {
+        $style = $element->has_attribute('style') ? $element->get_attribute('style') : '';
+        if ($style === '') {
+            return \false;
+        }
+        $has_background_image = \preg_match('/background-image:\s*url\(/i', $style) === 1;
+        $has_background_color = self::extract_background_color($style) !== '';
+        $is_hero_like = self::class_matches($element, '/(?:^|[-_\s])(hero|cover|banner|masthead)(?:$|[-_\s])/i');
+        if (!$has_background_image && !$has_background_color) {
+            return \false;
+        }
+        return $is_hero_like || $has_background_image && $element->get_tag_name() === 'SECTION';
+    }
+    /**
+     * Checks whether an element is a columns wrapper.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return bool True when the element should become core/columns.
+     */
+    private static function is_columns_element($element): bool
+    {
+        if (!\in_array($element->get_tag_name(), ['DIV', 'SECTION'], \true)) {
+            return \false;
+        }
+        if (!self::class_matches($element, '/(?:^|[-_\s])(columns|row|grid|flex)(?:$|[-_\s])/i')) {
+            return \false;
+        }
+        $column_count = 0;
+        foreach ($element->get_child_elements() as $child) {
+            if (!self::is_column_element($child)) {
+                return \false;
+            }
+            $column_count++;
+        }
+        return $column_count >= 2;
+    }
+    /**
+     * Checks whether an element is an individual column.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return bool True when the element should become core/column.
+     */
+    private static function is_column_element($element): bool
+    {
+        if (!\in_array($element->get_tag_name(), ['DIV', 'SECTION', 'ARTICLE', 'ASIDE'], \true)) {
+            return \false;
+        }
+        return self::class_matches($element, '/(?:^|[-_\s])(column|col|cell)(?:$|[-_\s]|\d)/i');
+    }
+    /**
+     * Checks whether an element is an empty explicit spacer.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return bool True when the element should become core/spacer.
+     */
+    private static function is_spacer_element($element): bool
+    {
+        if (!\in_array($element->get_tag_name(), ['DIV', 'SPAN'], \true)) {
+            return \false;
+        }
+        if (\trim(wp_strip_all_tags($element->get_inner_html())) !== '') {
+            return \false;
+        }
+        return self::class_matches($element, '/(?:^|[-_\s])(spacer|gap|separator-space)(?:$|[-_\s])/i') && self::extract_height_value($element) !== '';
+    }
+    /**
+     * Checks a source element class attribute against a pattern.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @param string                      $pattern Regex pattern.
+     * @return bool True when the class matches.
+     */
+    private static function class_matches($element, string $pattern): bool
+    {
+        $class_name = $element->has_attribute('class') ? $element->get_attribute('class') : '';
+        return $class_name !== '' && \preg_match($pattern, $class_name) === 1;
+    }
+    /**
+     * Extracts an explicit height CSS value.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element The source element.
+     * @return string CSS height value or empty string.
+     */
+    private static function extract_height_value($element): string
+    {
+        $style = $element->has_attribute('style') ? $element->get_attribute('style') : '';
+        if (\preg_match('/(?:^|;)\s*height:\s*([^;]+)/i', $style, $matches)) {
+            return \trim($matches[1]);
+        }
+        return '';
+    }
+    /**
+     * Extracts a background-color CSS value.
+     *
+     * @param string $style CSS style attribute.
+     * @return string CSS color value or empty string.
+     */
+    private static function extract_background_color(string $style): string
+    {
+        if (\preg_match('/(?:^|;)\s*background(?:-color)?:\s*(?![^;]*url\()([^;]+)/i', $style, $matches)) {
+            return \trim($matches[1]);
         }
         return '';
     }

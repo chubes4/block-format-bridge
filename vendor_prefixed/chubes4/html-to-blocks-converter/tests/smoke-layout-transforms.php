@@ -1,0 +1,180 @@
+<?php
+
+namespace BlockFormatBridge\Vendor;
+
+/**
+ * Smoke test: high-confidence layout raw transforms.
+ *
+ * Run: php tests/smoke-layout-transforms.php
+ *
+ * Exits 0 on pass, 1 on failure. Uses small WordPress stubs so it can run
+ * deterministically outside a site that may already have another h2bc copy
+ * loaded by a drop-in or composer autoloader.
+ */
+// phpcs:disable
+if (!\defined('ABSPATH')) {
+    \define('ABSPATH', __DIR__);
+}
+if (!\class_exists('WP_Block_Type_Registry', \false)) {
+    class WP_Block_Type_Registry
+    {
+        public static function get_instance()
+        {
+            return new self();
+        }
+        public function is_registered($name)
+        {
+            return \in_array($name, ['core/group', 'core/columns', 'core/column', 'core/cover', 'core/spacer', 'core/heading', 'core/paragraph', 'core/html'], \true);
+        }
+        public function get_registered($name)
+        {
+            return (object) ['attributes' => []];
+        }
+    }
+    \class_alias('BlockFormatBridge\Vendor\WP_Block_Type_Registry', 'WP_Block_Type_Registry', \false);
+}
+foreach (['esc_attr', 'esc_html', 'esc_url'] as $function_name) {
+    if (!\function_exists($function_name)) {
+        eval('function ' . $function_name . '( $value ) { return htmlspecialchars( (string) $value, ENT_QUOTES, "UTF-8" ); }');
+    }
+}
+if (!\function_exists('BlockFormatBridge\Vendor\wp_strip_all_tags')) {
+    function wp_strip_all_tags($text)
+    {
+        return \strip_tags($text);
+    }
+}
+$repo_root = \dirname(__DIR__);
+require_once $repo_root . '/includes/class-block-factory.php';
+require_once $repo_root . '/includes/class-transform-registry.php';
+class Layout_Smoke_Element
+{
+    private string $tag_name;
+    private array $attributes;
+    private string $inner_html;
+    private array $children;
+    public function __construct(string $tag_name, array $attributes = [], string $inner_html = '', array $children = [])
+    {
+        $this->tag_name = \strtoupper($tag_name);
+        $this->attributes = \array_change_key_case($attributes, \CASE_LOWER);
+        $this->inner_html = $inner_html;
+        $this->children = $children;
+    }
+    public function get_tag_name(): string
+    {
+        return $this->tag_name;
+    }
+    public function has_attribute(string $name): bool
+    {
+        return \array_key_exists(\strtolower($name), $this->attributes);
+    }
+    public function get_attribute(string $name): ?string
+    {
+        return $this->attributes[\strtolower($name)] ?? null;
+    }
+    public function get_inner_html(): string
+    {
+        return $this->inner_html;
+    }
+    public function get_child_elements(): array
+    {
+        return $this->children;
+    }
+    public function query_selector(string $selector)
+    {
+        return null;
+    }
+    public function get_text_content(): string
+    {
+        return \trim(\strip_tags($this->inner_html));
+    }
+}
+$failures = [];
+$assertions = 0;
+$smoke_assert = static function ($condition, $label, $detail = '') use (&$failures, &$assertions) {
+    $assertions++;
+    if (!$condition) {
+        $failures[] = 'FAIL [' . $label . ']' . ($detail !== '' ? ': ' . $detail : '');
+    }
+};
+$find_transform = static function ($element, string $block_name) {
+    foreach (HTML_To_Blocks_Transform_Registry::get_raw_transforms() as $transform) {
+        if (($transform['blockName'] ?? '') !== $block_name) {
+            continue;
+        }
+        if (\is_callable($transform['isMatch'] ?? null) && \call_user_func($transform['isMatch'], $element)) {
+            return $transform;
+        }
+    }
+    return null;
+};
+$handler = static function ($args) {
+    $html = $args['HTML'] ?? '';
+    if (\strpos($html, '<h1') !== \false || \strpos($html, '<h2') !== \false) {
+        return [HTML_To_Blocks_Block_Factory::create_block('core/heading', ['level' => 2, 'content' => 'Heading'])];
+    }
+    return [HTML_To_Blocks_Block_Factory::create_block('core/paragraph', ['content' => 'Paragraph'])];
+};
+// --------------------------------------------------------------------------
+// Group: section is a high-confidence semantic wrapper, and inner content must
+// recurse through the normal raw handler.
+// --------------------------------------------------------------------------
+$section = new Layout_Smoke_Element('section', ['id' => 'intro', 'class' => 'intro-section'], '<h2>Intro</h2><p>Hello</p>');
+$group_transform = $find_transform($section, 'core/group');
+$group = $group_transform ? \call_user_func($group_transform['transform'], $section, $handler) : null;
+$smoke_assert($group && $group['blockName'] === 'core/group', 'section-to-group');
+$smoke_assert(($group['attrs']['anchor'] ?? '') === 'intro', 'group-preserves-anchor');
+$smoke_assert(\strpos($group['attrs']['className'] ?? '', 'intro-section') !== \false, 'group-preserves-class');
+$smoke_assert(\count($group['innerBlocks'] ?? []) === 1, 'group-preserves-inner-blocks');
+$smoke_assert(($group['innerBlocks'][0]['blockName'] ?? '') === 'core/heading', 'group-inner-heading');
+// --------------------------------------------------------------------------
+// Columns: require an explicit row/grid signal plus direct column-like children.
+// --------------------------------------------------------------------------
+$left = new Layout_Smoke_Element('div', ['class' => 'col-md-6'], '<p>Left</p>');
+$right = new Layout_Smoke_Element('div', ['class' => 'col-md-6'], '<p>Right</p>');
+$row = new Layout_Smoke_Element('div', ['class' => 'row'], '', [$left, $right]);
+$columns_transform = $find_transform($row, 'core/columns');
+$columns = $columns_transform ? \call_user_func($columns_transform['transform'], $row, $handler) : null;
+$smoke_assert($columns && $columns['blockName'] === 'core/columns', 'row-to-columns');
+$smoke_assert(\count($columns['innerBlocks'] ?? []) === 2, 'columns-has-two-columns');
+$smoke_assert(($columns['innerBlocks'][0]['blockName'] ?? '') === 'core/column', 'first-child-column');
+$smoke_assert(($columns['innerBlocks'][1]['blockName'] ?? '') === 'core/column', 'second-child-column');
+$smoke_assert(\strpos($columns['innerBlocks'][0]['attrs']['className'] ?? '', 'col-md-6') !== \false, 'column-preserves-class');
+$smoke_assert(($columns['innerBlocks'][0]['innerBlocks'][0]['blockName'] ?? '') === 'core/paragraph', 'column-preserves-inner-paragraph');
+// --------------------------------------------------------------------------
+// Cover: require a hero/cover signal with an explicit background style.
+// --------------------------------------------------------------------------
+$hero = new Layout_Smoke_Element('section', ['id' => 'hero', 'class' => 'hero', 'style' => 'background-image: url(/hero.jpg); background-color: #123456;'], '<h1>Launch</h1>');
+$cover_transform = $find_transform($hero, 'core/cover');
+$cover = $cover_transform ? \call_user_func($cover_transform['transform'], $hero, $handler) : null;
+$smoke_assert($cover && $cover['blockName'] === 'core/cover', 'hero-to-cover');
+$smoke_assert(($cover['attrs']['anchor'] ?? '') === 'hero', 'cover-preserves-anchor');
+$smoke_assert(($cover['attrs']['url'] ?? '') === '/hero.jpg', 'cover-preserves-background-image');
+$smoke_assert(($cover['attrs']['customOverlayColor'] ?? '') === '#123456', 'cover-preserves-background-color');
+$smoke_assert(($cover['innerBlocks'][0]['blockName'] ?? '') === 'core/heading', 'cover-preserves-inner-heading');
+// --------------------------------------------------------------------------
+// Spacer: only empty explicit spacer elements with an explicit height qualify.
+// --------------------------------------------------------------------------
+$spacer_element = new Layout_Smoke_Element('div', ['class' => 'spacer', 'style' => 'height: 48px'], '');
+$spacer_transform = $find_transform($spacer_element, 'core/spacer');
+$spacer = $spacer_transform ? \call_user_func($spacer_transform['transform'], $spacer_element, $handler) : null;
+$smoke_assert($spacer && $spacer['blockName'] === 'core/spacer', 'explicit-spacer-to-spacer');
+$smoke_assert(($spacer['attrs']['height'] ?? '') === '48px', 'spacer-preserves-height');
+// --------------------------------------------------------------------------
+// Fallback safety: arbitrary divs must not become layout blocks.
+// --------------------------------------------------------------------------
+$ambiguous = new Layout_Smoke_Element('div', [], '<p>Ambiguous</p>');
+$smoke_assert($find_transform($ambiguous, 'core/group') === null, 'ambiguous-div-not-group');
+$smoke_assert($find_transform($ambiguous, 'core/columns') === null, 'ambiguous-div-not-columns');
+$smoke_assert($find_transform($ambiguous, 'core/cover') === null, 'ambiguous-div-not-cover');
+$smoke_assert($find_transform($ambiguous, 'core/spacer') === null, 'ambiguous-div-not-spacer');
+echo 'Assertions: ' . $assertions . \PHP_EOL;
+if (empty($failures)) {
+    echo 'ALL PASS' . \PHP_EOL;
+    exit(0);
+}
+echo 'FAILURES (' . \count($failures) . '):' . \PHP_EOL;
+foreach ($failures as $failure) {
+    echo '  - ' . $failure . \PHP_EOL;
+}
+exit(1);
