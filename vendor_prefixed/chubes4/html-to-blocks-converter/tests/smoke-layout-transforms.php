@@ -127,6 +127,20 @@ $smoke_assert(($group['attrs']['anchor'] ?? '') === 'intro', 'group-preserves-an
 $smoke_assert(\strpos($group['attrs']['className'] ?? '', 'intro-section') !== \false, 'group-preserves-class');
 $smoke_assert(\count($group['innerBlocks'] ?? []) === 1, 'group-preserves-inner-blocks');
 $smoke_assert(($group['innerBlocks'][0]['blockName'] ?? '') === 'core/heading', 'group-inner-heading');
+$main = new Layout_Smoke_Element('main', ['class' => 'site-shell'], '<section class="hero"><h1>FSE Template Smoke</h1><p>Template raw HTML should become blocks.</p></section>');
+$main_transform = $find_transform($main, 'core/group');
+$main_group = $main_transform ? \call_user_func($main_transform['transform'], $main, $handler) : null;
+$landmark_tags = ['header', 'footer', 'article', 'aside', 'nav'];
+$smoke_assert($main_group && $main_group['blockName'] === 'core/group', 'main-landmark-to-group');
+$smoke_assert(\strpos($main_group['attrs']['className'] ?? '', 'site-shell') !== \false, 'main-landmark-preserves-class');
+$smoke_assert(($main_group['innerBlocks'][0]['blockName'] ?? '') === 'core/heading', 'main-landmark-recurses-children');
+foreach ($landmark_tags as $tag) {
+    $landmark = new Layout_Smoke_Element($tag, [], '<p>Landmark copy</p>');
+    $landmark_transform = $find_transform($landmark, 'core/group');
+    $landmark_group = $landmark_transform ? \call_user_func($landmark_transform['transform'], $landmark, $handler) : null;
+    $smoke_assert($landmark_group && $landmark_group['blockName'] === 'core/group', $tag . '-landmark-to-group');
+    $smoke_assert(($landmark_group['innerBlocks'][0]['blockName'] ?? '') === 'core/paragraph', $tag . '-landmark-recurses-children');
+}
 // --------------------------------------------------------------------------
 // Columns: require an explicit row/grid signal plus direct column-like children.
 // --------------------------------------------------------------------------
