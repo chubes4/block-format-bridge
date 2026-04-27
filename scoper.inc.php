@@ -26,6 +26,9 @@ return [
 		'WP_REST_Request',
 		'WP_REST_Response',
 	],
+	'exclude-functions' => [
+		'do_action',
+	],
 	// Disable php-scoper's default class_alias emission so the build does
 	// NOT write `\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_*',
 	// 'HTML_To_Blocks_*', false)` shims back to the bare global names.

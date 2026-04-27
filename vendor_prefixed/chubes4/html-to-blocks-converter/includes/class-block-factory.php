@@ -73,6 +73,13 @@ class HTML_To_Blocks_Block_Factory
             case 'core/list-item':
                 $content = $attributes['content'] ?? '';
                 return '<li>' . $content . '</li>';
+            case 'core/button':
+                return self::generate_button_html($attributes);
+            case 'core/pullquote':
+                return self::generate_pullquote_html($attributes);
+            case 'core/verse':
+                $content = $attributes['content'] ?? '';
+                return '<pre class="wp-block-verse">' . $content . '</pre>';
             case 'core/image':
                 return self::generate_image_html($attributes);
             case 'core/code':
@@ -93,9 +100,47 @@ class HTML_To_Blocks_Block_Factory
                 return '<hr class="' . esc_attr($class) . '"/>';
             case 'core/table':
                 return self::generate_table_html($attributes);
+            case 'core/video':
+                return self::generate_video_html($attributes);
+            case 'core/audio':
+                return self::generate_audio_html($attributes);
+            case 'core/file':
+                return self::generate_file_html($attributes);
+            case 'core/embed':
+                return self::generate_embed_html($attributes);
             default:
                 return '';
         }
+    }
+    /**
+     * Generates HTML for button block.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Button HTML.
+     */
+    private static function generate_button_html($attributes)
+    {
+        $text = $attributes['text'] ?? '';
+        $url = $attributes['url'] ?? '';
+        $rel = !empty($attributes['rel']) ? ' rel="' . esc_attr($attributes['rel']) . '"' : '';
+        $target = !empty($attributes['linkTarget']) ? ' target="' . esc_attr($attributes['linkTarget']) . '"' : '';
+        $class_name = 'wp-block-button';
+        if (!empty($attributes['className'])) {
+            $class_name .= ' ' . $attributes['className'];
+        }
+        return '<div class="' . esc_attr($class_name) . '"><a class="wp-block-button__link wp-element-button" href="' . esc_url($url) . '"' . $target . $rel . '>' . $text . '</a></div>';
+    }
+    /**
+     * Generates HTML for pullquote block.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Pullquote HTML.
+     */
+    private static function generate_pullquote_html($attributes)
+    {
+        $value = $attributes['value'] ?? '';
+        $citation = !empty($attributes['citation']) ? '<cite>' . $attributes['citation'] . '</cite>' : '';
+        return '<figure class="wp-block-pullquote"><blockquote>' . $value . $citation . '</blockquote></figure>';
     }
     /**
      * Generates HTML for image block
@@ -179,6 +224,104 @@ class HTML_To_Blocks_Block_Factory
         return $html;
     }
     /**
+     * Generates HTML for a video block.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Block HTML.
+     */
+    private static function generate_video_html($attributes)
+    {
+        $src = $attributes['src'] ?? '';
+        if ($src === '') {
+            return '';
+        }
+        $attrs = ' controls';
+        foreach (['autoplay', 'loop', 'muted', 'playsInline'] as $flag) {
+            if (!empty($attributes[$flag])) {
+                $attrs .= ' ' . \strtolower($flag === 'playsInline' ? 'playsinline' : $flag);
+            }
+        }
+        foreach (['poster', 'preload'] as $key) {
+            if (!empty($attributes[$key])) {
+                $attrs .= ' ' . $key . '="' . esc_attr($attributes[$key]) . '"';
+            }
+        }
+        $html = '<figure class="wp-block-video"><video src="' . esc_url($src) . '"' . $attrs . '></video>';
+        if (!empty($attributes['caption'])) {
+            $html .= '<figcaption class="wp-element-caption">' . $attributes['caption'] . '</figcaption>';
+        }
+        $html .= '</figure>';
+        return $html;
+    }
+    /**
+     * Generates HTML for an audio block.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Block HTML.
+     */
+    private static function generate_audio_html($attributes)
+    {
+        $src = $attributes['src'] ?? '';
+        if ($src === '') {
+            return '';
+        }
+        $attrs = ' controls';
+        foreach (['autoplay', 'loop'] as $flag) {
+            if (!empty($attributes[$flag])) {
+                $attrs .= ' ' . $flag;
+            }
+        }
+        if (!empty($attributes['preload'])) {
+            $attrs .= ' preload="' . esc_attr($attributes['preload']) . '"';
+        }
+        $html = '<figure class="wp-block-audio"><audio src="' . esc_url($src) . '"' . $attrs . '></audio>';
+        if (!empty($attributes['caption'])) {
+            $html .= '<figcaption class="wp-element-caption">' . $attributes['caption'] . '</figcaption>';
+        }
+        $html .= '</figure>';
+        return $html;
+    }
+    /**
+     * Generates HTML for a file block.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Block HTML.
+     */
+    private static function generate_file_html($attributes)
+    {
+        $href = $attributes['href'] ?? $attributes['textLinkHref'] ?? '';
+        if ($href === '') {
+            return '';
+        }
+        $name = $attributes['fileName'] ?? \basename(\strtok($href, '?#'));
+        $target = !empty($attributes['textLinkTarget']) ? ' target="' . esc_attr($attributes['textLinkTarget']) . '"' : '';
+        $html = '<div class="wp-block-file"><a href="' . esc_url($href) . '"' . $target . '>' . $name . '</a>';
+        if (!isset($attributes['showDownloadButton']) || $attributes['showDownloadButton']) {
+            $html .= '<a href="' . esc_url($href) . '" class="wp-block-file__button wp-element-button" download>Download</a>';
+        }
+        $html .= '</div>';
+        return $html;
+    }
+    /**
+     * Generates HTML for an embed block.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Block HTML.
+     */
+    private static function generate_embed_html($attributes)
+    {
+        $url = $attributes['url'] ?? '';
+        if ($url === '') {
+            return '';
+        }
+        $provider = $attributes['providerNameSlug'] ?? '';
+        $class = 'wp-block-embed';
+        if ($provider !== '') {
+            $class .= ' is-provider-' . sanitize_html_class($provider) . ' wp-block-embed-' . sanitize_html_class($provider);
+        }
+        return '<figure class="' . esc_attr($class) . '"><div class="wp-block-embed__wrapper">' . esc_url($url) . '</div></figure>';
+    }
+    /**
      * Generates wrapper HTML for blocks with inner blocks
      *
      * @param string $name       Block name
@@ -197,12 +340,33 @@ class HTML_To_Blocks_Block_Factory
                 return ['opening' => '<li>' . $content, 'closing' => '</li>'];
             case 'core/quote':
                 return ['opening' => '<blockquote class="wp-block-quote">', 'closing' => '</blockquote>'];
+            case 'core/buttons':
+                return ['opening' => '<div class="wp-block-buttons">', 'closing' => '</div>'];
+            case 'core/details':
+                $summary = $attributes['summary'] ?? '';
+                return ['opening' => '<details class="wp-block-details"><summary>' . $summary . '</summary>', 'closing' => '</details>'];
             case 'core/group':
                 return ['opening' => '<div class="wp-block-group">', 'closing' => '</div>'];
             case 'core/column':
                 return ['opening' => '<div class="wp-block-column">', 'closing' => '</div>'];
             case 'core/columns':
                 return ['opening' => '<div class="wp-block-columns">', 'closing' => '</div>'];
+            case 'core/gallery':
+                $class = 'wp-block-gallery has-nested-images columns-default is-cropped';
+                if (!empty($attributes['columns'])) {
+                    $class = 'wp-block-gallery has-nested-images columns-' . (int) $attributes['columns'] . ' is-cropped';
+                }
+                return ['opening' => '<figure class="' . esc_attr($class) . '">', 'closing' => '</figure>'];
+            case 'core/media-text':
+                $media_url = $attributes['mediaUrl'] ?? '';
+                $media_type = $attributes['mediaType'] ?? 'image';
+                $media_alt = esc_attr($attributes['mediaAlt'] ?? '');
+                $media_html = $media_type === 'video' ? '<video src="' . esc_url($media_url) . '" controls></video>' : '<img src="' . esc_url($media_url) . '" alt="' . $media_alt . '"/>';
+                $class = 'wp-block-media-text is-stacked-on-mobile';
+                if (($attributes['mediaPosition'] ?? 'left') === 'right') {
+                    $class .= ' has-media-on-the-right';
+                }
+                return ['opening' => '<div class="' . esc_attr($class) . '"><figure class="wp-block-media-text__media">' . $media_html . '</figure><div class="wp-block-media-text__content">', 'closing' => '</div></div>'];
             default:
                 return ['opening' => '', 'closing' => ''];
         }

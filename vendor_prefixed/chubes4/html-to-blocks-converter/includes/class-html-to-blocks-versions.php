@@ -117,7 +117,7 @@ if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Versions', \false)) 
              *
              * @param string $version Loaded version.
              */
-            do_action('html_to_blocks_loaded', $version);
+            \do_action('html_to_blocks_loaded', $version);
         }
     }
 }
