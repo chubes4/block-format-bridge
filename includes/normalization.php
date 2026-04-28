@@ -71,9 +71,10 @@ if ( ! function_exists( 'bfb_normalize_blocks' ) ) {
 		}
 
 		$tokens = bfb_extract_block_tokens( $content );
-		if ( bfb_is_wp_error( $tokens ) ) {
+		if ( $tokens instanceof WP_Error ) {
 			return $tokens;
 		}
+		/** @var array<int, array{raw: string, offset: int, type: string, name: string}> $tokens */
 
 		if ( empty( $tokens ) ) {
 			return new WP_Error(
@@ -133,7 +134,7 @@ if ( ! function_exists( 'bfb_normalize_blocks' ) ) {
 			return new WP_Error(
 				'bfb_blocks_unclosed_comment',
 				'Serialized block markup contains an unclosed block comment.',
-				array( 'open_blocks' => array_values( $stack ) )
+				array( 'open_blocks' => $stack )
 			);
 		}
 
@@ -210,7 +211,7 @@ if ( ! function_exists( 'bfb_extract_block_tokens' ) ) {
 				$tokens[] = array(
 					'raw'    => $raw,
 					'offset' => $match[1],
-					'type'   => isset( $open[2] ) && '/' === $open[2] ? 'self' : 'open',
+					'type'   => isset( $open[2] ) ? 'self' : 'open',
 					'name'   => $open[1],
 				);
 				continue;
@@ -274,17 +275,5 @@ if ( ! function_exists( 'bfb_excerpt' ) ) {
 	function bfb_excerpt( string $content ): string {
 		$excerpt = trim( preg_replace( '/\s+/', ' ', $content ) ?? $content );
 		return substr( $excerpt, 0, 120 );
-	}
-}
-
-if ( ! function_exists( 'bfb_is_wp_error' ) ) {
-	/**
-	 * Local wrapper for tests that load the API with a minimal WP_Error stub.
-	 *
-	 * @param mixed $value Value to test.
-	 * @return bool
-	 */
-	function bfb_is_wp_error( $value ): bool {
-		return function_exists( 'is_wp_error' ) ? is_wp_error( $value ) : $value instanceof WP_Error;
 	}
 }

@@ -53,9 +53,9 @@ function bfb_resolve_format_for_insert( array $data, array $postarr ): string {
 	 * @param string $post_type Post type being inserted.
 	 * @param string $content   Raw post content (already wp_unslash'd? NO — still slashed).
 	 */
-	$format = apply_filters( 'bfb_default_format', 'html', $post_type, $content );
+	$format = (string) apply_filters( 'bfb_default_format', 'html', $post_type, $content );
 
-	return is_string( $format ) && '' !== $format ? $format : 'html';
+	return '' !== $format ? $format : 'html';
 }
 
 /**
@@ -76,12 +76,8 @@ function bfb_resolve_format_for_insert( array $data, array $postarr ): string {
  * @param array $postarr Original post-insert array.
  * @return array Modified post data.
  */
-function bfb_convert_on_insert( $data, $postarr ) {
-	if ( ! is_array( $data ) ) {
-		return $data;
-	}
-
-	if ( empty( $data['post_content'] ) ) {
+function bfb_convert_on_insert( array $data, array $postarr ): array {
+	if ( empty( $data['post_content'] ) || ! is_string( $data['post_content'] ) ) {
 		return $data;
 	}
 
@@ -125,7 +121,11 @@ function bfb_convert_on_insert( $data, $postarr ) {
 		return $data;
 	}
 
-	$content   = wp_unslash( $data['post_content'] );
+	$content = wp_unslash( $data['post_content'] );
+	if ( ! is_string( $content ) ) {
+		return $data;
+	}
+
 	$post_type = isset( $data['post_type'] ) ? (string) $data['post_type'] : '';
 
 	// Already block markup — leave it alone.
@@ -135,7 +135,15 @@ function bfb_convert_on_insert( $data, $postarr ) {
 
 	$adapter = bfb_get_adapter( $format );
 	if ( ! $adapter ) {
-		error_log( sprintf( '[Block Format Bridge] No adapter for format "%s" on insert; skipping.', $format ) );
+		do_action(
+			'bfb_diagnostic',
+			'insert_adapter_unavailable',
+			'No adapter is registered for insert conversion; skipping.',
+			array(
+				'format'    => $format,
+				'post_type' => $post_type,
+			)
+		);
 		return $data;
 	}
 
@@ -158,13 +166,13 @@ function bfb_convert_on_insert( $data, $postarr ) {
 	do_action(
 		'bfb_insert_conversion_measured',
 		array(
-			'format'      => $format,
-			'from'        => $format,
-			'to'          => 'blocks',
-			'duration_ms' => ( microtime( true ) - $started_at ) * 1000,
-			'input_bytes' => strlen( $content ),
+			'format'       => $format,
+			'from'         => $format,
+			'to'           => 'blocks',
+			'duration_ms'  => ( microtime( true ) - $started_at ) * 1000,
+			'input_bytes'  => strlen( $content ),
 			'output_bytes' => strlen( $serialized ),
-			'post_type'   => $post_type,
+			'post_type'    => $post_type,
 		)
 	);
 

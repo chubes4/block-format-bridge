@@ -39,8 +39,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 
 		// Already block markup — parse and return.
 		if ( false !== strpos( $content, '<!-- wp:' ) ) {
-			$parsed = parse_blocks( $content );
-			return is_array( $parsed ) ? $parsed : array();
+			return parse_blocks( $content );
 		}
 
 		if ( function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ) ) {
@@ -56,7 +55,12 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		// Should only happen in a broken build: BFB requires
 		// chubes4/html-to-blocks-converter and built distributions ship
 		// the prefixed function above.
-		error_log( '[Block Format Bridge] html-to-blocks-converter is unavailable; falling back to a freeform block.' );
+		do_action(
+			'bfb_diagnostic',
+			'html_to_blocks_unavailable',
+			'html-to-blocks-converter is unavailable; falling back to a freeform block.',
+			array( 'adapter' => 'html' )
+		);
 		return array(
 			array(
 				'blockName'    => 'core/freeform',

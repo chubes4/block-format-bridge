@@ -103,13 +103,13 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		// Mirrors the approach in roots/post-content-to-markdown.
 		$html = (string) preg_replace_callback(
 			'#<pre\b[^>]*>(.*?)</pre>#is',
-			static function ( array $match ): string {
+			static function ( array $pre_match ): string {
 				$language_class = '';
-				if ( preg_match( '/\blanguage-([A-Za-z0-9_-]+)/', $match[0], $language_match ) ) {
+				if ( preg_match( '/\blanguage-([A-Za-z0-9_-]+)/', $pre_match[0], $language_match ) ) {
 					$language_class = ' class="language-' . esc_attr( $language_match[1] ) . '"';
 				}
 
-				$inner = html_entity_decode( strip_tags( $match[1] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				$inner = html_entity_decode( wp_strip_all_tags( $pre_match[1] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 				return '<pre><code' . $language_class . '>' . htmlspecialchars( $inner, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) . '</code></pre>';
 			},
 			$html
@@ -167,7 +167,12 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		}
 
 		if ( null === $class ) {
-			error_log( '[Block Format Bridge] league/commonmark is not loaded; markdown conversion unavailable.' );
+			do_action(
+				'bfb_diagnostic',
+				'commonmark_unavailable',
+				'league/commonmark is not loaded; markdown conversion unavailable.',
+				array( 'adapter' => 'markdown' )
+			);
 			return '';
 		}
 
@@ -176,7 +181,12 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 			$result    = $converter->convert( $markdown );
 			return (string) $result;
 		} catch ( \Throwable $e ) {
-			error_log( sprintf( '[Block Format Bridge] CommonMark conversion failed: %s', $e->getMessage() ) );
+			do_action(
+				'bfb_diagnostic',
+				'commonmark_conversion_failed',
+				'CommonMark conversion failed.',
+				array( 'error' => $e->getMessage() )
+			);
 			return '';
 		}
 	}
@@ -210,7 +220,12 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		}
 
 		if ( null === $class ) {
-			error_log( '[Block Format Bridge] league/html-to-markdown is not loaded; HTML→markdown conversion unavailable.' );
+			do_action(
+				'bfb_diagnostic',
+				'html_to_markdown_unavailable',
+				'league/html-to-markdown is not loaded; HTML to markdown conversion unavailable.',
+				array( 'adapter' => 'markdown' )
+			);
 			return '';
 		}
 
@@ -261,7 +276,12 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 
 			return (string) $converter->convert( $html );
 		} catch ( \Throwable $e ) {
-			error_log( sprintf( '[Block Format Bridge] HTML→markdown conversion failed: %s', $e->getMessage() ) );
+			do_action(
+				'bfb_diagnostic',
+				'html_to_markdown_conversion_failed',
+				'HTML to markdown conversion failed.',
+				array( 'error' => $e->getMessage() )
+			);
 			return '';
 		}
 	}
@@ -291,11 +311,20 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 			return;
 		}
 
+		if ( ! method_exists( $converter, 'getEnvironment' ) ) {
+			return;
+		}
+
 		try {
 			$env = $converter->getEnvironment();
 			$env->addConverter( new $class() );
 		} catch ( \Throwable $e ) {
-			error_log( sprintf( '[Block Format Bridge] TableConverter registration failed: %s', $e->getMessage() ) );
+			do_action(
+				'bfb_diagnostic',
+				'table_converter_registration_failed',
+				'TableConverter registration failed.',
+				array( 'error' => $e->getMessage() )
+			);
 		}
 	}
 }

@@ -56,10 +56,6 @@ add_action( 'init', 'bfb_register_rest_filters', 20 );
  * @return array
  */
 function bfb_rest_add_collection_param( $params ) {
-	if ( ! is_array( $params ) ) {
-		return $params;
-	}
-
 	$params['content_format'] = array(
 		'description' => __( 'Render post content in the requested format and expose it as `content.formatted` on each post.', 'block-format-bridge' ),
 		'type'        => 'string',
@@ -78,10 +74,6 @@ function bfb_rest_add_collection_param( $params ) {
  * @return WP_REST_Response
  */
 function bfb_rest_prepare_response( $response, $post, $request ) {
-	if ( ! ( $response instanceof WP_REST_Response ) || ! ( $post instanceof WP_Post ) ) {
-		return $response;
-	}
-
 	$format = $request->get_param( 'content_format' );
 	if ( ! is_string( $format ) || '' === $format ) {
 		return $response;
