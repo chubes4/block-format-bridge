@@ -300,9 +300,6 @@ add_filter( 'bfb_register_format_adapter', function ( $adapter, $slug ) {
 
 ## Known limitations
 
-- **Code-fence language hints round-trip lossily.** `\`\`\`php` becomes `\`\`\`` after Blocks → Markdown. The block
-  carries `className: language-php` but league/html-to-markdown doesn't reconstruct the fence info string. Track in
-  follow-up issue.
 - **Custom blocks without sensible HTML rendering produce garbage markdown.** Out of bridge scope; document in your
   block.
 

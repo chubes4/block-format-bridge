@@ -287,11 +287,9 @@ MARKDOWN;
 		$this->assertStringContainsString( 'Paragraph with **bold**.', $markdown );
 		$this->assertStringContainsString( '- One', $markdown );
 		$this->assertStringContainsString( '> Quote text', $markdown );
+		$this->assertStringContainsString( '```php', $markdown );
 		$this->assertStringContainsString( 'echo "hi";', $markdown );
 		$this->assertStringContainsString( '| Name | BFB |', $markdown );
-
-		// league/html-to-markdown currently preserves code content but not the language hint.
-		$this->assertStringNotContainsString( '```php', $markdown );
 	}
 
 	/**
@@ -346,7 +344,7 @@ MARKDOWN;
 			. '<!-- wp:paragraph --><p>Block paragraph with <strong>bold</strong>, <em>emphasis</em>, and <a href="https://example.com">example link</a>.</p><!-- /wp:paragraph -->'
 			. '<!-- wp:list --><ul class="wp-block-list"><!-- wp:list-item --><li>First block item</li><!-- /wp:list-item --><li>Second block item</li></ul><!-- /wp:list -->'
 			. '<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Quoted blocks</p><!-- /wp:paragraph --></blockquote><!-- /wp:quote -->'
-			. '<!-- wp:code --><pre class="wp-block-code"><code>echo &quot;matrix&quot;;</code></pre><!-- /wp:code -->'
+			. '<!-- wp:code --><pre class="wp-block-code language-php"><code>echo &quot;matrix&quot;;</code></pre><!-- /wp:code -->'
 			. '<!-- wp:table --><figure class="wp-block-table"><table><tbody><tr><td>Name</td><td>Value</td></tr><tr><td>BFB</td><td>Matrix</td></tr></tbody></table></figure><!-- /wp:table -->';
 
 		$matrix = array(
@@ -372,7 +370,7 @@ MARKDOWN;
 				'from'     => 'blocks',
 				'to'       => 'markdown',
 				'content'  => $blocks,
-				'contains' => array( '## Block Matrix', '**bold**', '*emphasis*', '[example link](https://example.com)', '> Quoted blocks', 'echo "matrix";', '| Name | Value |' ),
+				'contains' => array( '## Block Matrix', '**bold**', '*emphasis*', '[example link](https://example.com)', '> Quoted blocks', '```php', 'echo "matrix";', '| Name | Value |' ),
 			),
 			'html -> markdown' => array(
 				'from'     => 'html',

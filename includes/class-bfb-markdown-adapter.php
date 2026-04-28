@@ -104,8 +104,13 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		$html = (string) preg_replace_callback(
 			'#<pre\b[^>]*>(.*?)</pre>#is',
 			static function ( array $match ): string {
+				$language_class = '';
+				if ( preg_match( '/\blanguage-([A-Za-z0-9_-]+)/', $match[0], $language_match ) ) {
+					$language_class = ' class="language-' . esc_attr( $language_match[1] ) . '"';
+				}
+
 				$inner = html_entity_decode( strip_tags( $match[1] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-				return '<pre><code>' . htmlspecialchars( $inner, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) . '</code></pre>';
+				return '<pre><code' . $language_class . '>' . htmlspecialchars( $inner, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) . '</code></pre>';
 			},
 			$html
 		);
