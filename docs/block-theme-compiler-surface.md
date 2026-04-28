@@ -51,11 +51,11 @@ add a parallel pre-parser around h2bc for these markers.
 
 ### 1. First-class block-array helper
 
-BFB should expose a small helper like `bfb_to_blocks( string $content, string $from ): array`.
+BFB exposes `bfb_to_blocks( string $content, string $from ): array`.
 
 Today callers can already get block arrays with `bfb_get_adapter( $from )->to_blocks( $content )`, but that reaches through the public registry into the adapter contract. Compiler code should not need to know whether `'blocks'` is a special source, whether an adapter exists, or whether the input should be parsed with `parse_blocks()`.
 
-Recommended contract:
+Contract:
 
 ```php
 /**
@@ -73,11 +73,11 @@ Behavior:
 - Unsupported formats return an empty array and log the same style of error as `bfb_convert()`.
 - The helper should be the internal source of truth for `bfb_convert()` once implemented, avoiding two conversion paths.
 
-This is a small API addition, but it is not required before compiler exploration can begin.
+Use this helper instead of reaching into adapters directly.
 
 ### 2. WP-CLI conversion command
 
-BFB should eventually expose a CLI command for non-PHP callers, but not as part of this issue.
+BFB exposes a CLI command for non-PHP callers.
 
 Node-based tools such as Studio can already call WordPress through WP-CLI. A command like this would let those tools use the server-side converter without embedding PHP glue:
 
@@ -85,7 +85,7 @@ Node-based tools such as Studio can already call WordPress through WP-CLI. A com
 wp bfb convert --from=html --to=blocks < input.html
 ```
 
-Recommended initial command shape:
+Command shape:
 
 - `wp bfb convert --from=<format> --to=<format> [--input=<file>] [--output=<file>]`
 - Read STDIN when `--input` is omitted.
@@ -93,7 +93,7 @@ Recommended initial command shape:
 - Return serialized content for normal format targets.
 - Use a separate flag for structured block arrays, for example `--as=json`, rather than overloading the default output.
 
-This should land after the PHP helper surface is stable, because the CLI should be a thin wrapper around the public API rather than a parallel conversion path.
+The CLI is a thin wrapper around `bfb_convert()` for serialized output and `bfb_to_blocks()` for `--as=json` structured block output.
 
 ### 3. Arrays plus serialized markup in one call
 
@@ -145,6 +145,6 @@ That gives compiler consumers a stable integration target without moving transfo
 ## Recommended Sequence
 
 1. Document this surface now.
-2. Add `bfb_to_blocks()` when the first compiler consumer needs block arrays directly.
+2. Use `bfb_to_blocks()` when a compiler consumer needs block arrays directly.
 3. Add `bfb_to_block_document()` if callers repeatedly need arrays plus serialized markup from the same source.
-4. Add `wp bfb convert` after the PHP helpers settle, using the helpers internally.
+4. Use `wp bfb convert` for non-PHP callers that need server-side conversion.

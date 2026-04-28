@@ -269,6 +269,33 @@ MARKDOWN;
 	}
 
 	/**
+	 * Compiler consumers should get block arrays without reaching into adapters.
+	 */
+	public function test_bfb_to_blocks_exposes_compiler_facing_block_array_helper(): void {
+		$block_markup = '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">Array Heading</h2><!-- /wp:heading -->'
+			. '<!-- wp:paragraph --><p>Array paragraph.</p><!-- /wp:paragraph -->';
+
+		$parsed = bfb_to_blocks( $block_markup, 'blocks' );
+		$this->assertSame( 'core/heading', $parsed[0]['blockName'] ?? null );
+		$this->assertSame( 2, $parsed[0]['attrs']['level'] ?? null );
+		$this->assertSame( 'core/paragraph', $parsed[1]['blockName'] ?? null );
+
+		$html = bfb_to_blocks( '<h3>HTML Array</h3><p>HTML copy.</p>', 'html' );
+		$this->assertSame( 'core/heading', $html[0]['blockName'] ?? null );
+		$this->assertSame( 3, $html[0]['attrs']['level'] ?? null );
+		$this->assertSame( 'core/paragraph', $html[1]['blockName'] ?? null );
+
+		$markdown = bfb_to_blocks( "# Markdown Array\n\n- One\n- Two", 'markdown' );
+		$flat     = $this->flatten_blocks( $markdown );
+		$this->assertContains( 'core/heading', $flat );
+		$this->assertContains( 'core/list', $flat );
+		$this->assertContains( 'core/list-item', $flat );
+
+		$this->assertSame( array(), bfb_to_blocks( 'content', 'asciidoc' ) );
+		$this->assertSame( '', bfb_convert( 'content', 'asciidoc', 'blocks' ) );
+	}
+
+	/**
 	 * Blocks should render to HTML through WordPress' real render_block() path.
 	 */
 	public function test_blocks_to_html_renders_static_and_dynamic_blocks(): void {
