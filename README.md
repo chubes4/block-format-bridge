@@ -384,7 +384,7 @@ add_filter( 'bfb_register_format_adapter', function ( $adapter, $slug ) {
 
 ## Tests
 
-Run the conversion smoke suite through Homeboy:
+Run the conversion smoke suite through [Homeboy](https://github.com/Extra-Chill/homeboy):
 
 ```bash
 homeboy test block-format-bridge
