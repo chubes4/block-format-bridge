@@ -3,6 +3,16 @@
 /**
  * Smoke test for namespace-safe REST filter callback registration.
  *
+ * h2bc runs both as a standalone plugin and as a dependency bundled by plugins
+ * such as Block Format Bridge. Bundled copies can be php-scoped into a vendor
+ * namespace, while WordPress still stores hook callbacks as strings and invokes
+ * them later. This smoke guards the pattern that builds those callback strings
+ * from __NAMESPACE__ instead of assuming root-global function names.
+ *
+ * The test simulates php-scoper by injecting a synthetic namespace into
+ * includes/hooks.php, then rewrites the WordPress hook APIs to local stubs so we
+ * can inspect the callbacks h2bc registers without booting WordPress.
+ *
  * Run with: php tests/smoke-scoped-rest-callback.php
  *
  * @package HTML_To_Blocks_Converter\Tests
@@ -62,9 +72,12 @@ function html_to_blocks_convert_content(string $content): string
 {
     return $content;
 }
+// Load the production hook file as if php-scoper had placed it in this namespace.
 $source = file_get_contents(dirname(__DIR__) . '/includes/hooks.php');
 $test_namespace = __NAMESPACE__;
 $source = preg_replace('/^<\?php\s*(?:namespace\s+[^;]+;\s*)?/', "<?php\nnamespace {$test_namespace};\n", $source, 1);
+// Keep WordPress hook calls inside the synthetic namespace so the stubs above
+// capture the exact callback strings that would be handed to WordPress.
 $source = str_replace(array('\add_filter(', '\has_filter(', '\add_action(', '\has_action(', '\get_post_types(', '\apply_filters('), array('add_filter(', 'has_filter(', 'add_action(', 'has_action(', 'get_post_types(', 'apply_filters('), $source);
 $tmp = tempnam(sys_get_temp_dir(), 'h2bc-scoped-hooks-');
 file_put_contents($tmp, $source);

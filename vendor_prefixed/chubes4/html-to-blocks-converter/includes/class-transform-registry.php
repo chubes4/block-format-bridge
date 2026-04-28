@@ -25,11 +25,209 @@ class HTML_To_Blocks_Transform_Registry
         if (self::$transforms !== null) {
             return self::$transforms;
         }
-        self::$transforms = \array_merge(self::get_heading_transforms(), self::get_list_transforms(), self::get_button_transforms(), self::get_media_transforms(), self::get_image_transforms(), self::get_details_transforms(), self::get_pullquote_transforms(), self::get_quote_transforms(), self::get_code_transforms(), self::get_verse_transforms(), self::get_preformatted_transforms(), self::get_separator_transforms(), self::get_table_transforms(), self::get_layout_transforms(), self::get_paragraph_transforms());
+        self::$transforms = \array_merge(self::get_site_editor_marker_transforms(), self::get_heading_transforms(), self::get_navigation_transforms(), self::get_list_transforms(), self::get_button_transforms(), self::get_media_transforms(), self::get_image_transforms(), self::get_details_transforms(), self::get_pullquote_transforms(), self::get_quote_transforms(), self::get_code_transforms(), self::get_verse_transforms(), self::get_preformatted_transforms(), self::get_separator_transforms(), self::get_table_transforms(), self::get_layout_transforms(), self::get_paragraph_transforms());
         \usort(self::$transforms, function ($a, $b) {
             return ($a['priority'] ?? 10) - ($b['priority'] ?? 10);
         });
         return self::$transforms;
+    }
+    /**
+     * Explicit Site Editor primitive marker transforms.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_site_editor_marker_transforms()
+    {
+        return [['blockName' => 'core/pattern', 'priority' => 1, 'isMatch' => function ($element) {
+            return self::get_pattern_marker_slug($element) !== '';
+        }, 'transform' => function ($element) {
+            return HTML_To_Blocks_Block_Factory::create_block('core/pattern', ['slug' => self::get_pattern_marker_slug($element)]);
+        }], ['blockName' => 'core/template-part', 'priority' => 1, 'isMatch' => function ($element) {
+            return self::get_template_part_marker_slug($element) !== '';
+        }, 'transform' => function ($element) {
+            $slug = self::get_template_part_marker_slug($element);
+            $attributes = ['slug' => $slug];
+            if (\in_array($slug, ['header', 'footer', 'sidebar'], \true)) {
+                $attributes['area'] = $slug;
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/template-part', $attributes);
+        }]];
+    }
+    /**
+     * Gets a valid explicit pattern marker slug.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Element to inspect.
+     * @return string Pattern slug or empty string.
+     */
+    private static function get_pattern_marker_slug($element): string
+    {
+        if (!$element->has_attribute('data-bfb-pattern')) {
+            return '';
+        }
+        $slug = \trim((string) $element->get_attribute('data-bfb-pattern'));
+        return \preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.\/-]+$/i', $slug) === 1 ? $slug : '';
+    }
+    /**
+     * Gets a valid explicit template-part marker slug.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Element to inspect.
+     * @return string Template-part slug or empty string.
+     */
+    private static function get_template_part_marker_slug($element): string
+    {
+        if (!$element->has_attribute('data-bfb-template-part')) {
+            return '';
+        }
+        $slug = \trim((string) $element->get_attribute('data-bfb-template-part'));
+        return \preg_match('/^[a-z0-9_.-]+$/i', $slug) === 1 ? $slug : '';
+    }
+    /**
+     * Static navigation transforms for side-effect-free nav list markup.
+     *
+     * @return array Transform definitions
+     */
+    private static function get_navigation_transforms()
+    {
+        return [['blockName' => 'core/navigation', 'priority' => 9, 'selector' => 'nav', 'isMatch' => function ($element) {
+            return self::is_static_navigation_element($element);
+        }, 'transform' => function ($element) {
+            return self::create_static_navigation_block($element);
+        }]];
+    }
+    /**
+     * Checks whether a nav element is a pure static list navigation.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Element to inspect.
+     * @return bool
+     */
+    private static function is_static_navigation_element($element): bool
+    {
+        if ($element->get_tag_name() !== 'NAV') {
+            return \false;
+        }
+        $children = $element->get_child_elements();
+        if (\count($children) !== 1 || !\in_array($children[0]->get_tag_name(), ['UL', 'OL'], \true)) {
+            return \false;
+        }
+        if (self::strip_child_markup($element->get_inner_html(), [$children[0]]) !== '') {
+            return \false;
+        }
+        return !empty(self::create_navigation_items_from_list($children[0], \true));
+    }
+    /**
+     * Creates a static core/navigation block without persistent wp_navigation refs.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Nav element.
+     * @return array Block array.
+     */
+    private static function create_static_navigation_block($element): array
+    {
+        $list = $element->get_child_elements()[0];
+        $attributes = [];
+        if ($element->has_attribute('aria-label') && $element->get_attribute('aria-label') !== '') {
+            $attributes['ariaLabel'] = $element->get_attribute('aria-label');
+        }
+        if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
+            $attributes['anchor'] = $element->get_attribute('id');
+        }
+        return HTML_To_Blocks_Block_Factory::create_block('core/navigation', $attributes, self::create_navigation_items_from_list($list, \true));
+    }
+    /**
+     * Creates navigation link/submenu blocks from direct list items.
+     *
+     * @param HTML_To_Blocks_HTML_Element $list_element List element.
+     * @param bool                        $is_top_level Whether links are top-level items.
+     * @return array Block arrays.
+     */
+    private static function create_navigation_items_from_list($list_element, bool $is_top_level): array
+    {
+        $items = [];
+        foreach ($list_element->get_child_elements() as $li) {
+            if ($li->get_tag_name() !== 'LI') {
+                return [];
+            }
+            $item = self::create_navigation_item_from_li($li, $is_top_level);
+            if (!$item) {
+                return [];
+            }
+            $items[] = $item;
+        }
+        return $items;
+    }
+    /**
+     * Creates a navigation-link or navigation-submenu block from one list item.
+     *
+     * @param HTML_To_Blocks_HTML_Element $li_element List item element.
+     * @param bool                        $is_top_level Whether this is a top-level link.
+     * @return array|null Block array, or null when the item is not a safe static link.
+     */
+    private static function create_navigation_item_from_li($li_element, bool $is_top_level): ?array
+    {
+        $children = $li_element->get_child_elements();
+        $anchor = null;
+        $nested_list = null;
+        foreach ($children as $child) {
+            if ($child->get_tag_name() === 'A' && !$anchor) {
+                $anchor = $child;
+                continue;
+            }
+            if (\in_array($child->get_tag_name(), ['UL', 'OL'], \true) && !$nested_list) {
+                $nested_list = $child;
+                continue;
+            }
+            return null;
+        }
+        if (!$anchor || !$anchor->has_attribute('href')) {
+            return null;
+        }
+        if (self::strip_child_markup($li_element->get_inner_html(), $children) !== '') {
+            return null;
+        }
+        $attributes = self::get_navigation_link_attributes($anchor, $is_top_level);
+        if ($nested_list) {
+            $inner_blocks = self::create_navigation_items_from_list($nested_list, \false);
+            if (empty($inner_blocks)) {
+                return null;
+            }
+            return HTML_To_Blocks_Block_Factory::create_block('core/navigation-submenu', $attributes, $inner_blocks);
+        }
+        return HTML_To_Blocks_Block_Factory::create_block('core/navigation-link', $attributes);
+    }
+    /**
+     * Gets side-effect-free navigation link attributes from an anchor.
+     *
+     * @param HTML_To_Blocks_HTML_Element $anchor Anchor element.
+     * @param bool                        $is_top_level Whether this is a top-level link.
+     * @return array Block attributes.
+     */
+    private static function get_navigation_link_attributes($anchor, bool $is_top_level): array
+    {
+        $attributes = ['label' => \trim($anchor->get_inner_html()), 'url' => $anchor->get_attribute('href'), 'kind' => 'custom', 'isTopLevel' => $is_top_level];
+        if ($anchor->has_attribute('target') && $anchor->get_attribute('target') === '_blank') {
+            $attributes['opensInNewTab'] = \true;
+        }
+        if ($anchor->has_attribute('rel') && $anchor->get_attribute('rel') !== '') {
+            $attributes['rel'] = $anchor->get_attribute('rel');
+        }
+        if ($anchor->has_attribute('title') && $anchor->get_attribute('title') !== '') {
+            $attributes['title'] = $anchor->get_attribute('title');
+        }
+        return $attributes;
+    }
+    /**
+     * Removes known direct child markup and returns remaining meaningful content.
+     *
+     * @param string $inner_html Inner HTML to inspect.
+     * @param array  $children   Child elements to remove.
+     * @return string Remaining non-whitespace content.
+     */
+    private static function strip_child_markup(string $inner_html, array $children): string
+    {
+        $remaining = $inner_html;
+        foreach ($children as $child) {
+            $remaining = \str_replace($child->get_outer_html(), '', $remaining);
+        }
+        return \trim(wp_strip_all_tags($remaining));
     }
     /**
      * Media and embed transforms for high-confidence static HTML patterns.
@@ -307,16 +505,8 @@ class HTML_To_Blocks_Transform_Registry
         }, 'transform' => function ($element) {
             $level = (int) \substr($element->get_tag_name(), 1);
             $content = $element->get_inner_html();
-            $attributes = ['level' => $level, 'content' => $content];
-            if ($element->has_attribute('id')) {
-                $attributes['anchor'] = $element->get_attribute('id');
-            }
-            if ($element->has_attribute('style')) {
-                $style = $element->get_attribute('style');
-                if (\preg_match('/text-align:\s*(left|center|right)/i', $style, $matches)) {
-                    $attributes['textAlign'] = \strtolower($matches[1]);
-                }
-            }
+            $attributes = self::get_block_support_attributes($element, ['anchor' => \true, 'align' => \true, 'text_align' => \true, 'colors' => \true, 'typography' => \true, 'spacing' => \true, 'border' => \true, 'class_name' => \true]);
+            $attributes = \array_merge($attributes, ['level' => $level, 'content' => $content]);
             return HTML_To_Blocks_Block_Factory::create_block('core/heading', $attributes);
         }]];
     }
@@ -342,10 +532,8 @@ class HTML_To_Blocks_Transform_Registry
     private static function create_list_block_from_element($list_element)
     {
         $ordered = $list_element->get_tag_name() === 'OL';
-        $list_attributes = ['ordered' => $ordered];
-        if ($list_element->has_attribute('id') && $list_element->get_attribute('id') !== '') {
-            $list_attributes['anchor'] = $list_element->get_attribute('id');
-        }
+        $list_attributes = self::get_block_support_attributes($list_element, ['anchor' => \true, 'class_name' => \true, 'colors' => \true, 'spacing' => \true, 'border' => \true]);
+        $list_attributes = \array_merge($list_attributes, ['ordered' => $ordered]);
         if ($list_element->has_attribute('start')) {
             $list_attributes['start'] = (int) $list_element->get_attribute('start');
         }
@@ -789,13 +977,13 @@ class HTML_To_Blocks_Transform_Registry
         return [['blockName' => 'core/separator', 'priority' => 10, 'selector' => 'hr', 'isMatch' => function ($element) {
             return $element->get_tag_name() === 'HR';
         }, 'transform' => function ($element) {
-            $attributes = [];
+            $attributes = self::get_block_support_attributes($element, ['anchor' => \true, 'class_name' => \true, 'align' => \true, 'colors' => \true, 'spacing' => \true, 'border' => \true]);
             if ($element->has_attribute('class')) {
                 $class = $element->get_attribute('class');
                 if (\strpos($class, 'is-style-wide') !== \false) {
-                    $attributes['className'] = 'is-style-wide';
+                    $attributes['className'] = self::merge_class_names($attributes['className'] ?? '', 'is-style-wide');
                 } elseif (\strpos($class, 'is-style-dots') !== \false) {
-                    $attributes['className'] = 'is-style-dots';
+                    $attributes['className'] = self::merge_class_names($attributes['className'] ?? '', 'is-style-dots');
                 }
             }
             return HTML_To_Blocks_Block_Factory::create_block('core/separator', $attributes);
@@ -872,10 +1060,8 @@ class HTML_To_Blocks_Transform_Registry
                 $caption_text = self::extract_cell_content_at_offset($table_html, $html_offset, 'CAPTION');
             }
         }
-        $attributes = ['head' => $rows_head, 'body' => $rows_body, 'foot' => $rows_foot];
-        if ($table_element->has_attribute('id') && $table_element->get_attribute('id') !== '') {
-            $attributes['anchor'] = $table_element->get_attribute('id');
-        }
+        $attributes = self::get_block_support_attributes($table_element, ['anchor' => \true, 'class_name' => \true, 'align' => \true, 'colors' => \true, 'spacing' => \true, 'border' => \true]);
+        $attributes = \array_merge($attributes, ['head' => $rows_head, 'body' => $rows_body, 'foot' => $rows_foot]);
         if (!empty($caption_text)) {
             $attributes['caption'] = $caption_text;
         }
@@ -918,13 +1104,10 @@ class HTML_To_Blocks_Transform_Registry
         return [['blockName' => 'core/spacer', 'priority' => 11, 'isMatch' => function ($element) {
             return self::is_spacer_element($element);
         }, 'transform' => function ($element) {
-            $attributes = [];
+            $attributes = self::get_block_support_attributes($element, ['anchor' => \true, 'class_name' => \true, 'spacing' => \true]);
             $height = self::extract_height_value($element);
             if ($height !== '') {
                 $attributes['height'] = $height;
-            }
-            if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
-                $attributes['anchor'] = $element->get_attribute('id');
             }
             return HTML_To_Blocks_Block_Factory::create_block('core/spacer', $attributes);
         }], ['blockName' => 'core/cover', 'priority' => 12, 'isMatch' => function ($element) {
@@ -972,14 +1155,247 @@ class HTML_To_Blocks_Transform_Registry
      */
     private static function get_common_layout_attributes($element): array
     {
+        $options = ['anchor' => \true, 'class_name' => \true, 'align' => \true, 'colors' => \true, 'typography' => \true, 'spacing' => \true, 'border' => \true, 'layout' => \true, 'tag_name' => $element->get_tag_name() !== 'DIV', 'aria_label' => \true];
+        return self::get_block_support_attributes($element, $options);
+    }
+    /**
+     * Extracts direct, mechanical block-support attributes from HTML.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Source element.
+     * @param array                       $options Enabled support keys.
+     * @return array Block attributes.
+     */
+    private static function get_block_support_attributes($element, array $options = []): array
+    {
         $attributes = [];
-        if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
+        $classes = $element->has_attribute('class') ? $element->get_attribute('class') : '';
+        $style = $element->has_attribute('style') ? $element->get_attribute('style') : '';
+        if (!empty($options['anchor']) && $element->has_attribute('id') && $element->get_attribute('id') !== '') {
             $attributes['anchor'] = $element->get_attribute('id');
         }
-        if ($element->has_attribute('class') && $element->get_attribute('class') !== '') {
-            $attributes['className'] = $element->get_attribute('class');
+        if (!empty($options['align']) && \preg_match('/(?:^|\s)align(wide|full|left|center|right)(?:$|\s)/i', $classes, $matches)) {
+            $attributes['align'] = \strtolower($matches[1]);
+        }
+        if (!empty($options['class_name'])) {
+            $class_name = self::safe_block_class_name($classes);
+            if ($class_name !== '') {
+                $attributes['className'] = $class_name;
+            }
+        }
+        if (!empty($options['tag_name'])) {
+            $tag_name = \strtolower($element->get_tag_name());
+            if (\in_array($tag_name, ['section', 'main', 'article', 'aside', 'header', 'footer', 'nav'], \true)) {
+                $attributes['tagName'] = $tag_name;
+            }
+        }
+        if (!empty($options['aria_label']) && $element->has_attribute('aria-label') && $element->get_attribute('aria-label') !== '') {
+            $attributes['ariaLabel'] = $element->get_attribute('aria-label');
+        }
+        if (!empty($options['colors'])) {
+            self::apply_color_support_attributes($attributes, $style, $classes);
+        }
+        if (!empty($options['typography'])) {
+            self::apply_typography_support_attributes($attributes, $style, $classes);
+        }
+        if ($style !== '') {
+            if (!empty($options['text_align'])) {
+                $text_align = self::extract_css_property($style, 'text-align');
+                if (\in_array(\strtolower($text_align), ['left', 'center', 'right'], \true)) {
+                    $attributes['textAlign'] = \strtolower($text_align);
+                }
+            }
+            if (!empty($options['spacing'])) {
+                self::apply_spacing_support_attributes($attributes, $style);
+            }
+            if (!empty($options['border'])) {
+                self::apply_border_support_attributes($attributes, $style);
+            }
+        }
+        if (!empty($options['layout'])) {
+            self::apply_layout_support_attributes($attributes, $classes);
         }
         return $attributes;
+    }
+    /**
+     * Preserves source classes that are safe as block custom classes.
+     *
+     * @param string $class_name Source class attribute.
+     * @return string Safe custom classes.
+     */
+    private static function safe_block_class_name(string $class_name): string
+    {
+        $classes = \preg_split('/\s+/', \trim($class_name));
+        $classes = \array_filter($classes, function ($class) {
+            return $class !== '' && \preg_match('/^[A-Za-z0-9_-]+$/', $class) === 1 && \preg_match('/^align(?:wide|full|left|center|right)$/i', $class) !== 1 && \preg_match('/^has-(?:[A-Za-z0-9_-]+-(?:color|background-color|font-size)|text-color|background|custom-font-size)$/i', $class) !== 1 && \preg_match('/^is-(?:layout-(?:flow|constrained|flex)|vertical|horizontal|nowrap|content-justification-[A-Za-z0-9_-]+)$/i', $class) !== 1 && \stripos($class, 'wp-block-') !== 0;
+        });
+        return \implode(' ', \array_values(\array_unique($classes)));
+    }
+    /**
+     * Merges two class-name strings without duplicates.
+     *
+     * @param string $base Base classes.
+     * @param string $extra Extra classes.
+     * @return string Merged classes.
+     */
+    private static function merge_class_names(string $base, string $extra): string
+    {
+        return self::safe_block_class_name(\trim($base . ' ' . $extra));
+    }
+    /**
+     * Applies direct color declarations and explicit WordPress color preset classes.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $style Source style attribute.
+     * @param string $classes Source class attribute.
+     */
+    private static function apply_color_support_attributes(array &$attributes, string $style, string $classes = ''): void
+    {
+        $text_color = self::extract_preset_class_slug($classes, 'color');
+        if ($text_color !== '') {
+            $attributes['textColor'] = $text_color;
+        }
+        $background_color = self::extract_preset_class_slug($classes, 'background-color');
+        if ($background_color !== '') {
+            $attributes['backgroundColor'] = $background_color;
+        }
+        $color = self::extract_css_property($style, 'color');
+        if ($color !== '') {
+            $attributes['style']['color']['text'] = $color;
+        }
+        $background = self::extract_background_color($style);
+        if ($background !== '') {
+            $attributes['style']['color']['background'] = $background;
+        }
+    }
+    /**
+     * Applies explicit WordPress typography preset classes/vars.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $style Source style attribute.
+     * @param string $classes Source class attribute.
+     */
+    private static function apply_typography_support_attributes(array &$attributes, string $style, string $classes = ''): void
+    {
+        $font_size = self::extract_preset_class_slug($classes, 'font-size');
+        if ($font_size !== '') {
+            $attributes['fontSize'] = $font_size;
+            return;
+        }
+        $font_size_value = self::extract_css_property($style, 'font-size');
+        $font_size_token = self::normalise_wp_preset_var($font_size_value, 'font-size');
+        if ($font_size_token !== '') {
+            $attributes['fontSize'] = $font_size_token;
+        }
+    }
+    /**
+     * Applies direct margin/padding declarations to block support attributes.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $style Source style attribute.
+     */
+    private static function apply_spacing_support_attributes(array &$attributes, string $style): void
+    {
+        foreach (['margin', 'padding'] as $kind) {
+            $value = self::extract_css_property($style, $kind);
+            $side_values = [];
+            foreach (['top', 'right', 'bottom', 'left'] as $side) {
+                $side_value = self::extract_css_property($style, $kind . '-' . $side);
+                if ($side_value !== '') {
+                    $side_values[$side] = $side_value;
+                }
+            }
+            if (!empty($side_values)) {
+                foreach ($side_values as $side => $side_value) {
+                    $side_values[$side] = self::normalise_wp_preset_var($side_value, 'spacing') ?: $side_value;
+                }
+                $attributes['style']['spacing'][$kind] = $side_values;
+                continue;
+            }
+            if ($value !== '') {
+                $attributes['style']['spacing'][$kind] = self::normalise_wp_preset_var($value, 'spacing') ?: $value;
+            }
+        }
+    }
+    /**
+     * Applies explicit WordPress layout classes emitted by block supports.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $classes Source class attribute.
+     */
+    private static function apply_layout_support_attributes(array &$attributes, string $classes): void
+    {
+        if (\preg_match('/(?:^|\s)is-layout-(flow|constrained|flex)(?:\s|$)/i', $classes, $matches)) {
+            $type = \strtolower($matches[1]);
+            $attributes['layout']['type'] = $type === 'flow' ? 'default' : $type;
+        }
+        if (\preg_match('/(?:^|\s)is-(vertical|horizontal)(?:\s|$)/i', $classes, $matches)) {
+            $attributes['layout']['orientation'] = \strtolower($matches[1]);
+        }
+        if (\preg_match('/(?:^|\s)is-content-justification-(left|right|center|space-between)(?:\s|$)/i', $classes, $matches)) {
+            $attributes['layout']['justifyContent'] = \strtolower($matches[1]);
+        }
+        if (\preg_match('/(?:^|\s)is-nowrap(?:\s|$)/i', $classes)) {
+            $attributes['layout']['flexWrap'] = 'nowrap';
+        }
+    }
+    /**
+     * Applies direct border declarations to block support attributes.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $style Source style attribute.
+     */
+    private static function apply_border_support_attributes(array &$attributes, string $style): void
+    {
+        foreach (['color', 'style', 'width', 'radius'] as $part) {
+            $value = self::extract_css_property($style, 'border-' . $part);
+            if ($value !== '') {
+                $attributes['style']['border'][$part] = $value;
+            }
+        }
+        $border = self::extract_css_property($style, 'border');
+        if ($border !== '') {
+            $attributes['style']['border']['width'] = $attributes['style']['border']['width'] ?? $border;
+        }
+    }
+    /**
+     * Extracts one CSS declaration value from a style attribute.
+     *
+     * @param string $style CSS style attribute.
+     * @param string $name CSS property name.
+     * @return string CSS value or empty string.
+     */
+    private static function extract_css_property(string $style, string $name): string
+    {
+        $pattern = '/(?:^|;)\s*' . \preg_quote($name, '/') . '\s*:\s*([^;]+)/i';
+        return \preg_match($pattern, $style, $matches) ? \trim($matches[1]) : '';
+    }
+    /**
+     * Extracts a WordPress preset slug from generated block-support classes.
+     *
+     * @param string $classes Source class attribute.
+     * @param string $kind Preset class kind: color, background-color, or font-size.
+     * @return string Preset slug or empty string.
+     */
+    private static function extract_preset_class_slug(string $classes, string $kind): string
+    {
+        $pattern = $kind === 'background-color' ? '/(?:^|\s)has-([A-Za-z0-9_-]+)-background-color(?:\s|$)/i' : '/(?:^|\s)has-([A-Za-z0-9_-]+)-' . \preg_quote($kind, '/') . '(?:\s|$)/i';
+        if (!\preg_match($pattern, $classes, $matches)) {
+            return '';
+        }
+        $slug = \strtolower($matches[1]);
+        return \in_array($slug, ['text', 'background', 'custom'], \true) ? '' : $slug;
+    }
+    /**
+     * Converts explicit WordPress preset CSS vars to block attribute token syntax.
+     *
+     * @param string $value CSS value.
+     * @param string $kind Preset kind, such as spacing or font-size.
+     * @return string Block preset token or empty string.
+     */
+    private static function normalise_wp_preset_var(string $value, string $kind): string
+    {
+        $pattern = '/^var\(\s*--wp--preset--' . \preg_quote($kind, '/') . '--([A-Za-z0-9_-]+)\s*\)$/i';
+        return \preg_match($pattern, \trim($value), $matches) ? 'var:preset|' . $kind . '|' . \strtolower($matches[1]) : '';
     }
     /**
      * Checks whether an element is a safe group wrapper.
@@ -1123,16 +1539,8 @@ class HTML_To_Blocks_Transform_Registry
             return $element->get_tag_name() === 'P';
         }, 'transform' => function ($element) {
             $content = $element->get_inner_html();
-            $attributes = ['content' => $content];
-            if ($element->has_attribute('id')) {
-                $attributes['anchor'] = $element->get_attribute('id');
-            }
-            if ($element->has_attribute('style')) {
-                $style = $element->get_attribute('style');
-                if (\preg_match('/text-align:\s*(left|center|right)/i', $style, $matches)) {
-                    $attributes['style'] = ['typography' => ['textAlign' => \strtolower($matches[1])]];
-                }
-            }
+            $attributes = self::get_block_support_attributes($element, ['anchor' => \true, 'align' => \true, 'text_align' => \true, 'colors' => \true, 'typography' => \true, 'spacing' => \true, 'border' => \true, 'class_name' => \true]);
+            $attributes['content'] = $content;
             return HTML_To_Blocks_Block_Factory::create_block('core/paragraph', $attributes);
         }]];
     }

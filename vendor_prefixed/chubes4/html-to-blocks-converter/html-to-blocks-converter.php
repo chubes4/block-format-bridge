@@ -6,7 +6,7 @@ namespace BlockFormatBridge\Vendor;
  * Plugin Name: HTML to Blocks Converter
  * Plugin URI: https://github.com/chubes4/html-to-blocks-converter
  * Description: Converts raw HTML to Gutenberg blocks — on write (wp_insert_post) and on read (REST API for the editor)
- * Version: 0.4.0
+ * Version: 0.6.0
  * Author: Chris Huber
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -29,7 +29,7 @@ if (\version_compare(get_bloginfo('version'), \HTML_TO_BLOCKS_CONVERTER_MIN_WP, 
         \printf(
             /* translators: %s: minimum WordPress version */
             esc_html__('HTML to Blocks Converter requires WordPress %s or higher.', 'html-to-blocks-converter'),
-            \HTML_TO_BLOCKS_CONVERTER_MIN_WP
+            esc_html(\HTML_TO_BLOCKS_CONVERTER_MIN_WP)
         );
         echo '</p></div>';
     });
