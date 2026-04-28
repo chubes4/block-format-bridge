@@ -87,10 +87,10 @@ The insert/update hook path is split by source format:
 
 Both paths are server-side and deterministic. There is no AI conversion pass in BFB or h2bc.
 
-FSE and template blocks are a higher-level concern. Raw HTML can describe markup, but it often cannot encode intent such
-as template areas, patterns, block locking, global style relationships, or theme-specific structure. When that intent is
-required, use a compiler or generation layer above BFB/h2bc, then pass the resulting block markup through the normal
-storage/rendering path.
+Block-theme structure and Site Editor behavior are higher-level concerns. Raw HTML can describe markup, but it often
+cannot encode intent such as template areas, patterns, block locking, global style relationships, or theme-specific
+structure. When that intent is required, use a compiler or generation layer above BFB/h2bc, then pass the resulting block
+markup through the normal storage/rendering path.
 
 ## Install
 
@@ -217,11 +217,11 @@ when active. The bridge surface is the simpler, programmatic query-param form.
 
 Resolve a registered adapter directly. Useful when callers need block arrays instead of serialized content.
 
-### FSE / Site Compiler Consumers
+### Block Theme Compiler Consumers
 
 Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion substrate, not the layer that infers
-FSE intent. Proposed compiler-facing helpers and CLI shape are documented in
-[`docs/fse-compiler-surface.md`](docs/fse-compiler-surface.md).
+block-theme or Site Editor intent. Proposed compiler-facing helpers and CLI shape are documented in
+[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md).
 
 ### Filters
 

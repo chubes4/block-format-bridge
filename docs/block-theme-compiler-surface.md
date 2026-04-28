@@ -1,8 +1,8 @@
-# FSE Compiler Consumer Surface
+# Block Theme Compiler Consumer Surface
 
 Issue: https://github.com/chubes4/block-format-bridge/issues/29
 
-This note defines the Block Format Bridge surface a future static HTML/CSS to block-theme compiler should consume. It is intentionally limited to BFB's boundary: format conversion through the block pivot. FSE inference, template intent, theme.json generation, and per-block transform behavior belong above BFB or inside html-to-blocks-converter.
+This note defines the Block Format Bridge surface a future static HTML/CSS to block-theme compiler should consume. It is intentionally limited to BFB's boundary: format conversion through the block pivot. Block-theme structure, Site Editor behavior, template intent, theme.json generation, and per-block transform behavior belong above BFB or inside html-to-blocks-converter.
 
 ## Boundary
 
