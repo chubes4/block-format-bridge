@@ -2,10 +2,11 @@
 /**
  * Public API.
  *
- * Two functions form the entire Phase 1 surface:
+ * These functions form the public Phase 1 surface:
  *
- *   bfb_convert( $content, $from, $to )  — universal conversion
- *   bfb_get_adapter( $slug )             — registry lookup
+ *   bfb_convert( $content, $from, $to )     — universal conversion
+ *   bfb_normalize( $content, $format )      — declared-format validation
+ *   bfb_get_adapter( $slug )                — registry lookup
  *
  * Both route through the block pivot via the adapter registry. There
  * is no parsing logic in this file; everything is delegation.
