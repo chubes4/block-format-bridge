@@ -24,6 +24,29 @@ HTML / Markdown / future formats
 
 A site compiler can use BFB for deterministic conversion once it has already decided what belongs in templates, template parts, patterns, posts, or global styles.
 
+## Explicit Site Editor Primitive Markers
+
+BFB's public marker vocabulary is intentionally narrow and explicit:
+
+- `data-bfb-pattern="namespace/slug"` declares a WordPress pattern reference.
+- `data-bfb-template-part="area-or-slug"` declares a template part reference.
+
+These markers exist for compiler output, not heuristic discovery. A compiler may emit them after it has already decided
+that a fragment should become a pattern reference or template part. BFB/h2bc must not infer the same primitives from
+ordinary wrappers such as `<header>`, `<footer>`, `<section class="hero">`, or a repeated layout shape.
+
+The deterministic targets are:
+
+- Pattern marker → `core/pattern` with the marker value as `slug`.
+- Template-part marker → `core/template-part` with the marker value as `slug`, and `area` when the value is a standard Site Editor area such as `header`, `footer`, or `sidebar`.
+
+`data-wp-*` aliases are out of scope unless WordPress itself defines them as source-HTML markers. BFB-owned attributes
+avoid implying a WordPress core contract that does not exist.
+
+Implementation note: the marker contract is documented here because BFB owns the public conversion substrate. The actual
+HTML-element transforms belong in html-to-blocks-converter, the library BFB delegates to for HTML → Blocks. BFB should not
+add a parallel pre-parser around h2bc for these markers.
+
 ## Answers
 
 ### 1. First-class block-array helper
