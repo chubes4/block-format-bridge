@@ -343,6 +343,45 @@ MARKDOWN;
 	}
 
 	/**
+	 * Custom blocks convert to markdown from rendered front-end HTML, not from hidden attrs.
+	 */
+	public function test_custom_blocks_to_markdown_uses_rendered_html_contract(): void {
+		$semantic_block = 'bfb/semantic-markdown-fixture';
+		$empty_block    = 'bfb/empty-markdown-fixture';
+
+		register_block_type(
+			$semantic_block,
+			array(
+				'render_callback' => static function (): string {
+					return '<article><h2>Custom block heading</h2><p>Front-end copy.</p><ul><li>Rendered item</li></ul></article>';
+				},
+			)
+		);
+		register_block_type(
+			$empty_block,
+			array(
+				'render_callback' => static function (): string {
+					return '';
+				},
+			)
+		);
+
+		try {
+			$semantic_markdown = bfb_convert( '<!-- wp:bfb/semantic-markdown-fixture /-->', 'blocks', 'markdown' );
+			$this->assertStringContainsString( '## Custom block heading', $semantic_markdown );
+			$this->assertStringContainsString( 'Front-end copy.', $semantic_markdown );
+			$this->assertStringContainsString( '- Rendered item', $semantic_markdown );
+
+			$empty_markdown = bfb_convert( '<!-- wp:bfb/empty-markdown-fixture {"title":"Hidden attr title"} /-->', 'blocks', 'markdown' );
+			$this->assertSame( '', $empty_markdown );
+			$this->assertStringNotContainsString( 'Hidden attr title', $empty_markdown );
+		} finally {
+			unregister_block_type( $semantic_block );
+			unregister_block_type( $empty_block );
+		}
+	}
+
+	/**
 	 * Non-block formats should compose through the block pivot in both directions.
 	 */
 	public function test_composition_paths_route_through_blocks_pivot(): void {

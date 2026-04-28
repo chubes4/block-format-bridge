@@ -282,6 +282,31 @@ block-theme or Site Editor intent. The compiler-facing helper and CLI shape are 
 [`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The public mechanical conversion scope
 matrix is documented in [`docs/mechanical-block-theme-conversion.md`](docs/mechanical-block-theme-conversion.md).
 
+### Custom block Markdown rendering contract
+
+BFB's Blocks → Markdown path is render-output based:
+
+```text
+parse_blocks() -> render_block() -> league/html-to-markdown
+```
+
+That means BFB converts the front-end HTML a block renders. It does not infer Markdown semantics from block comments,
+attributes, editor-only scaffolding, JSON blobs, placeholders, or empty render output. Custom blocks that want useful
+Markdown output should treat their front-end render contract as the source of truth.
+
+Custom block expectations:
+
+- Render semantic front-end HTML for the content you want represented in Markdown, such as headings, paragraphs, lists,
+  tables, links, images, blockquotes, and code blocks.
+- Keep editor-only scaffolding, inspector state, placeholders, and machine JSON out of saved or rendered output unless
+  that material should appear in the Markdown.
+- If semantic HTML is not enough for the block's content model, register a block-specific converter through
+  `bfb_html_to_markdown_converter` and let league/html-to-markdown handle that rendered HTML explicitly.
+
+For example, a dynamic block that renders `<h2>Release notes</h2><ul><li>Item</li></ul>` can produce meaningful
+Markdown. A block that only renders `<div data-state="{...}"></div>` or an empty placeholder cannot; BFB has no safe
+way to reconstruct the missing author-facing Markdown from the block comment alone.
+
 ### Filters
 
 - **`bfb_default_format( $format, $post_type, $content ): string`** — declares which format a CPT writes in by default.
@@ -356,11 +381,6 @@ add_filter( 'bfb_register_format_adapter', function ( $adapter, $slug ) {
     return $adapter;
 }, 10, 2 );
 ```
-
-## Known limitations
-
-- **Custom blocks without sensible HTML rendering produce garbage markdown.** Out of bridge scope; document in your
-  block.
 
 ## Tests
 
