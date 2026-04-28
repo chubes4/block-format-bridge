@@ -125,7 +125,8 @@ function bfb_convert_on_insert( $data, $postarr ) {
 		return $data;
 	}
 
-	$content = wp_unslash( $data['post_content'] );
+	$content   = wp_unslash( $data['post_content'] );
+	$post_type = isset( $data['post_type'] ) ? (string) $data['post_type'] : '';
 
 	// Already block markup — leave it alone.
 	if ( false !== strpos( $content, '<!-- wp:' ) ) {
@@ -138,10 +139,34 @@ function bfb_convert_on_insert( $data, $postarr ) {
 		return $data;
 	}
 
+	$started_at = microtime( true );
 	$serialized = bfb_convert( $content, $format, 'blocks' );
 	if ( '' === $serialized ) {
 		return $data;
 	}
+
+	/**
+	 * Fires after BFB successfully converts insert content to blocks.
+	 *
+	 * This action is intentionally observation-only: listeners can measure
+	 * conversion cost without affecting the data written to WordPress.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @param array $measurement Conversion timing and size metadata.
+	 */
+	do_action(
+		'bfb_insert_conversion_measured',
+		array(
+			'format'      => $format,
+			'from'        => $format,
+			'to'          => 'blocks',
+			'duration_ms' => ( microtime( true ) - $started_at ) * 1000,
+			'input_bytes' => strlen( $content ),
+			'output_bytes' => strlen( $serialized ),
+			'post_type'   => $post_type,
+		)
+	);
 
 	$data['post_content'] = wp_slash( $serialized );
 	return $data;
