@@ -194,7 +194,7 @@ function bfb_smoke_copy_path( string $source, string $target ): void {
 	copy( $source, $target );
 }
 
-function bfb_smoke_copy_package( string $source_root, string $target_root, string $version ): void {
+function bfb_smoke_copy_package( string $source_root, string $target_root, string $version, bool $with_normalization = true ): void {
 	mkdir( $target_root, 0777, true );
 	copy( $source_root . '/library.php', $target_root . '/library.php' );
 	bfb_smoke_copy_path( $source_root . '/includes', $target_root . '/includes' );
@@ -204,6 +204,11 @@ function bfb_smoke_copy_package( string $source_root, string $target_root, strin
 	bfb_smoke_assert( is_string( $library ), 'Temp library.php should be readable.' );
 	$library = preg_replace( '/\$bfb_library_version = \'[^\']+\';/', "\$bfb_library_version = '{$version}';", $library, 1, $count );
 	bfb_smoke_assert( 1 === $count && is_string( $library ), "Temp library.php version should patch to {$version}." );
+	if ( ! $with_normalization ) {
+		$library = str_replace( "\trequire_once \$bfb_library_path . '/includes/normalization.php';\n", '', $library, $removed );
+		bfb_smoke_assert( 1 === $removed, 'Stale temp library.php should remove the bfb_normalize() include.' );
+		unlink( $target_root . '/includes/normalization.php' );
+	}
 	file_put_contents( $target_root . '/library.php', $library );
 }
 
@@ -241,7 +246,7 @@ $consumer_a  = $temp_root . '/data-machine/vendor/chubes4/block-format-bridge';
 $consumer_b  = $temp_root . '/markdown-database-integration/vendor/chubes4/block-format-bridge';
 
 try {
-	bfb_smoke_copy_package( $source_root, $consumer_a, '0.3.0' );
+	bfb_smoke_copy_package( $source_root, $consumer_a, '0.3.0', false );
 	bfb_smoke_copy_package( $source_root, $consumer_b, '9.9.9' );
 
 	$bfb_loaded_versions = array();
@@ -281,12 +286,25 @@ try {
 	bfb_smoke_do_action_range( 'plugins_loaded', 1, 1 );
 
 	bfb_smoke_assert( function_exists( 'bfb_convert' ), 'bfb_convert() should exist after the winning copy boots.' );
+	bfb_smoke_assert( function_exists( 'bfb_normalize' ), 'bfb_normalize() should exist after the winning copy boots, even though the stale bundled copy lacked it.' );
 	bfb_smoke_assert( defined( 'BFB_VERSION' ) && '9.9.9' === BFB_VERSION, 'The highest registered BFB version should initialize.' );
 	$winning_path = realpath( $consumer_b );
+	$losing_path  = realpath( $consumer_a );
 	bfb_smoke_assert( is_string( $winning_path ), 'Winning consumer path should resolve.' );
+	bfb_smoke_assert( is_string( $losing_path ), 'Losing consumer path should resolve.' );
 	bfb_smoke_assert(
 		defined( 'BFB_PATH' ) && trailingslashit( $winning_path ) === BFB_PATH,
-		'BFB_PATH should point at the winning consumer copy. Expected ' . trailingslashit( $winning_path ) . ', got ' . ( defined( 'BFB_PATH' ) ? BFB_PATH : 'undefined' ) . '.'
+		'BFB_PATH should point at the winning consumer copy. Expected ' . trailingslashit( $winning_path ) . ', got ' . ( defined( 'BFB_PATH' ) ? BFB_PATH : 'undefined' ) . '. Losing copy was ' . trailingslashit( $losing_path ) . '.'
+	);
+	$convert_ref   = new ReflectionFunction( 'bfb_convert' );
+	$normalize_ref = new ReflectionFunction( 'bfb_normalize' );
+	bfb_smoke_assert(
+		$winning_path . '/includes/api.php' === $convert_ref->getFileName(),
+		'bfb_convert() should resolve from the winning copy. Expected ' . $winning_path . '/includes/api.php, got ' . ( $convert_ref->getFileName() ?: 'unknown' ) . '.'
+	);
+	bfb_smoke_assert(
+		$winning_path . '/includes/normalization.php' === $normalize_ref->getFileName(),
+		'bfb_normalize() should resolve from the winning copy. Expected ' . $winning_path . '/includes/normalization.php, got ' . ( $normalize_ref->getFileName() ?: 'unknown' ) . '. Losing copy has normalization.php=' . ( file_exists( $losing_path . '/includes/normalization.php' ) ? 'yes' : 'no' ) . '.'
 	);
 	bfb_smoke_assert( array( '9.9.9' ) === $bfb_loaded_versions, 'bfb_loaded should fire once for the winning version.' );
 	bfb_smoke_assert( 1 === bfb_smoke_hook_count( 'wp_insert_post_data', 'bfb_convert_on_insert' ), 'BFB insert conversion hook should register once.' );
