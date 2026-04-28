@@ -186,6 +186,9 @@ function bfb_smoke_copy_path( string $source, string $target ): void {
 		mkdir( $target, 0777, true );
 		$iterator = new FilesystemIterator( $source, FilesystemIterator::SKIP_DOTS );
 		foreach ( $iterator as $item ) {
+			if ( ! $item instanceof SplFileInfo ) {
+				continue;
+			}
 			bfb_smoke_copy_path( $item->getPathname(), $target . '/' . $item->getBasename() );
 		}
 		return;
@@ -200,8 +203,11 @@ function bfb_smoke_copy_package( string $source_root, string $target_root, strin
 	bfb_smoke_copy_path( $source_root . '/includes', $target_root . '/includes' );
 	bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
 
-	$library = file_get_contents( $target_root . '/library.php' );
-	bfb_smoke_assert( is_string( $library ), 'Temp library.php should be readable.' );
+	$library_raw = file_get_contents( $target_root . '/library.php' );
+	if ( ! is_string( $library_raw ) ) {
+		bfb_smoke_assert( false, 'Temp library.php should be readable.' );
+	}
+	$library = is_string( $library_raw ) ? $library_raw : '';
 	$library = preg_replace( '/\$bfb_library_version = \'[^\']+\';/', "\$bfb_library_version = '{$version}';", $library, 1, $count );
 	bfb_smoke_assert( 1 === $count && is_string( $library ), "Temp library.php version should patch to {$version}." );
 	if ( ! $with_normalization ) {
@@ -224,6 +230,9 @@ function bfb_smoke_remove_path( string $path ): void {
 
 	$iterator = new FilesystemIterator( $path, FilesystemIterator::SKIP_DOTS );
 	foreach ( $iterator as $item ) {
+		if ( ! $item instanceof SplFileInfo ) {
+			continue;
+		}
 		bfb_smoke_remove_path( $item->getPathname() );
 	}
 	rmdir( $path );
@@ -288,10 +297,16 @@ try {
 	bfb_smoke_assert( function_exists( 'bfb_convert' ), 'bfb_convert() should exist after the winning copy boots.' );
 	bfb_smoke_assert( function_exists( 'bfb_normalize' ), 'bfb_normalize() should exist after the winning copy boots, even though the stale bundled copy lacked it.' );
 	bfb_smoke_assert( defined( 'BFB_VERSION' ) && '9.9.9' === BFB_VERSION, 'The highest registered BFB version should initialize.' );
-	$winning_path = realpath( $consumer_b );
-	$losing_path  = realpath( $consumer_a );
-	bfb_smoke_assert( is_string( $winning_path ), 'Winning consumer path should resolve.' );
-	bfb_smoke_assert( is_string( $losing_path ), 'Losing consumer path should resolve.' );
+	$winning_path_raw = realpath( $consumer_b );
+	$losing_path_raw  = realpath( $consumer_a );
+	if ( ! is_string( $winning_path_raw ) ) {
+		bfb_smoke_assert( false, 'Winning consumer path should resolve.' );
+	}
+	if ( ! is_string( $losing_path_raw ) ) {
+		bfb_smoke_assert( false, 'Losing consumer path should resolve.' );
+	}
+	$winning_path = is_string( $winning_path_raw ) ? $winning_path_raw : '';
+	$losing_path  = is_string( $losing_path_raw ) ? $losing_path_raw : '';
 	bfb_smoke_assert(
 		defined( 'BFB_PATH' ) && trailingslashit( $winning_path ) === BFB_PATH,
 		'BFB_PATH should point at the winning consumer copy. Expected ' . trailingslashit( $winning_path ) . ', got ' . ( defined( 'BFB_PATH' ) ? BFB_PATH : 'undefined' ) . '. Losing copy was ' . trailingslashit( $losing_path ) . '.'
