@@ -96,7 +96,7 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 				return;
 			}
 
-			$source = $source ?: $this->describe_initializer( $initializer );
+			$source = $source ? $source : $this->describe_initializer( $initializer );
 
 			foreach ( $this->versions as $entry ) {
 				if ( $version === $entry['version'] && $source !== $entry['source'] ) {
@@ -169,7 +169,8 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 		private function describe_initializer( callable $initializer ): string {
 			if ( $initializer instanceof Closure ) {
 				$reflection = new ReflectionFunction( $initializer );
-				return $reflection->getFileName() ?: 'closure:' . spl_object_id( $initializer );
+				$file_name  = $reflection->getFileName();
+				return $file_name ? $file_name : 'closure:' . spl_object_id( $initializer );
 			}
 
 			if ( is_string( $initializer ) ) {
@@ -205,11 +206,12 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 			);
 
 			if ( function_exists( '_doing_it_wrong' ) ) {
-				_doing_it_wrong( __METHOD__, $message, $version );
+				_doing_it_wrong( __METHOD__, esc_html( $message ), esc_html( $version ) );
 				return;
 			}
 
-			trigger_error( $message, E_USER_WARNING );
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error -- Deliberate early-load diagnostic before BFB helpers are available.
+			trigger_error( esc_html( $message ), E_USER_WARNING );
 		}
 	}
 }
