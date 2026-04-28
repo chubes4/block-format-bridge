@@ -24,6 +24,10 @@ function do_action( string $hook_name, ...$args ): void {
 	}
 }
 
+function esc_html( string $text ): string {
+	return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+}
+
 require_once __DIR__ . '/../includes/class-bfb-versions.php';
 
 function bfb_duplicate_reset_registry(): BFB_Versions {

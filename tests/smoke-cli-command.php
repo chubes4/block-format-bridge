@@ -24,7 +24,11 @@ $cli_source = (string) $cli_source;
 $library    = (string) $library;
 
 bfb_cli_smoke_assert( strpos( $library, "includes/cli.php" ) !== false, 'library.php should load the CLI integration.' );
+bfb_cli_smoke_assert( strpos( $library, "includes/abilities.php" ) !== false, 'library.php should load the Abilities API integration.' );
 bfb_cli_smoke_assert( strpos( $cli_source, "WP_CLI::add_command( 'bfb', 'BFB_CLI_Command' )" ) !== false, 'CLI should register the bfb command namespace.' );
+bfb_cli_smoke_assert( strpos( $cli_source, 'public function capabilities' ) !== false, 'CLI should expose a capabilities subcommand.' );
+bfb_cli_smoke_assert( strpos( $cli_source, 'bfb_capabilities()' ) !== false, 'Capabilities CLI should wrap the PHP report helper.' );
+bfb_cli_smoke_assert( strpos( $cli_source, "'json' === \$format" ) !== false, 'Capabilities CLI should support --format=json.' );
 bfb_cli_smoke_assert( strpos( $cli_source, 'public function convert' ) !== false, 'CLI should expose a convert subcommand.' );
 bfb_cli_smoke_assert( strpos( $cli_source, "file_get_contents( 'php://stdin' )" ) !== false, 'CLI should read STDIN when --input is omitted.' );
 bfb_cli_smoke_assert( strpos( $cli_source, 'file_get_contents( $path )' ) !== false, 'CLI should read file input when --input is present.' );

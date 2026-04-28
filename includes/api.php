@@ -7,6 +7,7 @@
  *   bfb_convert( $content, $from, $to )     — universal conversion
  *   bfb_to_blocks( $content, $from )        — block-array conversion
  *   bfb_normalize( $content, $format )      — declared-format validation
+ *   bfb_capabilities()                      — conversion substrate report
  *   bfb_get_adapter( $slug )                — registry lookup
  *
  * `bfb_convert()` routes through the block pivot via the adapter registry.
@@ -18,6 +19,137 @@
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+if ( ! function_exists( 'bfb_capabilities' ) ) {
+	/**
+	 * Return a machine-readable report of the active conversion substrate.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function bfb_capabilities(): array {
+		$formats = array(
+			'blocks' => array(
+				'slug'        => 'blocks',
+				'label'       => 'Serialized WordPress blocks',
+				'adapter'     => null,
+				'to_blocks'   => true,
+				'from_blocks' => true,
+				'pivot'       => true,
+			),
+		);
+
+		foreach ( BFB_Adapter_Registry::slugs() as $slug ) {
+			$adapter = bfb_get_adapter( $slug );
+			if ( ! $adapter ) {
+				continue;
+			}
+
+			$formats[ $slug ] = array(
+				'slug'        => $slug,
+				'label'       => $slug,
+				'adapter'     => get_class( $adapter ),
+				'to_blocks'   => true,
+				'from_blocks' => true,
+				'pivot'       => false,
+			);
+		}
+
+		$h2bc = bfb_h2bc_capabilities();
+
+		return array(
+			'bridge'         => array(
+				'version' => defined( 'BFB_VERSION' ) ? BFB_VERSION : null,
+				'path'    => defined( 'BFB_PATH' ) ? BFB_PATH : null,
+			),
+			'formats'        => $formats,
+			'conversions'    => array(
+				'html_to_blocks' => array(
+					'available' => (bool) $h2bc['available'],
+					'provider'  => 'html-to-blocks-converter',
+				),
+			),
+			'h2bc'           => $h2bc,
+			'block_coverage' => array(
+				'source'             => 'not_available',
+				'requires'           => 'h2bc#56',
+				'supported_blocks'   => array(),
+				'unsupported_blocks' => array(),
+				'classifications'    => array(),
+			),
+			'hooks'          => array(
+				'filters' => array(
+					'bfb_register_format_adapter',
+					'bfb_default_format',
+					'bfb_skip_insert_conversion',
+					'bfb_rest_supported_post_types',
+					'bfb_markdown_input',
+					'bfb_markdown_output',
+					'bfb_html_to_markdown_options',
+				),
+				'actions' => array(
+					'bfb_loaded',
+					'bfb_adapters_registered',
+					'bfb_diagnostic',
+					'bfb_insert_conversion_measured',
+					'bfb_html_to_markdown_converter',
+				),
+			),
+			'abilities'      => array(
+				'block-format-bridge/get-capabilities',
+				'block-format-bridge/convert',
+				'block-format-bridge/normalize',
+			),
+		);
+	}
+}
+
+if ( ! function_exists( 'bfb_h2bc_capabilities' ) ) {
+	/**
+	 * Return availability metadata for the bundled or standalone h2bc substrate.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function bfb_h2bc_capabilities(): array {
+		$handler = null;
+		if ( function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ) ) {
+			$handler = '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler';
+		} elseif ( function_exists( 'html_to_blocks_raw_handler' ) ) {
+			$handler = 'html_to_blocks_raw_handler';
+		}
+
+		$path = null;
+		if ( defined( 'HTML_TO_BLOCKS_CONVERTER_PATH' ) ) {
+			$path = HTML_TO_BLOCKS_CONVERTER_PATH;
+		} elseif ( $handler ) {
+			$reflection = new ReflectionFunction( $handler );
+			$file       = $reflection->getFileName();
+			$path       = is_string( $file ) ? dirname( $file ) . '/' : null;
+		}
+
+		$version = null;
+		if ( $path ) {
+			$library = trailingslashit( $path ) . 'library.php';
+			if ( is_readable( $library ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local package metadata read.
+				$source = file_get_contents( $library );
+				if ( is_string( $source ) && preg_match( "/html_to_blocks_library_version\s*=\s*'([^']+)'/", $source, $match ) ) {
+					$version = $match[1];
+				}
+			}
+		}
+
+		return array(
+			'available'   => null !== $handler,
+			'version'     => $version,
+			'path'        => $path,
+			'raw_handler' => $handler,
+			'inventory'   => array(
+				'source'   => 'not_available',
+				'requires' => 'h2bc#56',
+			),
+		);
+	}
 }
 
 if ( ! function_exists( 'bfb_get_adapter' ) ) {
