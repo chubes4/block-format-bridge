@@ -72,6 +72,7 @@ $bfb_initializer = static function () use ( $bfb_library_path, $bfb_library_vers
 	require_once $bfb_library_path . '/includes/normalization.php';
 	require_once $bfb_library_path . '/includes/hooks.php';
 	require_once $bfb_library_path . '/includes/rest.php';
+	require_once $bfb_library_path . '/includes/cli.php';
 	require_once $bfb_library_path . '/includes/bootstrap.php';
 };
 

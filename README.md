@@ -16,6 +16,7 @@ become available by registering a new adapter; the bridge core never grows.
 BFB exposes two related but separate public surfaces:
 
 - **`bfb_convert()`** converts content between two different formats. It uses WordPress block arrays as the pivot.
+- **`bfb_to_blocks()`** converts a supported source format directly into parsed WordPress block arrays for compilers.
 - **`bfb_normalize()`** validates and normalizes content that already claims to be in one format.
 
 | Conversion direction | Underlying tool                        |
@@ -50,7 +51,7 @@ BFB includes two adapters:
 Every cross-format conversion routes through the block-array pivot:
 
 ```
-$blocks = $from_adapter->to_blocks( $content );
+$blocks = bfb_to_blocks( $content, $from );
 return    $to_adapter->from_blocks( $blocks );
 ```
 
@@ -175,6 +176,38 @@ $md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
 $html = bfb_convert( '# X', 'markdown', 'html' );
 ```
 
+### `bfb_to_blocks( $content, $from ): array`
+
+Compiler-facing conversion helper. Use this when you need parsed block arrays for inspection, splitting, policy checks,
+or template/pattern assembly instead of serialized block markup.
+
+```php
+$blocks = bfb_to_blocks( '<h1>Hello</h1><p>World</p>', 'html' );
+
+foreach ( $blocks as $block ) {
+    // parse_blocks()-compatible arrays.
+}
+```
+
+Contract:
+
+- `from === 'blocks'` parses serialized block markup with `parse_blocks()`.
+- Other formats resolve through `bfb_get_adapter( $from )` and call the adapter's `to_blocks()` method.
+- Unsupported source formats return an empty array and log the same style of error as `bfb_convert()`.
+
+### WP-CLI: `wp bfb convert`
+
+Non-PHP callers can route conversion through the same public BFB APIs:
+
+```bash
+wp bfb convert --from=html --to=blocks < input.html
+wp bfb convert --from=blocks --to=markdown --input=post.html --output=post.md
+wp bfb convert --from=html --to=blocks --as=json < input.html
+```
+
+The command reads STDIN when `--input` is omitted and writes STDOUT when `--output` is omitted. Default output is serialized
+content; use `--as=json` with `--to=blocks` when a block-array JSON document is needed.
+
 ### `bfb_normalize( $content, $format, $options = array() ): string|WP_Error`
 
 Validate and normalize content already declared as one format. Use this for imported or generated content before storage.
@@ -240,12 +273,12 @@ when active. The bridge surface is the simpler, programmatic query-param form.
 
 ### `bfb_get_adapter( $slug ): ?BFB_Format_Adapter`
 
-Resolve a registered adapter directly. Useful when callers need block arrays instead of serialized content.
+Resolve a registered adapter directly. Prefer `bfb_to_blocks()` when callers need block arrays instead of adapter internals.
 
 ### Block Theme Compiler Consumers
 
 Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion substrate, not the layer that infers
-block-theme or Site Editor intent. Proposed compiler-facing helpers and CLI shape are documented in
+block-theme or Site Editor intent. The compiler-facing helper and CLI shape are documented in
 [`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The public mechanical conversion scope
 matrix is documented in [`docs/mechanical-block-theme-conversion.md`](docs/mechanical-block-theme-conversion.md).
 

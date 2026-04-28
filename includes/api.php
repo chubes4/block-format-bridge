@@ -5,6 +5,7 @@
  * These functions form the public Phase 1 surface:
  *
  *   bfb_convert( $content, $from, $to )     — universal conversion
+ *   bfb_to_blocks( $content, $from )        — block-array conversion
  *   bfb_normalize( $content, $format )      — declared-format validation
  *   bfb_get_adapter( $slug )                — registry lookup
  *
@@ -31,13 +32,40 @@ if ( ! function_exists( 'bfb_get_adapter' ) ) {
 	}
 }
 
+if ( ! function_exists( 'bfb_to_blocks' ) ) {
+	/**
+	 * Convert content into parse_blocks()-compatible block arrays.
+	 *
+	 * This is the compiler-facing helper for callers that need the block-array
+	 * pivot directly instead of serialized block markup.
+	 *
+	 * @param string $content Source content.
+	 * @param string $from    Source format slug.
+	 * @return array<int, array<string, mixed>> Block array. Empty array on unsupported source.
+	 */
+	function bfb_to_blocks( string $content, string $from ): array {
+		if ( 'blocks' === $from ) {
+			return parse_blocks( $content );
+		}
+
+		$from_adapter = bfb_get_adapter( $from );
+		if ( ! $from_adapter ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Matches existing public conversion failure diagnostics.
+			error_log( sprintf( '[Block Format Bridge] No adapter registered for source format "%s".', $from ) );
+			return array();
+		}
+
+		return $from_adapter->to_blocks( $content );
+	}
+}
+
 if ( ! function_exists( 'bfb_convert' ) ) {
 	/**
 	 * Convert content from one format to another.
 	 *
 	 * Routing always passes through the block pivot:
 	 *
-	 *   $blocks = $from_adapter->to_blocks( $content );
+	 *   $blocks = bfb_to_blocks( $content, $from );
 	 *   return    $to_adapter->from_blocks( $blocks );
 	 *
 	 * Special cases:
@@ -57,19 +85,9 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 			return $content;
 		}
 
-		// Resolve the block-array intermediate.
-		if ( 'blocks' === $from ) {
-			$blocks = parse_blocks( $content );
-			if ( ! is_array( $blocks ) ) {
-				$blocks = array();
-			}
-		} else {
-			$from_adapter = bfb_get_adapter( $from );
-			if ( ! $from_adapter ) {
-				error_log( sprintf( '[Block Format Bridge] No adapter registered for source format "%s".', $from ) );
-				return '';
-			}
-			$blocks = $from_adapter->to_blocks( $content );
+		$blocks = bfb_to_blocks( $content, $from );
+		if ( array() === $blocks && 'blocks' !== $from ) {
+			return '';
 		}
 
 		// Render the intermediate into the target format.
@@ -79,6 +97,7 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 
 		$to_adapter = bfb_get_adapter( $to );
 		if ( ! $to_adapter ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Matches existing public conversion failure diagnostics.
 			error_log( sprintf( '[Block Format Bridge] No adapter registered for target format "%s".', $to ) );
 			return '';
 		}
