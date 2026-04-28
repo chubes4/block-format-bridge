@@ -309,6 +309,106 @@ MARKDOWN;
 	}
 
 	/**
+	 * Public API conversion matrix should cover every supported direction.
+	 */
+	public function test_public_conversion_matrix_covers_supported_format_directions(): void {
+		$html = <<<HTML
+<h2>Matrix Heading</h2>
+<p>Paragraph with <strong>bold</strong>, <em>emphasis</em>, and <a href="https://example.com">example link</a>.</p>
+<ul><li>First item</li><li>Second item</li></ul>
+<blockquote><p>Quoted HTML</p></blockquote>
+<pre><code class="language-php">echo "matrix";</code></pre>
+<table><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody><tr><td>BFB</td><td>Matrix</td></tr></tbody></table>
+<a class="download" href="https://example.com/report.pdf">Download report</a>
+<figure><img src="https://example.com/image.jpg" alt="Example"><figcaption>Media caption</figcaption></figure>
+HTML;
+
+		$markdown = <<<MARKDOWN
+# Markdown Matrix
+
+Paragraph with **bold**, *emphasis*, and [example link](https://example.com).
+
+- First item
+- Second item
+
+> Quoted markdown
+
+```php
+echo "matrix";
+```
+
+| Name | Value |
+| ---- | ----- |
+| BFB  | Matrix |
+MARKDOWN;
+
+		$blocks = '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">Block Matrix</h2><!-- /wp:heading -->'
+			. '<!-- wp:paragraph --><p>Block paragraph with <strong>bold</strong>, <em>emphasis</em>, and <a href="https://example.com">example link</a>.</p><!-- /wp:paragraph -->'
+			. '<!-- wp:list --><ul class="wp-block-list"><!-- wp:list-item --><li>First block item</li><!-- /wp:list-item --><li>Second block item</li></ul><!-- /wp:list -->'
+			. '<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>Quoted blocks</p><!-- /wp:paragraph --></blockquote><!-- /wp:quote -->'
+			. '<!-- wp:code --><pre class="wp-block-code"><code>echo &quot;matrix&quot;;</code></pre><!-- /wp:code -->'
+			. '<!-- wp:table --><figure class="wp-block-table"><table><tbody><tr><td>Name</td><td>Value</td></tr><tr><td>BFB</td><td>Matrix</td></tr></tbody></table></figure><!-- /wp:table -->';
+
+		$matrix = array(
+			'html -> blocks'    => array(
+				'from'     => 'html',
+				'to'       => 'blocks',
+				'content'  => $html,
+				'contains' => array( '<!-- wp:heading', '<!-- wp:paragraph', '<!-- wp:list', '<!-- wp:quote', '<!-- wp:code', '<!-- wp:table', '<!-- wp:image' ),
+			),
+			'markdown -> blocks' => array(
+				'from'     => 'markdown',
+				'to'       => 'blocks',
+				'content'  => $markdown,
+				'contains' => array( '<!-- wp:heading', '<!-- wp:paragraph', '<!-- wp:list', '<!-- wp:quote', '<!-- wp:code', '<!-- wp:table' ),
+			),
+			'blocks -> html'    => array(
+				'from'     => 'blocks',
+				'to'       => 'html',
+				'content'  => $blocks,
+				'contains' => array( '<h2 class="wp-block-heading">Block Matrix</h2>', '<strong>bold</strong>', '<blockquote class="wp-block-quote', 'Quoted blocks', '<table>' ),
+			),
+			'blocks -> markdown' => array(
+				'from'     => 'blocks',
+				'to'       => 'markdown',
+				'content'  => $blocks,
+				'contains' => array( '## Block Matrix', '**bold**', '*emphasis*', '[example link](https://example.com)', '> Quoted blocks', 'echo "matrix";', '| Name | Value |' ),
+			),
+			'html -> markdown' => array(
+				'from'     => 'html',
+				'to'       => 'markdown',
+				'content'  => $html,
+				'contains' => array( '## Matrix Heading', '**bold**', '*emphasis*', '[example link](https://example.com)', '> Quoted HTML', 'echo "matrix";', '| Name | Value |' ),
+			),
+			'markdown -> html' => array(
+				'from'     => 'markdown',
+				'to'       => 'html',
+				'content'  => $markdown,
+				'contains' => array( '<h1 class="wp-block-heading">Markdown Matrix</h1>', '<strong>bold</strong>', '<em>emphasis</em>', '<a href="https://example.com">example link</a>', '<blockquote class="wp-block-quote', '<code>echo &quot;matrix&quot;;', '<table>' ),
+			),
+		);
+
+		foreach ( $matrix as $label => $case ) {
+			$output = bfb_convert( $case['content'], $case['from'], $case['to'] );
+
+			$this->assertNotSame( '', $output, "{$label} should produce output." );
+			$this->assert_output_contains_all( $label, $output, $case['contains'] );
+		}
+
+		$file_blocks = bfb_convert( '<a href="https://example.com/report.pdf">Download report</a>', 'html', 'blocks' );
+		$this->assertStringContainsString( '<!-- wp:file', $file_blocks, 'HTML -> blocks should cover link-like file download transforms.' );
+
+		$malformed_mixed_blocks = '<!-- wp:heading --><h2>AI Heading</h2><!-- /wp:heading -->'
+			. "\n# Markdown outside serialized blocks\n"
+			. '<!-- wp:paragraph --><p>Copy</p><!-- /wp:paragraph -->';
+		$normalized             = bfb_normalize( $malformed_mixed_blocks, 'blocks' );
+
+		$this->assertTrue( is_wp_error( $normalized ), 'Malformed mixed AI-authored block-ish input should fail declared block normalization.' );
+		$this->assertInstanceOf( WP_Error::class, $normalized );
+		$this->assertSame( 'bfb_blocks_mixed_content', $normalized->get_error_code() );
+	}
+
+	/**
 	 * Convert content into parsed blocks through BFB's public API.
 	 *
 	 * @param string $content Source content.
@@ -340,6 +440,23 @@ MARKDOWN;
 		}
 
 		return $names;
+	}
+
+	/**
+	 * Assert every expected substring appears in a conversion result.
+	 *
+	 * @param string        $label    Conversion label.
+	 * @param string        $output   Conversion output.
+	 * @param array<string> $expected Expected substrings.
+	 */
+	private function assert_output_contains_all( string $label, string $output, array $expected ): void {
+		foreach ( $expected as $needle ) {
+			$this->assertStringContainsString(
+				$needle,
+				$output,
+				"{$label} should contain {$needle}. Output preview: " . substr( $output, 0, 500 )
+			);
+		}
 	}
 
 	/**
