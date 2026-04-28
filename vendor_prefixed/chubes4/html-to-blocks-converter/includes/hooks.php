@@ -66,12 +66,12 @@ $html_to_blocks_convert_rest_callback = __NAMESPACE__ ? __NAMESPACE__ . '\html_t
 if (!\function_exists($html_to_blocks_register_rest_callback)) {
     function html_to_blocks_register_rest_filters()
     {
-        global $html_to_blocks_convert_rest_callback;
+        $convert_rest_callback = __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_convert_rest_response' : 'html_to_blocks_convert_rest_response';
         $default_types = \array_keys(get_post_types(array('show_in_rest' => \true, 'public' => \true)));
         $supported_types = apply_filters('html_to_blocks_supported_post_types', $default_types);
         foreach ($supported_types as $post_type) {
-            if (!\function_exists('has_filter') || \false === \has_filter("rest_prepare_{$post_type}", $html_to_blocks_convert_rest_callback)) {
-                \add_filter("rest_prepare_{$post_type}", $html_to_blocks_convert_rest_callback, 10, 3);
+            if (!\function_exists('has_filter') || \false === \has_filter("rest_prepare_{$post_type}", $convert_rest_callback)) {
+                \add_filter("rest_prepare_{$post_type}", $convert_rest_callback, 10, 3);
             }
         }
     }
