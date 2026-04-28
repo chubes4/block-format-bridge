@@ -92,6 +92,31 @@ cannot encode intent such as template areas, patterns, block locking, global sty
 structure. When that intent is required, use a compiler or generation layer above BFB/h2bc, then pass the resulting block
 markup through the normal storage/rendering path.
 
+### Explicit Site Editor primitive markers
+
+BFB defines the public marker vocabulary for Site Editor primitives that cannot be inferred safely from arbitrary HTML.
+Only BFB-owned attributes are part of this contract:
+
+| Primitive | Marker | Deterministic block target |
+|-----------|--------|----------------------------|
+| Pattern reference | `data-bfb-pattern="namespace/slug"` | `core/pattern` with `slug: "namespace/slug"` |
+| Template part reference | `data-bfb-template-part="area-or-slug"` | `core/template-part` with `slug` and, when applicable, `area` |
+
+Rules:
+
+- BFB and h2bc must never infer patterns or template parts from layout, tag names, classes, or visual similarity.
+- `data-wp-*` aliases are intentionally not accepted. WordPress does not currently define those source-HTML markers, and
+  BFB should not mint WordPress-looking attributes for its own API.
+- Pattern markers require a fully-qualified `namespace/slug` value.
+- Template-part markers accept the standard Site Editor areas (`header`, `footer`, `sidebar`) as shorthand values. Other
+  values are treated as explicit template-part slugs.
+- Missing or malformed marker values should fall back to the normal HTML conversion path rather than guessing.
+
+The marker contract belongs in BFB because BFB is the public conversion substrate. The runtime HTML-element transforms
+belong in h2bc because `BFB_HTML_Adapter::to_blocks()` delegates HTML → Blocks conversion to
+`html_to_blocks_raw_handler()`. BFB will inherit marker support after h2bc implements those explicit raw transforms and
+the bundled dependency is refreshed.
+
 ## Install
 
 Install it as a standalone plugin, or bundle it as a Composer package.

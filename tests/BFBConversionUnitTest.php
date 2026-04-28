@@ -160,6 +160,29 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Site Editor primitives must never be inferred from lookalike HTML.
+	 */
+	public function test_html_to_blocks_does_not_infer_site_editor_primitives(): void {
+		$fixtures = array(
+			'unmarked header'           => '<header><h1>Site title</h1><nav><a href="/">Home</a></nav></header>',
+			'unmarked footer'           => '<footer><p>Copyright</p></footer>',
+			'unmarked sidebar'          => '<aside><h2>Related</h2><p>Links</p></aside>',
+			'unmarked pattern-lookalike' => '<section class="pricing-table"><h2>Pricing</h2><p>$10</p></section>',
+		);
+
+		foreach ( $fixtures as $label => $html ) {
+			$serialized = bfb_convert( $html, 'html', 'blocks' );
+			$blocks     = parse_blocks( $serialized );
+			$flat       = $this->flatten_blocks( $blocks );
+
+			$this->assertNotContains( 'core/template-part', $flat, "{$label} must not infer a template part." );
+			$this->assertNotContains( 'core/pattern', $flat, "{$label} must not infer a pattern." );
+			$this->assertStringNotContainsString( '<!-- wp:template-part', $serialized, "{$label} must not serialize a template part." );
+			$this->assertStringNotContainsString( '<!-- wp:pattern', $serialized, "{$label} must not serialize a pattern." );
+		}
+	}
+
+	/**
 	 * Unsupported embeds should stay observable and preserve their HTML fallback.
 	 */
 	public function test_html_to_blocks_emits_unsupported_fallback_hook(): void {
