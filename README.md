@@ -221,7 +221,8 @@ Resolve a registered adapter directly. Useful when callers need block arrays ins
 
 Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion substrate, not the layer that infers
 block-theme or Site Editor intent. Proposed compiler-facing helpers and CLI shape are documented in
-[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md).
+[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The public mechanical conversion scope
+matrix is documented in [`docs/mechanical-block-theme-conversion.md`](docs/mechanical-block-theme-conversion.md).
 
 ### Filters
 
