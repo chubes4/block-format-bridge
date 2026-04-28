@@ -46,9 +46,9 @@ $failures = 0;
 function assert_true( string $label, bool $ok, string $detail = '' ): void {
 	global $failures;
 	if ( $ok ) {
-		echo '  ✓ ' . $label . "\n";
+		echo '  ✓ ' . esc_html( $label ) . "\n";
 	} else {
-		echo '  ✗ ' . $label . ( '' !== $detail ? "\n      " . $detail : '' ) . "\n";
+		echo '  ✗ ' . esc_html( $label ) . ( '' !== $detail ? "\n      " . esc_html( $detail ) : '' ) . "\n";
 		++$failures;
 	}
 }
@@ -74,8 +74,8 @@ assert_true(
 );
 
 // --- Test 2: HTML → blocks parity ---
-$html         = '<h1>Hello</h1><p>World</p>';
-$html_result  = bfb_convert( $html, 'html', 'blocks' );
+$html        = '<h1>Hello</h1><p>World</p>';
+$html_result = bfb_convert( $html, 'html', 'blocks' );
 
 assert_true(
 	'HTML → blocks returns non-empty serialised markup',
@@ -104,7 +104,7 @@ $filter = function ( $format, $post_type ) use ( $test_post_type ) {
 };
 add_filter( 'bfb_default_format', $filter, 10, 2 );
 
-$post_id = wp_insert_post(
+$inserted_post_id = wp_insert_post(
 	array(
 		'post_type'    => $test_post_type,
 		'post_status'  => 'draft',
@@ -116,16 +116,17 @@ $post_id = wp_insert_post(
 
 remove_filter( 'bfb_default_format', $filter, 10 );
 
-if ( is_wp_error( $post_id ) ) {
-	assert_true( 'wp_insert_post succeeded', false, $post_id->get_error_message() );
+if ( is_wp_error( $inserted_post_id ) ) {
+	assert_true( 'wp_insert_post succeeded', false, $inserted_post_id->get_error_message() );
 } else {
-	$saved = get_post_field( 'post_content', $post_id );
+	$saved = get_post_field( 'post_content', $inserted_post_id );
+	$saved = is_string( $saved ) ? $saved : '';
 	assert_true(
 		'wp_insert_post stored block markup (filter-driven markdown route)',
 		false !== strpos( $saved, '<!-- wp:' ),
 		'stored: ' . substr( $saved, 0, 200 )
 	);
-	wp_delete_post( $post_id, true );
+	wp_delete_post( $inserted_post_id, true );
 }
 
 // --- Test 3b: bfb_skip_insert_conversion vetoes the conversion ---
@@ -162,6 +163,7 @@ if ( is_wp_error( $skip_post_id ) ) {
 	assert_true( 'wp_insert_post (skip path) succeeded', false, $skip_post_id->get_error_message() );
 } else {
 	$skipped_saved = get_post_field( 'post_content', $skip_post_id );
+	$skipped_saved = is_string( $skipped_saved ) ? $skipped_saved : '';
 	assert_true(
 		'bfb_skip_insert_conversion=true leaves post_content untouched',
 		false === strpos( $skipped_saved, '<!-- wp:' )
@@ -171,7 +173,7 @@ if ( is_wp_error( $skip_post_id ) ) {
 	assert_true(
 		'bfb_skip_insert_conversion receives the resolved format slug',
 		'markdown' === $skip_seen_format,
-		'got: ' . var_export( $skip_seen_format, true )
+		'got: ' . wp_json_encode( $skip_seen_format )
 	);
 	wp_delete_post( $skip_post_id, true );
 }
@@ -242,8 +244,8 @@ if ( is_wp_error( $render_post_id ) ) {
 }
 
 // --- Test 7a: TableConverter round-trips GFM tables ---
-$table_md       = "| col1 | col2 |\n| --- | --- |\n| a | b |\n";
-$table_round    = bfb_convert( bfb_convert( $table_md, 'markdown', 'blocks' ), 'blocks', 'markdown' );
+$table_md    = "| col1 | col2 |\n| --- | --- |\n| a | b |\n";
+$table_round = bfb_convert( bfb_convert( $table_md, 'markdown', 'blocks' ), 'blocks', 'markdown' );
 assert_true(
 	'Tables round-trip through markdown→blocks→markdown',
 	false !== strpos( $table_round, '| col1 | col2 |' ),
@@ -314,5 +316,5 @@ if ( 0 === $failures ) {
 	echo "All checks passed.\n";
 	exit( 0 );
 }
-echo $failures . " failure(s).\n";
+echo esc_html( (string) $failures ) . " failure(s).\n";
 exit( 1 );

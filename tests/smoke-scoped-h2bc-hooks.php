@@ -57,9 +57,12 @@ function has_action( string $hook_name, $callback = false ) {
 
 $hooks_file    = __DIR__ . '/../vendor_prefixed/chubes4/html-to-blocks-converter/includes/hooks.php';
 $versions_file = __DIR__ . '/../vendor_prefixed/chubes4/html-to-blocks-converter/includes/class-html-to-blocks-versions.php';
-$hooks_source  = file_get_contents( $hooks_file );
+$hooks_source_raw = file_get_contents( $hooks_file );
 
-bfb_smoke_assert( is_string( $hooks_source ), 'Scoped h2bc hooks.php should be readable.' );
+if ( ! is_string( $hooks_source_raw ) ) {
+	bfb_smoke_assert( false, 'Scoped h2bc hooks.php should be readable.' );
+}
+$hooks_source = is_string( $hooks_source_raw ) ? $hooks_source_raw : '';
 
 foreach ( array( 'add_filter', 'has_filter', 'add_action', 'has_action' ) as $function_name ) {
 	bfb_smoke_assert(
