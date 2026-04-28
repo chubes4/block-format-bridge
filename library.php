@@ -75,8 +75,8 @@ $bfb_initializer = static function () use ( $bfb_library_path, $bfb_library_vers
 	require_once $bfb_library_path . '/includes/bootstrap.php';
 };
 
-$bfb_register = static function () use ( $bfb_library_version, $bfb_initializer ): void {
-	BFB_Versions::instance()->register( $bfb_library_version, $bfb_initializer );
+$bfb_register = static function () use ( $bfb_library_path, $bfb_library_version, $bfb_initializer ): void {
+	BFB_Versions::instance()->register( $bfb_library_version, $bfb_initializer, $bfb_library_path );
 };
 
 BFB_Versions::register_hooks();

@@ -269,7 +269,14 @@ try {
 	$registered_versions = $versions->getValue( $registry );
 
 	bfb_smoke_assert( is_array( $registered_versions ), 'Registered versions should be inspectable.' );
-	bfb_smoke_assert( array( '0.3.0', '9.9.9' ) === array_keys( $registered_versions ), 'Both consumer copies should register their BFB versions.' );
+	bfb_smoke_assert(
+		array( '0.3.0', '9.9.9' ) === array_column( $registered_versions, 'version' ),
+		'Both consumer copies should register their BFB versions.'
+	);
+	bfb_smoke_assert(
+		array( realpath( $consumer_a ), realpath( $consumer_b ) ) === array_column( $registered_versions, 'source' ),
+		'Both consumer copies should retain source paths for duplicate-version diagnostics.'
+	);
 
 	bfb_smoke_do_action_range( 'plugins_loaded', 1, 1 );
 
