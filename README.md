@@ -279,8 +279,10 @@ Resolve a registered adapter directly. Prefer `bfb_to_blocks()` when callers nee
 
 Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion substrate, not the layer that infers
 block-theme or Site Editor intent. The compiler-facing helper and CLI shape are documented in
-[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The public mechanical conversion scope
-matrix is documented in [`docs/mechanical-block-theme-conversion.md`](docs/mechanical-block-theme-conversion.md).
+[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The stack workflow across h2bc, BFB, and
+compiler consumers is documented in [`docs/block-theme-conversion-workflow.md`](docs/block-theme-conversion-workflow.md).
+The public mechanical conversion scope matrix is documented in
+[`docs/mechanical-block-theme-conversion.md`](docs/mechanical-block-theme-conversion.md).
 
 ### Custom block Markdown rendering contract
 
