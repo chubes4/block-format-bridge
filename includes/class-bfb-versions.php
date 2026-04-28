@@ -29,11 +29,18 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 		private static $instance = null;
 
 		/**
-		 * Version => initializer callback.
+		 * Registered bridge copies.
 		 *
-		 * @var array<string, callable>
+		 * @var array<int, array{version: string, initializer: callable, source: string, order: int}>
 		 */
 		private $versions = array();
+
+		/**
+		 * Monotonic registration counter for deterministic same-version ties.
+		 *
+		 * @var int
+		 */
+		private $registration_order = 0;
 
 		/**
 		 * Whether the winning version has initialized.
@@ -79,16 +86,31 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 		/**
 		 * Register one copy of the bridge.
 		 *
-		 * @param string   $version     Semantic version string.
-		 * @param callable $initializer Initializer that loads this copy's files.
+		 * @param string      $version     Semantic version string.
+		 * @param callable    $initializer Initializer that loads this copy's files.
+		 * @param string|null $source      Optional source path or label for diagnostics.
 		 * @return void
 		 */
-		public function register( string $version, callable $initializer ): void {
+		public function register( string $version, callable $initializer, ?string $source = null ): void {
 			if ( $this->initialized ) {
 				return;
 			}
 
-			$this->versions[ $version ] = $initializer;
+			$source = $source ?: $this->describe_initializer( $initializer );
+
+			foreach ( $this->versions as $entry ) {
+				if ( $version === $entry['version'] && $source !== $entry['source'] ) {
+					$this->warn_duplicate_version( $version, $entry['source'], $source );
+					break;
+				}
+			}
+
+			$this->versions[] = array(
+				'version'     => $version,
+				'initializer' => $initializer,
+				'source'      => $source,
+				'order'       => ++$this->registration_order,
+			);
 		}
 
 		/**
@@ -110,9 +132,22 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 				return;
 			}
 
-			uksort( $this->versions, 'version_compare' );
-			$version     = array_key_last( $this->versions );
-			$initializer = $this->versions[ $version ];
+			$versions = $this->versions;
+			usort(
+				$versions,
+				static function ( array $left, array $right ): int {
+					$version_compare = version_compare( $left['version'], $right['version'] );
+					if ( 0 !== $version_compare ) {
+						return $version_compare;
+					}
+
+					return $left['order'] <=> $right['order'];
+				}
+			);
+
+			$winner      = $versions[ array_key_last( $versions ) ];
+			$version     = $winner['version'];
+			$initializer = $winner['initializer'];
 
 			$this->initialized = true;
 			$initializer();
@@ -123,6 +158,58 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 			 * @param string $version Loaded version.
 			 */
 			do_action( 'bfb_loaded', $version );
+		}
+
+		/**
+		 * Create a useful source label when the caller does not provide one.
+		 *
+		 * @param callable $initializer Initializer callback.
+		 * @return string
+		 */
+		private function describe_initializer( callable $initializer ): string {
+			if ( $initializer instanceof Closure ) {
+				$reflection = new ReflectionFunction( $initializer );
+				return $reflection->getFileName() ?: 'closure:' . spl_object_id( $initializer );
+			}
+
+			if ( is_string( $initializer ) ) {
+				return $initializer;
+			}
+
+			if ( is_array( $initializer ) && 2 === count( $initializer ) ) {
+				$class = is_object( $initializer[0] ) ? get_class( $initializer[0] ) : (string) $initializer[0];
+				return $class . '::' . (string) $initializer[1];
+			}
+
+			if ( is_object( $initializer ) ) {
+				return get_class( $initializer ) . ':' . spl_object_id( $initializer );
+			}
+
+			return 'callable:' . md5( gettype( $initializer ) );
+		}
+
+		/**
+		 * Warn when two different sources claim the same semantic version.
+		 *
+		 * @param string $version         Duplicate semantic version.
+		 * @param string $existing_source First registered source.
+		 * @param string $new_source      Later registered source.
+		 * @return void
+		 */
+		private function warn_duplicate_version( string $version, string $existing_source, string $new_source ): void {
+			$message = sprintf(
+				'Block Format Bridge version %1$s was registered by multiple sources. Same-version ties are deterministic but unsafe for different dev-main commits; the last registration wins. Existing source: %2$s. New source: %3$s.',
+				$version,
+				$existing_source,
+				$new_source
+			);
+
+			if ( function_exists( '_doing_it_wrong' ) ) {
+				_doing_it_wrong( __METHOD__, $message, $version );
+				return;
+			}
+
+			trigger_error( $message, E_USER_WARNING );
 		}
 	}
 }

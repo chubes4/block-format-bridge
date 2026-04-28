@@ -98,6 +98,12 @@ Package mode loads the full bridge service: adapters, `bfb_convert()`, `bfb_rend
 `wp_insert_post_data` integration, and the REST `?content_format=` integration. If multiple plugins bundle BFB while
 the standalone plugin is also active, the registry initializes the highest loaded version once.
 
+Released copies with distinct semantic versions are the safe multi-bundle path. If two different sources register the
+same semantic version, BFB keeps both registrations, emits a diagnostic with both source paths, and deterministically
+initializes the later registration. That same-version tie-break is a fallback for visibility, not a release strategy:
+different `dev-main` commits that report the same `$bfb_library_version` can expose different APIs, so consumers should
+not deploy mixed unreleased commits unless they intentionally control the load order.
+
 HTML → Blocks support is bundled via [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
 as a Composer package. You do **not** need the standalone html-to-blocks-converter plugin active for BFB to convert
 HTML/Markdown into block markup.
