@@ -8,8 +8,9 @@
  *   bfb_normalize( $content, $format )      — declared-format validation
  *   bfb_get_adapter( $slug )                — registry lookup
  *
- * Both route through the block pivot via the adapter registry. There
- * is no parsing logic in this file; everything is delegation.
+ * `bfb_convert()` routes through the block pivot via the adapter registry.
+ * `bfb_normalize()` validates already-declared content through the dedicated
+ * normalization helpers loaded from includes/normalization.php.
  *
  * @package BlockFormatBridge
  */

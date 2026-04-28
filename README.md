@@ -1,18 +1,22 @@
 # Block Format Bridge
 
-A WordPress plugin **and Composer package** that orchestrates bidirectional content format conversion (HTML, Blocks,
-Markdown) through a unified adapter API.
+A WordPress plugin **and Composer package** for content format conversion and declared-format normalization across HTML,
+Blocks, and Markdown.
 
 The bridge owns no parsing logic of its own. It composes existing libraries — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
 WordPress core's `serialize_blocks()` / `parse_blocks()` / `render_block()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
 and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown) — behind one contract. New formats
 become available by registering a new adapter; the bridge core never grows.
 
-> **Status:** Both write (HTML/Markdown → Blocks) and read (Blocks → HTML/Markdown) directions work end-to-end, plus
-> a `?content_format=` REST query param. The documented `bfb_convert()` directions below are covered by
-> Playground-backed PHPUnit tests via `homeboy test`.
+> **Status:** `bfb_convert()`, `bfb_normalize()`, insert-time conversion, and REST `?content_format=` are covered by the
+> smoke/Playground test suite.
 
 ## What it does
+
+BFB exposes two related but separate public surfaces:
+
+- **`bfb_convert()`** converts content between two different formats. It uses WordPress block arrays as the pivot.
+- **`bfb_normalize()`** validates and normalizes content that already claims to be in one format.
 
 | Conversion direction | Underlying tool                        |
 |----------------------|----------------------------------------|
@@ -36,7 +40,7 @@ interface BFB_Format_Adapter {
 }
 ```
 
-Two built-in adapters ship today:
+BFB includes two adapters:
 
 - **`BFB_HTML_Adapter`** — `to_blocks()` delegates to `html_to_blocks_raw_handler()` from `html-to-blocks-converter`;
   `from_blocks()` returns rendered HTML via `render_block()` (so dynamic blocks resolve to their server-side output).
@@ -49,6 +53,13 @@ Every cross-format conversion routes through the block-array pivot:
 $blocks = $from_adapter->to_blocks( $content );
 return    $to_adapter->from_blocks( $blocks );
 ```
+
+Declared-format normalization validates the declared format directly:
+
+- `blocks` requires coherent serialized block comments and rejects raw HTML/Markdown between top-level blocks.
+- `markdown` normalizes line endings and rejects serialized block comments mixed into Markdown.
+- `html` rejects serialized block comments and Markdown markers that indicate mixed input.
+- Unsupported formats return `WP_Error`; registered custom formats currently pass through unchanged.
 
 ### BFB and h2bc responsibility split
 
@@ -85,24 +96,18 @@ storage/rendering path.
 
 Install it as a standalone plugin, or bundle it as a Composer package.
 
-The package is not yet published to a Composer mirror, so today the install path is a VCS repository pointing at
-GitHub:
+Data Machine v0.88.0+ bundles BFB as its content-format substrate. Data Machine-powered sites do not need the standalone
+BFB plugin unless they also want to manage BFB independently.
+
+The package is not yet published to a Composer mirror, so install it from the GitHub VCS repository:
 
 ```bash
 composer config repositories.bfb vcs https://github.com/chubes4/block-format-bridge
 composer require chubes4/block-format-bridge:dev-main
 ```
 
-Composer autoloads `library.php`, which registers the bridge through an Action-Scheduler-style version registry.
-Package mode loads the full bridge service: adapters, `bfb_convert()`, `bfb_render_post()`, the write-side
-`wp_insert_post_data` integration, and the REST `?content_format=` integration. If multiple plugins bundle BFB while
-the standalone plugin is also active, the registry initializes the highest loaded version once.
-
-Released copies with distinct semantic versions are the safe multi-bundle path. If two different sources register the
-same semantic version, BFB keeps both registrations, emits a diagnostic with both source paths, and deterministically
-initializes the later registration. That same-version tie-break is a fallback for visibility, not a release strategy:
-different `dev-main` commits that report the same `$bfb_library_version` can expose different APIs, so consumers should
-not deploy mixed unreleased commits unless they intentionally control the load order.
+Composer autoloads `library.php`, which registers the full bridge service: adapters, `bfb_convert()`,
+`bfb_normalize()`, `bfb_render_post()`, insert-time conversion, and REST `?content_format=`.
 
 HTML → Blocks support is bundled via [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
 as a Composer package. You do **not** need the standalone html-to-blocks-converter plugin active for BFB to convert
@@ -123,6 +128,8 @@ composer build  # runs php-scoper to vendor-prefix h2bc + markdown dependencies
 
 Universal conversion. Routes through the block-array pivot via the adapter registry.
 
+When `$from === $to`, `bfb_convert()` returns the content unchanged. Use `bfb_normalize()` for same-format validation.
+
 ```php
 // Markdown → blocks (serialised block markup)
 $blocks = bfb_convert( "# Hello\n\nWorld", 'markdown', 'blocks' );
@@ -142,6 +149,35 @@ $md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
 // Markdown → HTML (composes via blocks)
 $html = bfb_convert( '# X', 'markdown', 'html' );
 ```
+
+### `bfb_normalize( $content, $format, $options = array() ): string|WP_Error`
+
+Validate and normalize content already declared as one format. Use this for imported or generated content before storage.
+
+```php
+$normalized = bfb_normalize( $maybe_blocks, 'blocks' );
+
+if ( is_wp_error( $normalized ) ) {
+    return $normalized;
+}
+
+wp_insert_post( array(
+    'post_type'    => 'post',
+    'post_content' => $normalized,
+) );
+```
+
+Contract:
+
+- Valid serialized block markup, HTML, and Markdown normalize idempotently.
+- Block markup with unclosed, malformed, or mismatched block comments returns `WP_Error`.
+- Declared block content with raw HTML or Markdown outside top-level block comments returns `WP_Error`.
+- Declared Markdown containing serialized block comments returns `WP_Error`.
+- Declared HTML containing serialized block comments or obvious Markdown markers returns `WP_Error`.
+- Markdown line endings are normalized to `\n`.
+- Unsupported formats return `WP_Error`; registered custom formats currently pass through unchanged.
+
+Detectable malformed or mixed input returns `WP_Error` instead of silently passing through.
 
 ### `bfb_render_post( $post, $format ): string`
 
@@ -179,14 +215,13 @@ when active. The bridge surface is the simpler, programmatic query-param form.
 
 ### `bfb_get_adapter( $slug ): ?BFB_Format_Adapter`
 
-Resolve a registered adapter directly. Useful when you want to skip the universal router and operate on block arrays
-without re-serialising.
+Resolve a registered adapter directly. Useful when callers need block arrays instead of serialized content.
 
 ### FSE / Site Compiler Consumers
 
-Future static HTML/CSS to block-theme compiler work should treat BFB as the format-conversion substrate, not the layer
-that infers FSE intent. The current stable surface is `bfb_convert()` plus the adapter registry. Proposed compiler-facing
-helpers and CLI shape are documented in [`docs/fse-compiler-surface.md`](docs/fse-compiler-surface.md).
+Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion substrate, not the layer that infers
+FSE intent. Proposed compiler-facing helpers and CLI shape are documented in
+[`docs/fse-compiler-surface.md`](docs/fse-compiler-surface.md).
 
 ### Filters
 
@@ -225,6 +260,21 @@ wp_insert_post( array(
     '_bfb_format'  => 'markdown',
 ) );
 ```
+
+### Version Registry
+
+BFB supports multiple Composer consumers plus the standalone plugin in one request. Every loaded copy registers its
+semantic version and source path. On `plugins_loaded:1`, BFB initializes one winner.
+
+Registry rules:
+
+- The highest semantic version wins.
+- Released copies with distinct semantic versions are safe to load side-by-side.
+- Duplicate same-version registrations from different sources emit a diagnostic with both source paths; the later
+  registration wins deterministically.
+
+The `dev-main` caveat: two different commits can report the same `$bfb_library_version`. Keep development consumers on
+the same commit, or use distinct semantic versions when testing multiple copies together.
 
 ### Adapter registration
 
