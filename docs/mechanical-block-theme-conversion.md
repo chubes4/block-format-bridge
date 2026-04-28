@@ -4,6 +4,9 @@ Issue: https://github.com/chubes4/block-format-bridge/issues/64
 
 This matrix defines the public scope boundary for deterministic conversion from static HTML/CSS into WordPress block data for block themes. It is written for site-builder and compiler consumers that need to decide which work belongs in Block Format Bridge (BFB), which work belongs in html-to-blocks-converter (h2bc), and which work belongs in a higher-level compiler.
 
+For the stack-level workflow across h2bc inventory/classification, BFB capability surfaces, and compiler consumers, see
+[`block-theme-conversion-workflow.md`](block-theme-conversion-workflow.md).
+
 BFB and h2bc handle deterministic conversion. They can map explicit source markup into WordPress block arrays and serialized block markup. They do not infer creative intent, site strategy, editorial structure, navigation decisions, template hierarchy, global Styles, or theme.json design systems from arbitrary markup. Those decisions belong above BFB.
 
 ## Categories
