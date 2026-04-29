@@ -18,6 +18,7 @@ if ( ! defined( 'BFB_PATH' ) ) {
 }
 
 $GLOBALS['bfb_smoke_abilities'] = array();
+$GLOBALS['bfb_smoke_ability_categories'] = array();
 
 function bfb_capabilities_smoke_assert( bool $condition, string $message ): void {
 	if ( ! $condition ) {
@@ -45,7 +46,11 @@ function did_action( string $hook_name ): int {
 }
 
 function add_action( string $hook_name, $callback, int $priority = 10, int $accepted_args = 1 ): void {
-	unset( $hook_name, $callback, $priority, $accepted_args );
+	unset( $priority, $accepted_args );
+
+	if ( 'wp_abilities_api_categories_init' === $hook_name && is_callable( $callback ) ) {
+		$callback();
+	}
 }
 
 function do_action( string $hook_name, ...$args ): void {
@@ -63,6 +68,10 @@ function current_user_can( string $capability ): bool {
 
 function wp_register_ability( string $name, array $config ): void {
 	$GLOBALS['bfb_smoke_abilities'][ $name ] = $config;
+}
+
+function wp_register_ability_category( string $slug, array $config ): void {
+	$GLOBALS['bfb_smoke_ability_categories'][ $slug ] = $config;
 }
 
 function parse_blocks( string $content ): array {
@@ -146,9 +155,15 @@ bfb_capabilities_smoke_assert( in_array( 'block-format-bridge/convert', $report[
 bfb_capabilities_smoke_assert( in_array( 'block-format-bridge/normalize', $report['abilities'], true ), 'Capability report should list the normalize ability.' );
 
 $abilities = $GLOBALS['bfb_smoke_abilities'];
+$categories = $GLOBALS['bfb_smoke_ability_categories'];
+bfb_capabilities_smoke_assert( isset( $categories['block-format-bridge'] ), 'BFB ability category should be registered.' );
+bfb_capabilities_smoke_assert( isset( $categories['block-format-bridge']['label'] ), 'BFB ability category should include a label.' );
 bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/get-capabilities'] ), 'Capabilities ability should be registered.' );
 bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/convert'] ), 'Convert ability should be registered.' );
 bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/normalize'] ), 'Normalize ability should be registered.' );
+bfb_capabilities_smoke_assert( 'block-format-bridge' === $abilities['block-format-bridge/get-capabilities']['category'], 'Capabilities ability should declare the BFB category.' );
+bfb_capabilities_smoke_assert( 'block-format-bridge' === $abilities['block-format-bridge/convert']['category'], 'Convert ability should declare the BFB category.' );
+bfb_capabilities_smoke_assert( 'block-format-bridge' === $abilities['block-format-bridge/normalize']['category'], 'Normalize ability should declare the BFB category.' );
 bfb_capabilities_smoke_assert( true === $abilities['block-format-bridge/get-capabilities']['meta']['show_in_rest'], 'Capabilities ability should opt into REST exposure.' );
 bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/convert']['input_schema']['properties']['options'] ), 'Convert ability should accept conversion options.' );
 

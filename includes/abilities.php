@@ -9,6 +9,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! defined( 'BFB_ABILITY_CATEGORY' ) ) {
+	define( 'BFB_ABILITY_CATEGORY', 'block-format-bridge' );
+}
+
+if ( ! function_exists( 'bfb_register_ability_category' ) ) {
+	/**
+	 * Register the Block Format Bridge ability category.
+	 *
+	 * @return void
+	 */
+	function bfb_register_ability_category(): void {
+		if ( ! function_exists( 'wp_register_ability_category' ) ) {
+			return;
+		}
+
+		wp_register_ability_category(
+			BFB_ABILITY_CATEGORY,
+			array(
+				'label'       => __( 'Block Format Bridge', 'block-format-bridge' ),
+				'description' => __( 'Content format conversion and normalization capabilities.', 'block-format-bridge' ),
+			)
+		);
+	}
+}
+
 if ( ! function_exists( 'bfb_register_abilities' ) ) {
 	/**
 	 * Register Block Format Bridge abilities when the Abilities API is present.
@@ -25,6 +50,7 @@ if ( ! function_exists( 'bfb_register_abilities' ) ) {
 			array(
 				'label'               => __( 'Get Block Format Bridge Capabilities', 'block-format-bridge' ),
 				'description'         => __( 'Return the active content-format conversion substrate capabilities.', 'block-format-bridge' ),
+				'category'            => BFB_ABILITY_CATEGORY,
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(),
@@ -41,6 +67,7 @@ if ( ! function_exists( 'bfb_register_abilities' ) ) {
 			array(
 				'label'               => __( 'Convert Content Format', 'block-format-bridge' ),
 				'description'         => __( 'Convert content between registered BFB formats through the block pivot.', 'block-format-bridge' ),
+				'category'            => BFB_ABILITY_CATEGORY,
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
@@ -63,6 +90,7 @@ if ( ! function_exists( 'bfb_register_abilities' ) ) {
 			array(
 				'label'               => __( 'Normalize Content Format', 'block-format-bridge' ),
 				'description'         => __( 'Normalize and validate content for a declared BFB format.', 'block-format-bridge' ),
+				'category'            => BFB_ABILITY_CATEGORY,
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
@@ -183,6 +211,12 @@ if ( ! function_exists( 'bfb_ability_error' ) ) {
 			),
 		);
 	}
+}
+
+if ( doing_action( 'wp_abilities_api_categories_init' ) ) {
+	bfb_register_ability_category();
+} elseif ( ! did_action( 'wp_abilities_api_categories_init' ) ) {
+	add_action( 'wp_abilities_api_categories_init', 'bfb_register_ability_category' );
 }
 
 if ( doing_action( 'wp_abilities_api_init' ) ) {
