@@ -39,18 +39,20 @@ interface BFB_Format_Adapter {
 	 * array of arrays each with `blockName`, `attrs`, `innerBlocks`,
 	 * `innerHTML`, and `innerContent` keys.
 	 *
-	 * @param string $content Source content in this adapter's format.
+	 * @param string               $content Source content in this adapter's format.
+	 * @param array<string, mixed> $options Per-call conversion options.
 	 * @return array Block array.
 	 */
-	public function to_blocks( string $content ): array;
+	public function to_blocks( string $content, array $options = array() ): array;
 
 	/**
 	 * Convert a block array back into this adapter's format.
 	 *
-	 * @param array $blocks Block array (parse_blocks() shape).
+	 * @param array<int, array<string, mixed>> $blocks  Block array (parse_blocks() shape).
+	 * @param array<string, mixed>             $options Per-call conversion options.
 	 * @return string Content in this adapter's format.
 	 */
-	public function from_blocks( array $blocks ): string;
+	public function from_blocks( array $blocks, array $options = array() ): string;
 
 	/**
 	 * Best-effort detection of whether $content is in this format.

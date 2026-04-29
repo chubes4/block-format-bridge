@@ -101,6 +101,80 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Conversion options should flow from the public API into adapters and h2bc args.
+	 */
+	public function test_conversion_options_flow_to_adapters_and_h2bc_args(): void {
+		$html = '<h2>Options Heading</h2><p>Options paragraph.</p>';
+
+		$default = bfb_convert( $html, 'html', 'blocks' );
+		$this->assertNotSame( '', $default, 'Default 3-argument conversion should remain supported.' );
+
+		$seen_args = null;
+		$listener  = static function ( array $args, string $content, array $options ) use ( &$seen_args ): array {
+			$seen_args = array(
+				'args'    => $args,
+				'content' => $content,
+				'options' => $options,
+			);
+			return $args;
+		};
+
+		add_filter( 'bfb_html_to_blocks_args', $listener, 10, 3 );
+		try {
+			$with_options = bfb_convert( $html, 'html', 'blocks', array( 'mode' => 'fidelity' ) );
+		} finally {
+			remove_filter( 'bfb_html_to_blocks_args', $listener, 10 );
+		}
+
+		$this->assertNotSame( '', $with_options, '4-argument conversion should produce serialized blocks.' );
+		$this->assertIsArray( $seen_args, 'HTML adapter should expose h2bc raw-handler arguments.' );
+		$this->assertSame( 'fidelity', $seen_args['args']['mode'] ?? null, 'Mode option should be forwarded to h2bc args.' );
+		$this->assertSame( $html, $seen_args['args']['HTML'] ?? null, 'BFB should preserve the reserved HTML raw-handler arg.' );
+		$this->assertSame( array( 'mode' => 'fidelity' ), $seen_args['options'] ?? null, 'HTML adapter should receive public conversion options.' );
+
+		$probe = new class() implements BFB_Format_Adapter {
+			/**
+			 * @var array<string, mixed>
+			 */
+			public $received_options = array();
+
+			public function slug(): string {
+				return 'probe-options';
+			}
+
+			public function to_blocks( string $content, array $options = array() ): array {
+				unset( $content );
+				$this->received_options = $options;
+				return parse_blocks( '<!-- wp:paragraph --><p>Probe</p><!-- /wp:paragraph -->' );
+			}
+
+			public function from_blocks( array $blocks, array $options = array() ): string {
+				unset( $blocks );
+				$this->received_options = $options;
+				return 'probe';
+			}
+
+			public function detect( string $content ): bool {
+				unset( $content );
+				return false;
+			}
+		};
+
+		$adapter_filter = static function ( $adapter, string $slug ) use ( $probe ) {
+			return 'probe-options' === $slug ? $probe : $adapter;
+		};
+
+		add_filter( 'bfb_register_format_adapter', $adapter_filter, 10, 2 );
+		try {
+			bfb_convert( 'probe source', 'probe-options', 'blocks', array( 'mode' => 'fidelity' ) );
+		} finally {
+			remove_filter( 'bfb_register_format_adapter', $adapter_filter, 10 );
+		}
+
+		$this->assertSame( array( 'mode' => 'fidelity' ), $probe->received_options, 'Generic adapters should receive public conversion options.' );
+	}
+
+	/**
 	 * BFB should expose h2bc's expanded layout transforms through bfb_convert().
 	 */
 	public function test_html_to_blocks_covers_expanded_layout_transforms(): void {

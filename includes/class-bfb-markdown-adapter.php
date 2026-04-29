@@ -36,7 +36,7 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 	/**
 	 * @inheritDoc
 	 */
-	public function to_blocks( string $content ): array {
+	public function to_blocks( string $content, array $options = array() ): array {
 		if ( '' === $content ) {
 			return array();
 		}
@@ -64,7 +64,7 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 			return array();
 		}
 
-		return $html_adapter->to_blocks( $html );
+		return $html_adapter->to_blocks( $html, $options );
 	}
 
 	/**
@@ -82,7 +82,9 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 	 * @param array $blocks Block array (parse_blocks() shape).
 	 * @return string Markdown representation. Empty string on failure.
 	 */
-	public function from_blocks( array $blocks ): string {
+	public function from_blocks( array $blocks, array $options = array() ): string {
+		unset( $options );
+
 		if ( empty( $blocks ) ) {
 			return '';
 		}

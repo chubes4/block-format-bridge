@@ -4,8 +4,8 @@
  *
  * These functions form the public Phase 1 surface:
  *
- *   bfb_convert( $content, $from, $to )     — universal conversion
- *   bfb_to_blocks( $content, $from )        — block-array conversion
+ *   bfb_convert( $content, $from, $to, $options ) — universal conversion
+ *   bfb_to_blocks( $content, $from, $options )    — block-array conversion
  *   bfb_normalize( $content, $format )      — declared-format validation
  *   bfb_capabilities()                      — conversion substrate report
  *   bfb_get_adapter( $slug )                — registry lookup
@@ -85,6 +85,7 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 					'bfb_rest_supported_post_types',
 					'bfb_markdown_input',
 					'bfb_markdown_output',
+					'bfb_html_to_blocks_args',
 					'bfb_html_to_markdown_options',
 				),
 				'actions' => array(
@@ -171,11 +172,12 @@ if ( ! function_exists( 'bfb_to_blocks' ) ) {
 	 * This is the compiler-facing helper for callers that need the block-array
 	 * pivot directly instead of serialized block markup.
 	 *
-	 * @param string $content Source content.
-	 * @param string $from    Source format slug.
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param array<string, mixed> $options Per-call conversion options.
 	 * @return array<int, array<string, mixed>> Block array. Empty array on unsupported source.
 	 */
-	function bfb_to_blocks( string $content, string $from ): array {
+	function bfb_to_blocks( string $content, string $from, array $options = array() ): array {
 		if ( 'blocks' === $from ) {
 			return parse_blocks( $content );
 		}
@@ -187,7 +189,7 @@ if ( ! function_exists( 'bfb_to_blocks' ) ) {
 			return array();
 		}
 
-		return $from_adapter->to_blocks( $content );
+		return $from_adapter->to_blocks( $content, $options );
 	}
 }
 
@@ -197,8 +199,8 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 	 *
 	 * Routing always passes through the block pivot:
 	 *
-	 *   $blocks = bfb_to_blocks( $content, $from );
-	 *   return    $to_adapter->from_blocks( $blocks );
+	 *   $blocks = bfb_to_blocks( $content, $from, $options );
+	 *   return    $to_adapter->from_blocks( $blocks, $options );
 	 *
 	 * Special cases:
 	 *   - $from === $to                → returns $content unchanged
@@ -207,17 +209,18 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 	 *                                    block markup, parsing it first
 	 *   - $to === 'blocks'             → returns serialized block markup
 	 *
-	 * @param string $content Source content.
-	 * @param string $from    Source format slug.
-	 * @param string $to      Target format slug.
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param string               $to      Target format slug.
+	 * @param array<string, mixed> $options Per-call conversion options.
 	 * @return string Converted content. Empty string on failure.
 	 */
-	function bfb_convert( string $content, string $from, string $to ): string {
+	function bfb_convert( string $content, string $from, string $to, array $options = array() ): string {
 		if ( $from === $to ) {
 			return $content;
 		}
 
-		$blocks = bfb_to_blocks( $content, $from );
+		$blocks = bfb_to_blocks( $content, $from, $options );
 		if ( array() === $blocks && 'blocks' !== $from ) {
 			return '';
 		}
@@ -234,7 +237,7 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 			return '';
 		}
 
-		return $to_adapter->from_blocks( $blocks );
+		return $to_adapter->from_blocks( $blocks, $options );
 	}
 }
 
@@ -249,11 +252,12 @@ if ( ! function_exists( 'bfb_render_post' ) ) {
 	 * Returns an empty string when the post is missing, the post type
 	 * does not support content, or the requested format is unknown.
 	 *
-	 * @param int|WP_Post $post   Post ID or WP_Post.
-	 * @param string      $format Target format slug (e.g. 'html', 'markdown').
+	 * @param int|WP_Post          $post    Post ID or WP_Post.
+	 * @param string               $format  Target format slug (e.g. 'html', 'markdown').
+	 * @param array<string, mixed> $options Per-call conversion options.
 	 * @return string Rendered content. Empty string on failure.
 	 */
-	function bfb_render_post( $post, string $format ): string {
+	function bfb_render_post( $post, string $format, array $options = array() ): string {
 		$post_obj = get_post( $post );
 		if ( ! $post_obj ) {
 			return '';
@@ -267,6 +271,6 @@ if ( ! function_exists( 'bfb_render_post' ) ) {
 		// post_content is always serialised block markup (or raw HTML on
 		// pre-Gutenberg installs); route through the 'blocks' source so
 		// dynamic blocks resolve.
-		return bfb_convert( $content, 'blocks', $format );
+		return bfb_convert( $content, 'blocks', $format, $options );
 	}
 }
