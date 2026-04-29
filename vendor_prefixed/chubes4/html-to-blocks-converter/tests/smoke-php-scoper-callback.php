@@ -33,6 +33,10 @@ function html_to_blocks_raw_handler($args)
 {
     return array('called_in_namespace' => __NAMESPACE__, 'args' => $args);
 }
+function current_namespace(): string
+{
+    return __NAMESPACE__;
+}
 /**
  * Builds the recursive-handler callable using the same
  * __NAMESPACE__-aware expression that lives in raw-handler.php and
@@ -41,7 +45,8 @@ function html_to_blocks_raw_handler($args)
  */
 function build_callback()
 {
-    return __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_raw_handler' : 'html_to_blocks_raw_handler';
+    $namespace = current_namespace();
+    return $namespace !== '' ? $namespace . '\html_to_blocks_raw_handler' : 'html_to_blocks_raw_handler';
 }
 namespace BlockFormatBridge\Vendor;
 
@@ -53,14 +58,17 @@ $smoke_assert = function ($condition, $label, $detail = '') use (&$failures, &$a
         $failures[] = "FAIL [{$label}]" . ($detail !== '' ? ": {$detail}" : '');
     }
 };
+$read_required_file = static function (string $path) use ($smoke_assert): string {
+    $contents = \file_get_contents($path);
+    $smoke_assert(\is_string($contents) && $contents !== '', \basename($path) . '-readable', "Unable to read {$path}");
+    return \is_string($contents) ? $contents : '';
+};
 // -----------------------------------------------------------------------
 // 1. Static source assertions
 // -----------------------------------------------------------------------
 $repo_root = \dirname(__DIR__);
-$raw_handler_source = \file_get_contents($repo_root . '/raw-handler.php');
-$library_source = \file_get_contents($repo_root . '/library.php');
-$smoke_assert(\is_string($raw_handler_source) && $raw_handler_source !== '', 'raw-handler-readable');
-$smoke_assert(\is_string($library_source) && $library_source !== '', 'library-readable');
+$raw_handler_source = $read_required_file($repo_root . '/raw-handler.php');
+$library_source = $read_required_file($repo_root . '/library.php');
 // The bare string literal must not appear as a callback argument to
 // call_user_func. Docblocks/comments are fine; we only fail on the exact
 // dangerous shape.
@@ -85,7 +93,13 @@ function html_to_blocks_raw_handler_global_smoke($args)
 {
     return array('called_in_namespace' => '', 'args' => $args);
 }
-$unscoped_callable = __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_raw_handler_global_smoke' : 'html_to_blocks_raw_handler_global_smoke';
+function html_to_blocks_smoke_current_namespace(): string
+{
+    // @phpstan-ignore-next-line The smoke intentionally exercises the global-namespace branch.
+    return __NAMESPACE__;
+}
+$global_namespace = html_to_blocks_smoke_current_namespace();
+$unscoped_callable = $global_namespace !== '' ? $global_namespace . '\html_to_blocks_raw_handler_global_smoke' : 'html_to_blocks_raw_handler_global_smoke';
 $smoke_assert($unscoped_callable === 'html_to_blocks_raw_handler_global_smoke', 'unscoped-callable-string-shape', "got: {$unscoped_callable}");
 $smoke_assert(\is_callable($unscoped_callable), 'unscoped-callable-resolves', "global function not resolvable: {$unscoped_callable}");
 // -----------------------------------------------------------------------
