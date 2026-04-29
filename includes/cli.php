@@ -20,6 +20,47 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 	class BFB_CLI_Command {
 
 		/**
+		 * Report active conversion substrate capabilities.
+		 *
+		 * ## OPTIONS
+		 *
+		 * [--format=<format>]
+		 * : Output format. Supports `json` or `summary`.
+		 * ---
+		 * default: summary
+		 * ---
+		 *
+		 * @param array<int, string>   $args       Positional arguments.
+		 * @param array<string, mixed> $assoc_args Associative arguments.
+		 * @return void
+		 */
+		public function capabilities( array $args, array $assoc_args ): void {
+			unset( $args );
+
+			$format = isset( $assoc_args['format'] ) ? (string) $assoc_args['format'] : 'summary';
+			$report = bfb_capabilities();
+
+			if ( 'json' === $format ) {
+				$output = wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+				if ( false === $output ) {
+					WP_CLI::error( 'Failed to encode capabilities as JSON.' );
+				}
+				WP_CLI::line( $output );
+				return;
+			}
+
+			if ( 'summary' !== $format ) {
+				WP_CLI::error( 'Unsupported --format value. Use "summary" or "json".' );
+			}
+
+			$bridge = isset( $report['bridge'] ) && is_array( $report['bridge'] ) ? $report['bridge'] : array();
+			$h2bc   = isset( $report['h2bc'] ) && is_array( $report['h2bc'] ) ? $report['h2bc'] : array();
+			WP_CLI::line( sprintf( 'BFB: %s', isset( $bridge['version'] ) ? (string) $bridge['version'] : 'unknown' ) );
+			WP_CLI::line( sprintf( 'Formats: %s', implode( ', ', array_keys( (array) $report['formats'] ) ) ) );
+			WP_CLI::line( sprintf( 'HTML -> blocks: %s', ! empty( $h2bc['available'] ) ? 'available' : 'unavailable' ) );
+		}
+
+		/**
 		 * Convert content between formats.
 		 *
 		 * ## OPTIONS
