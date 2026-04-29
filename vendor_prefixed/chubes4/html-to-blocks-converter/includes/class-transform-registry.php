@@ -560,7 +560,10 @@ class HTML_To_Blocks_Transform_Registry
                 }
             }
         }
-        return HTML_To_Blocks_Block_Factory::create_block('core/list', $list_attributes, $inner_blocks);
+        $block = HTML_To_Blocks_Block_Factory::create_block('core/list', $list_attributes, $inner_blocks);
+        // The source class is already preserved in the static list wrapper markup.
+        unset($block['attrs']['className']);
+        return $block;
     }
     /**
      * Creates a list-item block from an li element
@@ -973,10 +976,8 @@ class HTML_To_Blocks_Transform_Registry
             return !$has_only_code;
         }, 'transform' => function ($element) {
             $content = $element->get_inner_html();
-            $attributes = ['content' => $content];
-            if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
-                $attributes['anchor'] = $element->get_attribute('id');
-            }
+            $attributes = self::get_block_support_attributes($element, array('anchor' => \true, 'class_name' => \true));
+            $attributes['content'] = $content;
             return HTML_To_Blocks_Block_Factory::create_block('core/preformatted', $attributes);
         }]];
     }
@@ -1431,7 +1432,7 @@ class HTML_To_Blocks_Transform_Registry
         if ($tag !== 'DIV') {
             return \false;
         }
-        return self::class_matches($element, '/(?:^|[-_\s])(group|section|container|wrapper|content|main|article|aside|header|footer)(?:$|[-_\s])/i');
+        return self::class_matches($element, '/(?:^|[-_\s])(group|section|container|wrapper|content|main|article|aside|header|footer|inner|row)(?:$|[-_\s])/i');
     }
     /**
      * Checks whether an element is a cover/hero wrapper.
@@ -1545,14 +1546,17 @@ class HTML_To_Blocks_Transform_Registry
         return '';
     }
     /**
-     * core/paragraph transforms - p elements (lowest priority, fallback)
+     * core/paragraph transforms - p elements and text-only divs (lowest priority, fallback)
      *
      * @return array Transform definitions
      */
     private static function get_paragraph_transforms()
     {
-        return [['blockName' => 'core/paragraph', 'priority' => 20, 'selector' => 'p', 'isMatch' => function ($element) {
-            return $element->get_tag_name() === 'P';
+        return [['blockName' => 'core/paragraph', 'priority' => 20, 'selector' => 'p,div', 'isMatch' => function ($element) {
+            if ($element->get_tag_name() === 'P') {
+                return \true;
+            }
+            return $element->get_tag_name() === 'DIV' && array() === $element->get_child_elements() && \trim($element->get_text_content()) !== '';
         }, 'transform' => function ($element) {
             $content = $element->get_inner_html();
             $attributes = self::get_block_support_attributes($element, ['anchor' => \true, 'align' => \true, 'text_align' => \true, 'colors' => \true, 'typography' => \true, 'spacing' => \true, 'border' => \true, 'class_name' => \true]);

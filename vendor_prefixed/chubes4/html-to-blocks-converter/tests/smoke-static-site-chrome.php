@@ -3,9 +3,9 @@
 namespace BlockFormatBridge\Vendor;
 
 /**
- * Smoke test: top-level raw conversion must not re-emit descendants as siblings.
+ * Smoke test: common static-site chrome converts without core/html fallback.
  *
- * Run: php tests/smoke-no-duplicate-descendants.php
+ * Run: php tests/smoke-static-site-chrome.php
  */
 // phpcs:disable
 if (!\defined('ABSPATH')) {
@@ -37,7 +37,7 @@ if (!\class_exists('WP_Block_Type_Registry', \false)) {
         }
         public function is_registered($name)
         {
-            return \in_array($name, ['core/html', 'core/heading', 'core/list', 'core/list-item', 'core/paragraph'], \true);
+            return \in_array($name, ['core/group', 'core/html', 'core/list', 'core/list-item', 'core/navigation', 'core/navigation-link', 'core/paragraph', 'core/preformatted'], \true);
         }
         public function get_registered($name)
         {
@@ -74,15 +74,15 @@ if (!\function_exists('BlockFormatBridge\Vendor\serialize_blocks')) {
         $output = '';
         foreach ($blocks as $block) {
             $name = $block['blockName'] ?? '';
-            $attrs = \array_diff_key($block['attrs'] ?? [], ['content' => \true]);
-            $attrs_json = empty($attrs) ? '' : ' ' . \json_encode($attrs, \JSON_UNESCAPED_SLASHES);
             if ($name === 'core/html') {
                 $output .= '<!-- wp:html -->' . ($block['attrs']['content'] ?? $block['innerHTML'] ?? '') . '<!-- /wp:html -->';
                 continue;
             }
-            $output .= '<!-- wp:' . \substr($name, 5) . $attrs_json . ' -->';
-            $output .= $block['innerHTML'] ?? '';
+            $output .= '<!-- wp:' . \substr($name, 5) . ' -->';
+            $output .= $block['innerContent'][0] ?? $block['innerHTML'] ?? '';
             $output .= serialize_blocks($block['innerBlocks'] ?? []);
+            $inner_content = $block['innerContent'] ?? [];
+            $output .= \end($inner_content) ?: '';
             $output .= '<!-- /wp:' . \substr($name, 5) . ' -->';
         }
         return $output;
@@ -102,57 +102,29 @@ $assert = static function ($condition, $label, $detail = '') use (&$failures, &$
         $failures[] = 'FAIL [' . $label . ']' . ($detail !== '' ? ': ' . $detail : '');
     }
 };
-$assert_occurs_once = static function (string $haystack, string $needle, string $label) use ($assert) {
-    $count = \substr_count($haystack, $needle);
-    $assert($count === 1, $label, 'Expected one occurrence of ' . $needle . ', found ' . $count);
-};
 $html = <<<HTML
-<div class="compare">
-  <div class="col-wp">
-    <h3>WordPress <span class="tag">2003-2026</span></h3>
-    <ul>
-      <li>Buy domain, buy hosting, install LAMP stack</li>
-      <li>Run 5-minute install</li>
-    </ul>
+<header class="site">
+  <div class="site-inner">
+    <nav class="primary"><ul><li><a href="/">Home</a></li><li><a href="/manifesto/">Manifesto</a></li></ul></nav>
   </div>
-  <div class="col-claude">
-    <h3>The Prompt <span class="tag">2026-</span></h3>
-    <ul>
-      <li>Open Claude Code in a folder</li>
-      <li>Type one sentence describing the site</li>
-    </ul>
+</header>
+<footer class="site">
+  <div class="container">
+    <div class="row">
+      <div>© 2026 The Prompt Liberation Front. Hand-served by your filesystem.</div>
+      <ul class="links"><li><a href="/manifesto/">Manifesto</a></li><li><a href="/proof/">Proof</a></li></ul>
+    </div>
   </div>
-</div>
-<div class="eulogy-frame">
-  <div class="dates">May 27, 2003 - April 29, 2026</div>
-  <h2>For WordPress, with love.</h2>
-  <p>It is rare that a piece of software earns the right to be eulogized.</p>
-  <p class="signoff">- Generated, with feeling, in one prompt.</p>
-</div>
-<ol class="manifesto-list">
-  <li>
-    <div>
-      <h3>The CMS was a workaround for not being able to write HTML.</h3>
-      <p>That excuse no longer holds.</p>
-    </div>
-  </li>
-  <li>
-    <div>
-      <h3>The plugin economy was a tax on not knowing JavaScript.</h3>
-      <p>You paid \$49/year so a contact form could send an email.</p>
-    </div>
-  </li>
-</ol>
+</footer>
+<pre class="prompt"><span class="label">Prompt</span>Generate a static HTML site.</pre>
 HTML;
 $serialized = serialize_blocks(html_to_blocks_raw_handler(['HTML' => $html]));
-$assert_occurs_once($serialized, 'class="compare"', 'compare-wrapper-once');
-$assert_occurs_once($serialized, 'class="col-wp"', 'col-wp-once');
-$assert_occurs_once($serialized, 'class="col-claude"', 'col-claude-once');
-$assert_occurs_once($serialized, 'WordPress <span class="tag">', 'compare-heading-once');
-$assert_occurs_once($serialized, 'May 27, 2003', 'dates-once');
-$assert_occurs_once($serialized, 'It is rare that a piece of software earns the right to be eulogized.', 'eulogy-copy-once');
-$assert_occurs_once($serialized, 'The CMS was a workaround for not being able to write HTML.', 'manifesto-copy-once');
-$assert_occurs_once($serialized, 'manifesto-list', 'classed-list-wrapper-once');
+$assert(!\str_contains($serialized, 'wp:html'), 'static-chrome-avoids-core-html-fallback', $serialized);
+$assert(\str_contains($serialized, 'wp:group'), 'static-chrome-uses-group-blocks');
+$assert(\str_contains($serialized, 'wp:navigation'), 'static-nav-uses-navigation-block');
+$assert(\str_contains($serialized, 'wp:list'), 'footer-links-use-list-block');
+$assert(\str_contains($serialized, 'The Prompt Liberation Front'), 'text-only-div-preserves-footer-copy');
+$assert(\str_contains($serialized, 'class="wp-block-preformatted prompt"'), 'preformatted-rendered-html-preserves-source-class', $serialized);
 echo 'Assertions: ' . $assertions . \PHP_EOL;
 if (empty($failures)) {
     echo 'ALL PASS' . \PHP_EOL;

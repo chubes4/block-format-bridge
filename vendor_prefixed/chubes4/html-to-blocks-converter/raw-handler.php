@@ -112,7 +112,8 @@ function html_to_blocks_convert($html)
                 if ($element->has_attribute('class')) {
                     $existing_class = $block['attrs']['className'] ?? '';
                     $node_class = $element->get_attribute('class');
-                    if (!empty($node_class) && \strpos($existing_class, $node_class) === \false) {
+                    $inner_html = $block['innerHTML'] ?? '';
+                    if (!empty($node_class) && \strpos($existing_class, $node_class) === \false && \strpos($inner_html, $node_class) === \false) {
                         $block['attrs']['className'] = \trim($existing_class . ' ' . $node_class);
                     }
                 }
