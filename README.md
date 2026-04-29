@@ -125,12 +125,17 @@ Install it as a standalone plugin, or bundle it as a Composer package.
 Data Machine v0.88.0+ bundles BFB as its content-format substrate. Data Machine-powered sites do not need the standalone
 BFB plugin unless they also want to manage BFB independently.
 
-The package is not yet published to a Composer mirror, so install it from the GitHub VCS repository:
+### Composer via GitHub VCS
+
+BFB has tagged GitHub releases, but it is not currently published on Packagist, WordPress.org, or wp-packages.org. Until
+one of those mirrors exists, Composer consumers should install it from the GitHub VCS repository:
 
 ```bash
 composer config repositories.bfb vcs https://github.com/chubes4/block-format-bridge
-composer require chubes4/block-format-bridge:dev-main
+composer require chubes4/block-format-bridge:^0.5
 ```
+
+Use `dev-main` only when intentionally tracking unreleased development commits.
 
 Composer autoloads `library.php`, which registers the full bridge service: adapters, `bfb_convert()`,
 `bfb_normalize()`, `bfb_render_post()`, insert-time conversion, and REST `?content_format=`.
@@ -138,6 +143,23 @@ Composer autoloads `library.php`, which registers the full bridge service: adapt
 HTML → Blocks support is bundled via [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
 as a Composer package. You do **not** need the standalone html-to-blocks-converter plugin active for BFB to convert
 HTML/Markdown into block markup.
+
+### Publishing status
+
+- **GitHub releases:** available at https://github.com/chubes4/block-format-bridge/releases.
+- **Packagist:** not published yet; publishing there would keep the Composer package name
+  `chubes4/block-format-bridge`.
+- **WordPress.org:** not published yet; `readme.txt` is present to prepare for plugin-directory review, but no submission
+  has been made from this repository.
+- **wp-packages.org:** not published yet. wp-packages.org mirrors WordPress.org plugins as `wp-plugin/<slug>`, so BFB
+  will only appear there after a WordPress.org plugin-directory listing exists.
+
+If BFB is approved on WordPress.org under the `block-format-bridge` slug, the wp-packages.org install path will be:
+
+```bash
+composer config repositories.wp-packages composer https://repo.wp-packages.org
+composer require wp-plugin/block-format-bridge
+```
 
 ### Build from source
 
