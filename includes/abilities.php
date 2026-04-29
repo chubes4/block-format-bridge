@@ -47,6 +47,7 @@ if ( ! function_exists( 'bfb_register_abilities' ) ) {
 						'content' => array( 'type' => 'string' ),
 						'from'    => array( 'type' => 'string' ),
 						'to'      => array( 'type' => 'string' ),
+						'options' => array( 'type' => 'object' ),
 					),
 					'required'   => array( 'content', 'from', 'to' ),
 				),
@@ -113,12 +114,13 @@ if ( ! function_exists( 'bfb_ability_convert' ) ) {
 		$content = isset( $input['content'] ) ? (string) $input['content'] : '';
 		$from    = isset( $input['from'] ) ? (string) $input['from'] : '';
 		$to      = isset( $input['to'] ) ? (string) $input['to'] : '';
+		$options = isset( $input['options'] ) && is_array( $input['options'] ) ? $input['options'] : array();
 
 		if ( '' === $from || '' === $to ) {
 			return bfb_ability_error( 'bfb_missing_format', 'Both from and to formats are required.' );
 		}
 
-		$result = bfb_convert( $content, $from, $to );
+		$result = bfb_convert( $content, $from, $to, $options );
 		if ( '' === $result && '' !== $content ) {
 			return bfb_ability_error( 'bfb_conversion_failed', sprintf( 'BFB conversion failed for %s -> %s.', $from, $to ) );
 		}

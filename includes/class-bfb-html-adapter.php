@@ -32,7 +32,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 	/**
 	 * @inheritDoc
 	 */
-	public function to_blocks( string $content ): array {
+	public function to_blocks( string $content, array $options = array() ): array {
 		if ( '' === $content ) {
 			return array();
 		}
@@ -42,13 +42,31 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return parse_blocks( $content );
 		}
 
+		$args = array_merge( $options, array( 'HTML' => $content ) );
+
+		/**
+		 * Filters the argument array passed to html-to-blocks-converter.
+		 *
+		 * BFB reserves the `HTML` key for source content. Per-call conversion
+		 * options, such as `mode`, are forwarded alongside it for h2bc to
+		 * consume when supported.
+		 *
+		 * @since 0.5.0
+		 *
+		 * @param array<string, mixed> $args    Raw handler arguments.
+		 * @param string               $content Source HTML.
+		 * @param array<string, mixed> $options Per-call conversion options.
+		 */
+		$args         = (array) apply_filters( 'bfb_html_to_blocks_args', $args, $content, $options );
+		$args['HTML'] = $content;
+
 		if ( function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ) ) {
-			$blocks = \BlockFormatBridge\Vendor\html_to_blocks_raw_handler( array( 'HTML' => $content ) );
+			$blocks = \BlockFormatBridge\Vendor\html_to_blocks_raw_handler( $args );
 			return is_array( $blocks ) ? $blocks : array();
 		}
 
 		if ( function_exists( 'html_to_blocks_raw_handler' ) ) {
-			$blocks = html_to_blocks_raw_handler( array( 'HTML' => $content ) );
+			$blocks = html_to_blocks_raw_handler( $args );
 			return is_array( $blocks ) ? $blocks : array();
 		}
 
@@ -79,7 +97,9 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 	 * resolve to their server-side HTML output. Static blocks pass
 	 * through their inner HTML untouched.
 	 */
-	public function from_blocks( array $blocks ): string {
+	public function from_blocks( array $blocks, array $options = array() ): string {
+		unset( $options );
+
 		if ( empty( $blocks ) ) {
 			return '';
 		}

@@ -84,7 +84,8 @@ function bfb_get_adapter( string $format ) {
 	return 'markdown' === $format ? new stdClass() : null;
 }
 
-function bfb_convert( string $content, string $from, string $to ): string {
+function bfb_convert( string $content, string $from, string $to, array $options = array() ): string {
+	unset( $options );
 	return (string) $GLOBALS['bfb_smoke_conversion_output'];
 }
 

@@ -139,6 +139,7 @@ bfb_capabilities_smoke_assert( false === $report['formats']['html']['pivot'], 'A
 bfb_capabilities_smoke_assert( isset( $report['conversions']['html_to_blocks'] ), 'Capability report should expose HTML to blocks availability.' );
 bfb_capabilities_smoke_assert( 'not_available' === $report['block_coverage']['source'], 'Capability report should include conservative block coverage placeholder.' );
 bfb_capabilities_smoke_assert( 'h2bc#56' === $report['block_coverage']['requires'], 'Capability report should point at the h2bc inventory follow-up.' );
+bfb_capabilities_smoke_assert( in_array( 'bfb_html_to_blocks_args', $report['hooks']['filters'], true ), 'Capability report should list HTML raw-handler args filter.' );
 bfb_capabilities_smoke_assert( in_array( 'bfb_diagnostic', $report['hooks']['actions'], true ), 'Capability report should list observability hooks.' );
 bfb_capabilities_smoke_assert( in_array( 'block-format-bridge/get-capabilities', $report['abilities'], true ), 'Capability report should list the capabilities ability.' );
 bfb_capabilities_smoke_assert( in_array( 'block-format-bridge/convert', $report['abilities'], true ), 'Capability report should list the convert ability.' );
@@ -149,6 +150,7 @@ bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/get-capabi
 bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/convert'] ), 'Convert ability should be registered.' );
 bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/normalize'] ), 'Normalize ability should be registered.' );
 bfb_capabilities_smoke_assert( true === $abilities['block-format-bridge/get-capabilities']['meta']['show_in_rest'], 'Capabilities ability should opt into REST exposure.' );
+bfb_capabilities_smoke_assert( isset( $abilities['block-format-bridge/convert']['input_schema']['properties']['options'] ), 'Convert ability should accept conversion options.' );
 
 $capability_callback = $abilities['block-format-bridge/get-capabilities']['execute_callback'];
 $ability_report      = $capability_callback( array() );
