@@ -82,15 +82,15 @@ function html_to_blocks_convert($html)
         if ($processor->is_tag_closer()) {
             continue;
         }
-        if ($depth !== $top_level_depth) {
-            continue;
-        }
         $tag_name = $processor->get_tag();
         if (!isset($tag_occurrences[$tag_name])) {
             $tag_occurrences[$tag_name] = 0;
             $tag_positions[$tag_name] = html_to_blocks_find_all_tag_positions($html, $tag_name);
         }
         $occurrence = $tag_occurrences[$tag_name]++;
+        if ($depth !== $top_level_depth) {
+            continue;
+        }
         $element_html = html_to_blocks_extract_element_at_occurrence($html, $tag_name, $tag_positions[$tag_name], $occurrence);
         if (!$element_html) {
             \error_log(\sprintf('[HTML to Blocks] Element extraction failed | Tag: %s | Occurrence: %d | HTML preview: %s', $tag_name, $occurrence, \substr($html, 0, 300)));
@@ -338,6 +338,14 @@ function html_to_blocks_normalise_blocks($html)
         $tag_name = $processor->get_tag();
         $tag_upper = \strtoupper($tag_name);
         $is_closer = $processor->is_tag_closer();
+        $occurrence = null;
+        if (!$is_closer) {
+            if (!isset($tag_occurrences[$tag_name])) {
+                $tag_occurrences[$tag_name] = 0;
+                $tag_positions[$tag_name] = html_to_blocks_find_all_tag_positions($html, $tag_name);
+            }
+            $occurrence = $tag_occurrences[$tag_name]++;
+        }
         if ($depth !== $top_level_depth && $depth !== $body_depth) {
             continue;
         }
@@ -362,11 +370,6 @@ function html_to_blocks_normalise_blocks($html)
             if (!$in_paragraph) {
                 $in_paragraph = \true;
             }
-            if (!isset($tag_occurrences[$tag_name])) {
-                $tag_occurrences[$tag_name] = 0;
-                $tag_positions[$tag_name] = html_to_blocks_find_all_tag_positions($html, $tag_name);
-            }
-            $occurrence = $tag_occurrences[$tag_name]++;
             $element_html = html_to_blocks_extract_element_at_occurrence($html, $tag_name, $tag_positions[$tag_name], $occurrence);
             if ($element_html) {
                 $paragraph_buffer .= $element_html;
@@ -379,11 +382,6 @@ function html_to_blocks_normalise_blocks($html)
             }
             $paragraph_buffer = '';
             $in_paragraph = \false;
-            if (!isset($tag_occurrences[$tag_name])) {
-                $tag_occurrences[$tag_name] = 0;
-                $tag_positions[$tag_name] = html_to_blocks_find_all_tag_positions($html, $tag_name);
-            }
-            $occurrence = $tag_occurrences[$tag_name]++;
             $element_html = html_to_blocks_extract_element_at_occurrence($html, $tag_name, $tag_positions[$tag_name], $occurrence);
             if ($element_html) {
                 $output .= $element_html;

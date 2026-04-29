@@ -49,6 +49,53 @@ class HTML_To_Blocks_Block_Factory
         return ['blockName' => $name, 'attrs' => $sanitized_attributes, 'innerBlocks' => $inner_blocks, 'innerHTML' => $inner_html, 'innerContent' => $inner_content];
     }
     /**
+     * Merges a block's base class with the stored custom className attribute.
+     *
+     * @param string $base       Base class list required by the core block.
+     * @param array  $attributes Block attributes.
+     * @return string Merged class list.
+     */
+    private static function merge_block_class(string $base, array $attributes): string
+    {
+        $classes = \preg_split('/\s+/', \trim($base . ' ' . ($attributes['className'] ?? '')));
+        $classes = \is_array($classes) ? \array_filter($classes) : [];
+        return \implode(' ', \array_values(\array_unique($classes)));
+    }
+    /**
+     * Resolves an allowed HTML tagName attribute with a safe default.
+     *
+     * @param string $default    Default tag name.
+     * @param array  $attributes Block attributes.
+     * @param array  $allowed    Allowed lowercase tag names.
+     * @return string Safe tag name.
+     */
+    private static function tag_name(string $default, array $attributes, array $allowed): string
+    {
+        $tag_name = \strtolower((string) ($attributes['tagName'] ?? $default));
+        return \in_array($tag_name, $allowed, \true) ? $tag_name : $default;
+    }
+    /**
+     * Converts an associative attribute map to escaped HTML attributes.
+     *
+     * @param array $attrs HTML attribute map.
+     * @return string Leading-space-prefixed HTML attributes.
+     */
+    private static function html_attrs(array $attrs): string
+    {
+        $html = '';
+        foreach ($attrs as $name => $value) {
+            if ($value === null || $value === '' || $value === \false) {
+                continue;
+            }
+            if ($value === \true) {
+                $html .= ' ' . $name;
+                continue;
+            }
+            $html .= ' ' . $name . '="' . esc_attr($value) . '"';
+        }
+        return $html;
+    }
+    /**
      * Generates the complete HTML for a block without inner blocks
      *
      * @param string $name       Block name
@@ -60,16 +107,15 @@ class HTML_To_Blocks_Block_Factory
         switch ($name) {
             case 'core/paragraph':
                 $content = $attributes['content'] ?? '';
-                $align = '';
+                $html_attrs = ['class' => self::merge_block_class('', $attributes)];
                 if (!empty($attributes['align'])) {
-                    $align = ' style="text-align: ' . esc_attr($attributes['align']) . '"';
+                    $html_attrs['style'] = 'text-align: ' . $attributes['align'];
                 }
-                return '<p' . $align . '>' . $content . '</p>';
+                return '<p' . self::html_attrs($html_attrs) . '>' . $content . '</p>';
             case 'core/heading':
                 $level = $attributes['level'] ?? 2;
                 $content = $attributes['content'] ?? '';
-                $class = 'wp-block-heading';
-                return "<h{$level} class=\"{$class}\">{$content}</h{$level}>";
+                return '<h' . (int) $level . self::html_attrs(['class' => self::merge_block_class('wp-block-heading', $attributes)]) . '>' . $content . '</h' . (int) $level . '>';
             case 'core/list-item':
                 $content = $attributes['content'] ?? '';
                 return '<li>' . $content . '</li>';
@@ -79,25 +125,17 @@ class HTML_To_Blocks_Block_Factory
                 return self::generate_pullquote_html($attributes);
             case 'core/verse':
                 $content = $attributes['content'] ?? '';
-                return '<pre class="wp-block-verse">' . $content . '</pre>';
+                return '<pre' . self::html_attrs(['class' => self::merge_block_class('wp-block-verse', $attributes)]) . '>' . $content . '</pre>';
             case 'core/image':
                 return self::generate_image_html($attributes);
             case 'core/code':
                 $content = esc_html($attributes['content'] ?? '');
-                $extra_class = '';
-                if (!empty($attributes['className']) && \strpos($attributes['className'], 'language-') !== \false) {
-                    $extra_class = ' ' . esc_attr($attributes['className']);
-                }
-                return '<pre class="wp-block-code' . $extra_class . '"><code>' . $content . '</code></pre>';
+                return '<pre' . self::html_attrs(['class' => self::merge_block_class('wp-block-code', $attributes)]) . '><code>' . $content . '</code></pre>';
             case 'core/preformatted':
                 $content = $attributes['content'] ?? '';
-                return '<pre class="wp-block-preformatted">' . $content . '</pre>';
+                return '<pre' . self::html_attrs(['class' => self::merge_block_class('wp-block-preformatted', $attributes)]) . '>' . $content . '</pre>';
             case 'core/separator':
-                $class = 'wp-block-separator';
-                if (!empty($attributes['className'])) {
-                    $class .= ' ' . $attributes['className'];
-                }
-                return '<hr class="' . esc_attr($class) . '"/>';
+                return '<hr' . self::html_attrs(['class' => self::merge_block_class('wp-block-separator', $attributes)]) . '/>';
             case 'core/table':
                 return self::generate_table_html($attributes);
             case 'core/video':
@@ -112,6 +150,8 @@ class HTML_To_Blocks_Block_Factory
                 return self::generate_navigation_link_html($attributes);
             case 'core/shortcode':
                 return $attributes['text'] ?? '';
+            case 'core/html':
+                return $attributes['content'] ?? '';
             default:
                 return '';
         }
@@ -128,10 +168,7 @@ class HTML_To_Blocks_Block_Factory
         $url = $attributes['url'] ?? '';
         $rel = !empty($attributes['rel']) ? ' rel="' . esc_attr($attributes['rel']) . '"' : '';
         $target = !empty($attributes['linkTarget']) ? ' target="' . esc_attr($attributes['linkTarget']) . '"' : '';
-        $class_name = 'wp-block-button';
-        if (!empty($attributes['className'])) {
-            $class_name .= ' ' . $attributes['className'];
-        }
+        $class_name = self::merge_block_class('wp-block-button', $attributes);
         return '<div class="' . esc_attr($class_name) . '"><a class="wp-block-button__link wp-element-button" href="' . esc_url($url) . '"' . $target . $rel . '>' . $text . '</a></div>';
     }
     /**
@@ -144,7 +181,7 @@ class HTML_To_Blocks_Block_Factory
     {
         $value = $attributes['value'] ?? '';
         $citation = !empty($attributes['citation']) ? '<cite>' . $attributes['citation'] . '</cite>' : '';
-        return '<figure class="wp-block-pullquote"><blockquote>' . $value . $citation . '</blockquote></figure>';
+        return '<figure' . self::html_attrs(['class' => self::merge_block_class('wp-block-pullquote', $attributes)]) . '><blockquote>' . $value . $citation . '</blockquote></figure>';
     }
     /**
      * Generates HTML for image block
@@ -169,7 +206,7 @@ class HTML_To_Blocks_Block_Factory
         if (!empty($attributes['caption'])) {
             $figcaption = '<figcaption class="wp-element-caption">' . $attributes['caption'] . '</figcaption>';
         }
-        $class = 'wp-block-image';
+        $class = self::merge_block_class('wp-block-image', $attributes);
         if (!empty($attributes['align'])) {
             $class .= ' align' . $attributes['align'];
         }
@@ -183,7 +220,7 @@ class HTML_To_Blocks_Block_Factory
      */
     private static function generate_table_html($attributes)
     {
-        $html = '<figure class="wp-block-table"><table>';
+        $html = '<figure' . self::html_attrs(['class' => self::merge_block_class('wp-block-table', $attributes)]) . '><table>';
         if (!empty($attributes['head'])) {
             $html .= '<thead>';
             foreach ($attributes['head'] as $row) {
@@ -250,7 +287,7 @@ class HTML_To_Blocks_Block_Factory
                 $attrs .= ' ' . $key . '="' . esc_attr($attributes[$key]) . '"';
             }
         }
-        $html = '<figure class="wp-block-video"><video src="' . esc_url($src) . '"' . $attrs . '></video>';
+        $html = '<figure' . self::html_attrs(['class' => self::merge_block_class('wp-block-video', $attributes)]) . '><video src="' . esc_url($src) . '"' . $attrs . '></video>';
         if (!empty($attributes['caption'])) {
             $html .= '<figcaption class="wp-element-caption">' . $attributes['caption'] . '</figcaption>';
         }
@@ -278,7 +315,7 @@ class HTML_To_Blocks_Block_Factory
         if (!empty($attributes['preload'])) {
             $attrs .= ' preload="' . esc_attr($attributes['preload']) . '"';
         }
-        $html = '<figure class="wp-block-audio"><audio src="' . esc_url($src) . '"' . $attrs . '></audio>';
+        $html = '<figure' . self::html_attrs(['class' => self::merge_block_class('wp-block-audio', $attributes)]) . '><audio src="' . esc_url($src) . '"' . $attrs . '></audio>';
         if (!empty($attributes['caption'])) {
             $html .= '<figcaption class="wp-element-caption">' . $attributes['caption'] . '</figcaption>';
         }
@@ -299,7 +336,7 @@ class HTML_To_Blocks_Block_Factory
         }
         $name = $attributes['fileName'] ?? \basename(\strtok($href, '?#'));
         $target = !empty($attributes['textLinkTarget']) ? ' target="' . esc_attr($attributes['textLinkTarget']) . '"' : '';
-        $html = '<div class="wp-block-file"><a href="' . esc_url($href) . '"' . $target . '>' . $name . '</a>';
+        $html = '<div' . self::html_attrs(['class' => self::merge_block_class('wp-block-file', $attributes)]) . '><a href="' . esc_url($href) . '"' . $target . '>' . $name . '</a>';
         if (!isset($attributes['showDownloadButton']) || $attributes['showDownloadButton']) {
             $html .= '<a href="' . esc_url($href) . '" class="wp-block-file__button wp-element-button" download>Download</a>';
         }
@@ -319,7 +356,7 @@ class HTML_To_Blocks_Block_Factory
             return '';
         }
         $provider = $attributes['providerNameSlug'] ?? '';
-        $class = 'wp-block-embed';
+        $class = self::merge_block_class('wp-block-embed', $attributes);
         if ($provider !== '') {
             $class .= ' is-provider-' . sanitize_html_class($provider) . ' wp-block-embed-' . sanitize_html_class($provider);
         }
@@ -333,7 +370,7 @@ class HTML_To_Blocks_Block_Factory
      */
     private static function generate_navigation_link_html($attributes)
     {
-        return '<li class="wp-block-navigation-item wp-block-navigation-link">' . self::generate_navigation_link_anchor_html($attributes) . '</li>';
+        return '<li' . self::html_attrs(['class' => self::merge_block_class('wp-block-navigation-item wp-block-navigation-link', $attributes)]) . '>' . self::generate_navigation_link_anchor_html($attributes) . '</li>';
     }
     /**
      * Generates the anchor HTML shared by navigation-link and navigation-submenu.
@@ -362,28 +399,28 @@ class HTML_To_Blocks_Block_Factory
         switch ($name) {
             case 'core/list':
                 $tag = !empty($attributes['ordered']) ? 'ol' : 'ul';
-                $class = 'wp-block-list';
-                return ['opening' => "<{$tag} class=\"{$class}\">", 'closing' => "</{$tag}>"];
+                return ['opening' => '<' . $tag . self::html_attrs(['class' => self::merge_block_class('wp-block-list', $attributes)]) . '>', 'closing' => "</{$tag}>"];
             case 'core/list-item':
                 $content = $attributes['content'] ?? '';
                 return ['opening' => '<li>' . $content, 'closing' => '</li>'];
             case 'core/quote':
-                return ['opening' => '<blockquote class="wp-block-quote">', 'closing' => '</blockquote>'];
+                return ['opening' => '<blockquote' . self::html_attrs(['class' => self::merge_block_class('wp-block-quote', $attributes)]) . '>', 'closing' => '</blockquote>'];
             case 'core/buttons':
-                return ['opening' => '<div class="wp-block-buttons">', 'closing' => '</div>'];
+                return ['opening' => '<div' . self::html_attrs(['class' => self::merge_block_class('wp-block-buttons', $attributes)]) . '>', 'closing' => '</div>'];
             case 'core/details':
                 $summary = $attributes['summary'] ?? '';
-                return ['opening' => '<details class="wp-block-details"><summary>' . $summary . '</summary>', 'closing' => '</details>'];
+                return ['opening' => '<details' . self::html_attrs(['class' => self::merge_block_class('wp-block-details', $attributes)]) . '><summary>' . $summary . '</summary>', 'closing' => '</details>'];
             case 'core/group':
-                return ['opening' => '<div class="wp-block-group">', 'closing' => '</div>'];
+                $tag = self::tag_name('div', $attributes, ['div', 'section', 'main', 'article', 'aside', 'header', 'footer', 'nav']);
+                return ['opening' => '<' . $tag . self::html_attrs(['class' => self::merge_block_class('wp-block-group', $attributes), 'aria-label' => $attributes['ariaLabel'] ?? null]) . '>', 'closing' => '</' . $tag . '>'];
             case 'core/column':
-                return ['opening' => '<div class="wp-block-column">', 'closing' => '</div>'];
+                return ['opening' => '<div' . self::html_attrs(['class' => self::merge_block_class('wp-block-column', $attributes)]) . '>', 'closing' => '</div>'];
             case 'core/columns':
-                return ['opening' => '<div class="wp-block-columns">', 'closing' => '</div>'];
+                return ['opening' => '<div' . self::html_attrs(['class' => self::merge_block_class('wp-block-columns', $attributes)]) . '>', 'closing' => '</div>'];
             case 'core/gallery':
-                $class = 'wp-block-gallery has-nested-images columns-default is-cropped';
+                $class = self::merge_block_class('wp-block-gallery has-nested-images columns-default is-cropped', $attributes);
                 if (!empty($attributes['columns'])) {
-                    $class = 'wp-block-gallery has-nested-images columns-' . (int) $attributes['columns'] . ' is-cropped';
+                    $class = self::merge_block_class('wp-block-gallery has-nested-images columns-' . (int) $attributes['columns'] . ' is-cropped', $attributes);
                 }
                 return ['opening' => '<figure class="' . esc_attr($class) . '">', 'closing' => '</figure>'];
             case 'core/media-text':
@@ -391,17 +428,16 @@ class HTML_To_Blocks_Block_Factory
                 $media_type = $attributes['mediaType'] ?? 'image';
                 $media_alt = esc_attr($attributes['mediaAlt'] ?? '');
                 $media_html = $media_type === 'video' ? '<video src="' . esc_url($media_url) . '" controls></video>' : '<img src="' . esc_url($media_url) . '" alt="' . $media_alt . '"/>';
-                $class = 'wp-block-media-text is-stacked-on-mobile';
+                $class = self::merge_block_class('wp-block-media-text is-stacked-on-mobile', $attributes);
                 if (($attributes['mediaPosition'] ?? 'left') === 'right') {
                     $class .= ' has-media-on-the-right';
                 }
                 return ['opening' => '<div class="' . esc_attr($class) . '"><figure class="wp-block-media-text__media">' . $media_html . '</figure><div class="wp-block-media-text__content">', 'closing' => '</div></div>'];
             case 'core/navigation':
-                $aria_label = !empty($attributes['ariaLabel']) ? ' aria-label="' . esc_attr($attributes['ariaLabel']) . '"' : '';
-                return ['opening' => '<nav class="wp-block-navigation"' . $aria_label . '><ul class="wp-block-navigation__container wp-block-navigation">', 'closing' => '</ul></nav>'];
+                return ['opening' => '<nav' . self::html_attrs(['class' => self::merge_block_class('wp-block-navigation', $attributes), 'aria-label' => $attributes['ariaLabel'] ?? null]) . '><ul class="wp-block-navigation__container wp-block-navigation">', 'closing' => '</ul></nav>'];
             case 'core/navigation-submenu':
                 $link = self::generate_navigation_link_anchor_html($attributes);
-                return ['opening' => '<li class="wp-block-navigation-item has-child wp-block-navigation-submenu">' . $link . '<ul class="wp-block-navigation__submenu-container">', 'closing' => '</ul></li>'];
+                return ['opening' => '<li' . self::html_attrs(['class' => self::merge_block_class('wp-block-navigation-item has-child wp-block-navigation-submenu', $attributes)]) . '>' . $link . '<ul class="wp-block-navigation__submenu-container">', 'closing' => '</ul></li>'];
             default:
                 return ['opening' => '', 'closing' => ''];
         }
@@ -461,7 +497,7 @@ class HTML_To_Blocks_Block_Factory
     /**
      * Gets the inner HTML content from an element
      *
-     * @param HTML_To_Blocks_HTML_Element|string $element Element or HTML string
+     * @param mixed $element Element or HTML string
      * @return string Inner HTML
      */
     public static function get_inner_html($element)
@@ -478,7 +514,7 @@ class HTML_To_Blocks_Block_Factory
     /**
      * Gets text content from an element
      *
-     * @param HTML_To_Blocks_HTML_Element|string $element Element or HTML string
+     * @param mixed $element Element or HTML string
      * @return string Text content
      */
     public static function get_text_content($element)

@@ -139,7 +139,7 @@ $smoke_assert(($stack_group['attrs']['layout']['orientation'] ?? '') === 'vertic
 $smoke_assert(($stack_group['attrs']['layout']['flexWrap'] ?? '') === 'nowrap', 'group-preserves-layout-nowrap');
 $smoke_assert(($stack_group['attrs']['layout']['justifyContent'] ?? '') === 'space-between', 'group-preserves-layout-justification');
 $smoke_assert(($stack_group['attrs']['className'] ?? '') === 'custom-stack', 'group-filters-generated-layout-classes');
-$main = new Layout_Smoke_Element('main', ['class' => 'site-shell'], '<section class="hero"><h1>FSE Template Smoke</h1><p>Template raw HTML should become blocks.</p></section>');
+$main = new Layout_Smoke_Element('main', ['class' => 'site-shell'], '<section class="hero"><h1>Site Editor Template Smoke</h1><p>Template raw HTML should become blocks.</p></section>');
 $main_transform = $find_transform($main, 'core/group');
 $main_group = $main_transform ? \call_user_func($main_transform['transform'], $main, $handler) : null;
 $landmark_tags = ['header', 'footer', 'article', 'aside', 'nav'];

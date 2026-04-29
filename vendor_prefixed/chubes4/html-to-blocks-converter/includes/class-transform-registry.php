@@ -13,7 +13,7 @@ if (!\defined('ABSPATH')) {
 }
 class HTML_To_Blocks_Transform_Registry
 {
-    private static $transforms = null;
+    private static ?array $transforms = null;
     /**
      * Gets all raw transforms for core blocks
      * Sorted by priority (lower = higher priority)
@@ -438,8 +438,10 @@ class HTML_To_Blocks_Transform_Registry
      */
     private static function is_file_link($element): bool
     {
-        $href = \strtolower(\strtok($element->get_attribute('href'), '?#'));
-        if (\preg_match('/\.(?:pdf|docx?|pptx?|xlsx?|zip|rar|7z|txt|csv|ics|epub)$/', $href)) {
+        $href = (string) $element->get_attribute('href');
+        $href_path = \strtok($href, '?#');
+        $href_path = \false === $href_path ? '' : \strtolower($href_path);
+        if (\preg_match('/\.(?:pdf|docx?|pptx?|xlsx?|zip|rar|7z|txt|csv|ics|epub)$/', $href_path)) {
             return \true;
         }
         $class = $element->has_attribute('class') ? $element->get_attribute('class') : '';
@@ -692,7 +694,15 @@ class HTML_To_Blocks_Transform_Registry
         $attributes = [];
         if (\preg_match_all('/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s"\'>]+))/', $attribute_string, $matches, \PREG_SET_ORDER)) {
             foreach ($matches as $match) {
-                $attributes[\strtolower($match[1])] = \html_entity_decode($match[3] !== '' ? $match[3] : ($match[4] !== '' ? $match[4] : $match[5]), \ENT_QUOTES, 'UTF-8');
+                $value = '';
+                if (isset($match[3]) && '' !== $match[3]) {
+                    $value = $match[3];
+                } elseif (isset($match[4]) && '' !== $match[4]) {
+                    $value = $match[4];
+                } elseif (isset($match[5])) {
+                    $value = $match[5];
+                }
+                $attributes[\strtolower($match[1])] = \html_entity_decode($value, \ENT_QUOTES, 'UTF-8');
             }
         }
         return $attributes;
@@ -744,6 +754,9 @@ class HTML_To_Blocks_Transform_Registry
     private static function button_block_class_name(string $class_name): string
     {
         $classes = \preg_split('/\s+/', \trim($class_name));
+        if (\false === $classes) {
+            return '';
+        }
         $classes = \array_filter($classes, function ($class) {
             return !\in_array($class, ['wp-block-button__link', 'wp-element-button'], \true);
         });
@@ -1089,7 +1102,7 @@ class HTML_To_Blocks_Transform_Registry
         $close_pos = \stripos($content, $close_tag);
         if ($close_pos !== \false) {
             $inner_html = \substr($content, 0, $close_pos);
-            $offset += $matches[0][1] + \strlen($matches[0][0]) - \strlen($content) + $close_pos + \strlen($close_tag);
+            $offset = (int) ($offset + $matches[0][1] + \strlen($matches[0][0]) - \strlen($content) + $close_pos + \strlen($close_tag));
             return \trim($inner_html);
         }
         return '';
@@ -1225,6 +1238,9 @@ class HTML_To_Blocks_Transform_Registry
     private static function safe_block_class_name(string $class_name): string
     {
         $classes = \preg_split('/\s+/', \trim($class_name));
+        if (\false === $classes) {
+            return '';
+        }
         $classes = \array_filter($classes, function ($class) {
             return $class !== '' && \preg_match('/^[A-Za-z0-9_-]+$/', $class) === 1 && \preg_match('/^align(?:wide|full|left|center|right)$/i', $class) !== 1 && \preg_match('/^has-(?:[A-Za-z0-9_-]+-(?:color|background-color|font-size)|text-color|background|custom-font-size)$/i', $class) !== 1 && \preg_match('/^is-(?:layout-(?:flow|constrained|flex)|vertical|horizontal|nowrap|content-justification-[A-Za-z0-9_-]+)$/i', $class) !== 1 && \stripos($class, 'wp-block-') !== 0;
         });
