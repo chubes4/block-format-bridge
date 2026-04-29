@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b757b1e180efb071bc5ca93cd0faf866",
+    "content-hash": "17bb65e574fb5f8bb9fff608767bf4a3",
     "packages": [
         {
             "name": "dflydev/dot-access-data",
@@ -722,21 +722,22 @@
     "packages-dev": [
         {
             "name": "chubes4/html-to-blocks-converter",
-            "version": "v0.6.0",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chubes4/html-to-blocks-converter.git",
-                "reference": "923f8c4195dab63c0624a703d4182703504dcb8f"
+                "reference": "efdd877c8458f5ac2517bf526ca3657ad33889d5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/923f8c4195dab63c0624a703d4182703504dcb8f",
-                "reference": "923f8c4195dab63c0624a703d4182703504dcb8f",
+                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/efdd877c8458f5ac2517bf526ca3657ad33889d5",
+                "reference": "efdd877c8458f5ac2517bf526ca3657ad33889d5",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.4"
             },
+            "default-branch": true,
             "type": "wordpress-plugin",
             "autoload": {
                 "files": [
@@ -755,10 +756,10 @@
             "description": "Convert raw HTML into Gutenberg block arrays using WordPress' HTML API.",
             "homepage": "https://github.com/chubes4/html-to-blocks-converter",
             "support": {
-                "source": "https://github.com/chubes4/html-to-blocks-converter/tree/v0.6.0",
+                "source": "https://github.com/chubes4/html-to-blocks-converter/tree/main",
                 "issues": "https://github.com/chubes4/html-to-blocks-converter/issues"
             },
-            "time": "2026-04-28T20:00:21+00:00"
+            "time": "2026-04-29T19:48:53+00:00"
         },
         {
             "name": "fidry/console",
@@ -2484,7 +2485,9 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {},
+    "stability-flags": {
+        "chubes4/html-to-blocks-converter": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

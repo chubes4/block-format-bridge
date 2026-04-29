@@ -49,7 +49,7 @@ class GutenbergRawHandlerParityUnitTest extends WP_UnitTestCase
         $this->assertStringContainsString('deterministic static HTML', $doc);
         $this->assertStringContainsString('Google Docs', $doc);
         $this->assertStringContainsString('Microsoft Word', $doc);
-        $this->assertStringContainsString('Dynamic, contextual, or FSE block inference', $doc);
+        $this->assertStringContainsString('Dynamic, contextual, or Site Editor block inference', $doc);
     }
     /**
      * Gutenberg-compatible static fixture matrix.

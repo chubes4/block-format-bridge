@@ -72,10 +72,23 @@ function html_to_blocks_convert_content(string $content): string
 {
     return $content;
 }
+function html_to_blocks_smoke_registered_callbacks(): array
+{
+    global $registered_filters;
+    return array_column($registered_filters, 1);
+}
 // Load the production hook file as if php-scoper had placed it in this namespace.
 $source = file_get_contents(dirname(__DIR__) . '/includes/hooks.php');
+if (!is_string($source) || $source === '') {
+    fwrite(\STDERR, "FAIL: unable to read includes/hooks.php.\n");
+    exit(1);
+}
 $test_namespace = __NAMESPACE__;
 $source = preg_replace('/^<\?php\s*(?:namespace\s+[^;]+;\s*)?/', "<?php\nnamespace {$test_namespace};\n", $source, 1);
+if (!is_string($source)) {
+    fwrite(\STDERR, "FAIL: unable to rewrite includes/hooks.php for scoped smoke.\n");
+    exit(1);
+}
 // Keep WordPress hook calls inside the synthetic namespace so the stubs above
 // capture the exact callback strings that would be handed to WordPress.
 $source = str_replace(array('\add_filter(', '\has_filter(', '\add_action(', '\has_action(', '\get_post_types(', '\apply_filters('), array('add_filter(', 'has_filter(', 'add_action(', 'has_action(', 'get_post_types(', 'apply_filters('), $source);
@@ -83,8 +96,15 @@ $tmp = tempnam(sys_get_temp_dir(), 'h2bc-scoped-hooks-');
 file_put_contents($tmp, $source);
 require $tmp;
 unlink($tmp);
-html_to_blocks_register_rest_filters();
-$callbacks = array_column($registered_filters, 1);
+$register_rest_filters = __NAMESPACE__ . '\html_to_blocks_register_rest_filters';
+// @phpstan-ignore-next-line Dynamic require loads this scoped callback at runtime.
+if (!is_callable($register_rest_filters)) {
+    fwrite(\STDERR, "FAIL: scoped html_to_blocks_register_rest_filters() was not loaded.\n");
+    exit(1);
+}
+// @phpstan-ignore-next-line Dynamic require loads this scoped callback at runtime.
+call_user_func($register_rest_filters);
+$callbacks = html_to_blocks_smoke_registered_callbacks();
 if (!in_array(__NAMESPACE__ . '\html_to_blocks_convert_rest_response', $callbacks, \true)) {
     fwrite(\STDERR, "FAIL: scoped REST callback was not registered.\n");
     exit(1);

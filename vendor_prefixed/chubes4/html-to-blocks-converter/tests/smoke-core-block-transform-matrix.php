@@ -15,10 +15,6 @@ namespace BlockFormatBridge\Vendor;
  */
 // phpcs:disable
 $repo_root = \dirname(__DIR__);
-$registry_source = \file_get_contents($repo_root . '/includes/class-transform-registry.php');
-$raw_source = \file_get_contents($repo_root . '/raw-handler.php');
-$coverage_doc = \file_get_contents($repo_root . '/docs/core-block-coverage.md');
-$fse_doc = \file_get_contents($repo_root . '/docs/fse-boundary.md');
 $failures = [];
 $assertions = 0;
 $assert = static function ($condition, $label, $detail = '') use (&$failures, &$assertions) {
@@ -30,6 +26,15 @@ $assert = static function ($condition, $label, $detail = '') use (&$failures, &$
 $assert_contains = static function (string $haystack, string $needle, string $label) use ($assert) {
     $assert(\strpos($haystack, $needle) !== \false, $label, 'Missing ' . $needle);
 };
+$read_required_file = static function (string $path) use ($assert): string {
+    $contents = \file_get_contents($path);
+    $assert(\is_string($contents) && $contents !== '', \basename($path) . '-readable', 'Unable to read ' . $path);
+    return \is_string($contents) ? $contents : '';
+};
+$registry_source = $read_required_file($repo_root . '/includes/class-transform-registry.php');
+$raw_source = $read_required_file($repo_root . '/raw-handler.php');
+$coverage_doc = $read_required_file($repo_root . '/docs/core-block-coverage.md');
+$site_editor_doc = $read_required_file($repo_root . '/docs/site-editor-boundary.md');
 $raw_transform_blocks = [];
 \preg_match_all("/'blockName'\\s*=>\\s*'([^']+)'/", $registry_source, $matches);
 foreach ($matches[1] as $block_name) {
@@ -63,19 +68,19 @@ foreach ($context_required_blocks as $block_name) {
 }
 foreach (['core/site-title', 'core/post-title', 'core/query', 'core/comments'] as $doc_example) {
     $assert_contains($coverage_doc, '`' . $doc_example, 'coverage-doc-names-context-required-' . $doc_example);
-    $assert_contains($fse_doc, '`' . $doc_example, 'fse-doc-names-context-required-' . $doc_example);
+    $assert_contains($site_editor_doc, '`' . $doc_example, 'site-editor-doc-names-context-required-' . $doc_example);
 }
 foreach (['core/pattern', 'core/template-part'] as $doc_example) {
     $assert_contains($coverage_doc, '`' . $doc_example, 'coverage-doc-names-explicit-marker-' . $doc_example);
-    $assert_contains($fse_doc, '`' . $doc_example, 'fse-doc-names-explicit-marker-' . $doc_example);
+    $assert_contains($site_editor_doc, '`' . $doc_example, 'site-editor-doc-names-explicit-marker-' . $doc_example);
 }
 foreach (['core/navigation', 'core/navigation-link', 'core/navigation-submenu'] as $doc_example) {
     $assert_contains($coverage_doc, '`' . $doc_example, 'coverage-doc-names-static-navigation-' . $doc_example);
 }
 $assert_contains($coverage_doc, 'Persistent `core/navigation` entities', 'coverage-doc-names-persistent-navigation-boundary');
-$assert_contains($fse_doc, 'Persistent `core/navigation', 'fse-doc-names-persistent-navigation-boundary');
+$assert_contains($site_editor_doc, 'Persistent `core/navigation', 'site-editor-doc-names-persistent-navigation-boundary');
 $assert_contains($coverage_doc, 'Theme And Context Block Classification', 'coverage-doc-classifies-theme-context-blocks');
-$assert_contains($fse_doc, 'Theme Block Classification', 'fse-doc-classifies-theme-blocks');
+$assert_contains($site_editor_doc, 'Theme Block Classification', 'site-editor-doc-classifies-theme-blocks');
 $future_candidates = ['Additional embed providers', 'Additional static layout patterns', 'Static social links'];
 foreach ($future_candidates as $future_candidate) {
     $assert_contains($coverage_doc, $future_candidate, 'doc-names-future-candidate-' . $future_candidate);
