@@ -130,6 +130,12 @@ class HTML_To_Blocks_Transform_Registry
         if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
             $attributes['anchor'] = $element->get_attribute('id');
         }
+        if ($element->has_attribute('class')) {
+            $class_name = self::safe_block_class_name($element->get_attribute('class'));
+            if ($class_name !== '') {
+                $attributes['className'] = $class_name;
+            }
+        }
         return HTML_To_Blocks_Block_Factory::create_block('core/navigation', $attributes, self::create_navigation_items_from_list($list, \true));
     }
     /**
@@ -659,7 +665,11 @@ class HTML_To_Blocks_Transform_Registry
      */
     private static function get_button_transforms()
     {
-        return [['blockName' => 'core/buttons', 'priority' => 9, 'selector' => 'a', 'isMatch' => function ($element) {
+        return [['blockName' => 'core/buttons', 'priority' => 8, 'selector' => 'div,p', 'isMatch' => function ($element) {
+            return self::is_button_anchor_container($element);
+        }, 'transform' => function ($element) {
+            return self::create_buttons_block_from_container($element);
+        }], ['blockName' => 'core/buttons', 'priority' => 9, 'selector' => 'a', 'isMatch' => function ($element) {
             return $element->get_tag_name() === 'A' && self::is_button_like_anchor($element);
         }, 'transform' => function ($element) {
             return self::create_buttons_block_from_anchor($element);
@@ -670,6 +680,49 @@ class HTML_To_Blocks_Transform_Registry
             $anchor = self::get_single_anchor_from_html($element->get_inner_html());
             return self::create_buttons_block_from_anchor($anchor);
         }]];
+    }
+    /**
+     * Checks whether an element is a simple row/container of button-like anchors.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Element to inspect.
+     * @return bool True when the container can safely become core/buttons.
+     */
+    private static function is_button_anchor_container($element): bool
+    {
+        if (!\in_array($element->get_tag_name(), ['DIV', 'P'], \true)) {
+            return \false;
+        }
+        $children = self::get_direct_anchor_children_from_html($element->get_inner_html());
+        if (\count($children) < 2) {
+            return \false;
+        }
+        foreach ($children as $child) {
+            if (!self::is_button_like_anchor($child)) {
+                return \false;
+            }
+        }
+        return \true;
+    }
+    /**
+     * Gets direct anchor children when the HTML contains only sibling anchors and whitespace.
+     *
+     * @param string $html Inner HTML to inspect.
+     * @return array Anchor elements.
+     */
+    private static function get_direct_anchor_children_from_html(string $html): array
+    {
+        $remaining = $html;
+        $anchors = [];
+        if (!\preg_match_all('/<a\s([^>]*)>(.*?)<\/a>/is', $html, $matches, \PREG_SET_ORDER)) {
+            return [];
+        }
+        foreach ($matches as $match) {
+            $outer = $match[0];
+            $attributes = self::parse_attribute_string($match[1]);
+            $anchors[] = new HTML_To_Blocks_HTML_Element('a', $attributes, $outer, \trim($match[2]));
+            $remaining = \str_replace($outer, '', $remaining);
+        }
+        return \trim($remaining) === '' ? $anchors : [];
     }
     /**
      * Gets a single anchor element when the HTML is only one anchor.
@@ -732,6 +785,45 @@ class HTML_To_Blocks_Transform_Registry
      */
     private static function create_buttons_block_from_anchor($anchor): array
     {
+        return self::create_buttons_block_from_anchors([$anchor]);
+    }
+    /**
+     * Creates a buttons wrapper with one button child per direct anchor.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Container element.
+     * @return array Block array.
+     */
+    private static function create_buttons_block_from_container($element): array
+    {
+        $attributes = [];
+        if ($element->has_attribute('class')) {
+            $attributes['className'] = $element->get_attribute('class');
+        }
+        return self::create_buttons_block_from_anchors(self::get_direct_anchor_children_from_html($element->get_inner_html()), $attributes);
+    }
+    /**
+     * Creates a buttons wrapper with button children from anchors.
+     *
+     * @param array $anchors            Anchor elements.
+     * @param array $wrapper_attributes Wrapper block attributes.
+     * @return array Block array.
+     */
+    private static function create_buttons_block_from_anchors(array $anchors, array $wrapper_attributes = []): array
+    {
+        $buttons = [];
+        foreach ($anchors as $anchor) {
+            $buttons[] = self::create_button_block_from_anchor($anchor);
+        }
+        return HTML_To_Blocks_Block_Factory::create_block('core/buttons', $wrapper_attributes, $buttons);
+    }
+    /**
+     * Creates one button block from an anchor.
+     *
+     * @param HTML_To_Blocks_HTML_Element $anchor Anchor element.
+     * @return array Block array.
+     */
+    private static function create_button_block_from_anchor($anchor): array
+    {
         $attributes = ['text' => $anchor->get_inner_html()];
         if ($anchor->has_attribute('href')) {
             $attributes['url'] = $anchor->get_attribute('href');
@@ -745,8 +837,7 @@ class HTML_To_Blocks_Transform_Registry
         if ($anchor->has_attribute('class')) {
             $attributes['className'] = self::button_block_class_name($anchor->get_attribute('class'));
         }
-        $button = HTML_To_Blocks_Block_Factory::create_block('core/button', $attributes);
-        return HTML_To_Blocks_Block_Factory::create_block('core/buttons', [], [$button]);
+        return HTML_To_Blocks_Block_Factory::create_block('core/button', $attributes);
     }
     /**
      * Converts anchor classes to button block classes.

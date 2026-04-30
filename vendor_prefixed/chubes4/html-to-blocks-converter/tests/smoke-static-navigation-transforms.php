@@ -45,7 +45,7 @@ class WP_Block_Type_Registry
     }
     public function get_registered($name)
     {
-        $attributes = \array_fill_keys(['anchor', 'ariaLabel', 'isTopLevel', 'kind', 'label', 'opensInNewTab', 'rel', 'title', 'url'], ['type' => 'string']);
+        $attributes = \array_fill_keys(['anchor', 'ariaLabel', 'className', 'isTopLevel', 'kind', 'label', 'opensInNewTab', 'rel', 'title', 'url'], ['type' => 'string']);
         $attributes['isTopLevel'] = ['type' => 'boolean'];
         $attributes['opensInNewTab'] = ['type' => 'boolean'];
         return (object) ['attributes' => $attributes];
@@ -133,12 +133,15 @@ $ul = static function (array $items) {
 $about = $li([$anchor('/about/', 'About')]);
 $contact = $li([$anchor('/contact/', 'Contact', ['target' => '_blank', 'rel' => 'noopener'])]);
 $flat_list = $ul([$about, $contact]);
-$flat_nav = new Static_Nav_Smoke_Element('nav', ['aria-label' => 'Primary'], $flat_list->get_outer_html(), [$flat_list]);
+$flat_nav = new Static_Nav_Smoke_Element('nav', ['aria-label' => 'Primary', 'class' => 'wp-block-navigation primary alignwide'], $flat_list->get_outer_html(), [$flat_list]);
 $transform = $find_transform($flat_nav, 'core/navigation');
 $flat_block = $transform ? \call_user_func($transform['transform'], $flat_nav) : null;
 $smoke_assert($transform !== null, 'flat-nav-transform-selected');
 $smoke_assert($flat_block['blockName'] === 'core/navigation', 'flat-nav-block-name');
 $smoke_assert(($flat_block['attrs']['ariaLabel'] ?? '') === 'Primary', 'flat-nav-aria-label-preserved');
+$smoke_assert(($flat_block['attrs']['className'] ?? '') === 'primary', 'flat-nav-safe-class-preserved', \json_encode($flat_block['attrs'] ?? []));
+$smoke_assert(\str_contains($flat_block['innerHTML'], '<nav class="wp-block-navigation primary"'), 'flat-nav-class-in-saved-wrapper', $flat_block['innerHTML'] ?? '');
+$smoke_assert(\str_contains($flat_block['innerContent'][0] ?? '', '<nav class="wp-block-navigation primary"'), 'flat-nav-class-in-canonical-opening', $flat_block['innerContent'][0] ?? '');
 $smoke_assert(\count($flat_block['innerBlocks']) === 2, 'flat-nav-link-count');
 $smoke_assert($flat_block['innerBlocks'][0]['blockName'] === 'core/navigation-link', 'flat-nav-first-link-block');
 $smoke_assert($flat_block['innerBlocks'][0]['attrs']['url'] === '/about/', 'flat-nav-first-url');
