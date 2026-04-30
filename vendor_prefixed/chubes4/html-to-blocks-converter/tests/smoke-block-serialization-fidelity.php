@@ -83,14 +83,16 @@ $assert = static function ($condition, $label, $detail = '') use (&$failures, &$
     }
 };
 $paragraph = HTML_To_Blocks_Block_Factory::create_block('core/paragraph', ['content' => 'A generated static website.', 'className' => 'lede']);
+$styled_paragraph = HTML_To_Blocks_Block_Factory::create_block('core/paragraph', ['content' => 'Styled paragraph.', 'className' => 'center', 'style' => ['color' => ['text' => 'var(--muted)'], 'spacing' => ['margin' => ['top' => '36px']]]]);
 $heading = HTML_To_Blocks_Block_Factory::create_block('core/heading', ['level' => 1, 'content' => 'WordPress is officially dead.', 'className' => 'hero-title']);
-$group = HTML_To_Blocks_Block_Factory::create_block('core/group', ['className' => 'hero', 'tagName' => 'section'], [$heading, $paragraph]);
+$group = HTML_To_Blocks_Block_Factory::create_block('core/group', ['className' => 'hero', 'tagName' => 'section'], [$heading, $paragraph, $styled_paragraph]);
 $list = HTML_To_Blocks_Block_Factory::create_block('core/list', ['ordered' => \true, 'className' => 'manifesto-list'], [HTML_To_Blocks_Block_Factory::create_block('core/list-item', ['content' => 'One'])]);
 $preformatted = HTML_To_Blocks_Block_Factory::create_block('core/preformatted', ['content' => '<span class="label">The Prompt</span>Generate a site.', 'className' => 'prompt']);
 $serialized = serialize_blocks([$group, $list, $preformatted]);
 $assert(\strpos($serialized, '<section class="wp-block-group hero">') !== \false, 'group-static-html-uses-tag-and-class', $serialized);
 $assert(\strpos($serialized, '<h1 class="wp-block-heading hero-title">WordPress is officially dead.</h1>') !== \false, 'heading-static-html-preserves-class', $serialized);
 $assert(\strpos($serialized, '<p class="lede">A generated static website.</p>') !== \false, 'paragraph-static-html-preserves-class', $serialized);
+$assert(\strpos($serialized, '<p class="center" style="color:var(--muted);margin-top:36px">Styled paragraph.</p>') !== \false, 'paragraph-static-html-preserves-style-supports', $serialized);
 $assert(\substr_count($serialized, 'manifesto-list') === 2, 'list-class-in-attrs-and-static-html', $serialized);
 $assert(\strpos($serialized, '<ol class="wp-block-list manifesto-list">') !== \false, 'list-static-html-preserves-class', $serialized);
 $assert(\substr_count($serialized, 'prompt') === 2, 'preformatted-class-in-attrs-and-static-html', $serialized);

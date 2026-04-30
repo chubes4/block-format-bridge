@@ -96,6 +96,48 @@ class HTML_To_Blocks_Block_Factory
         return $html;
     }
     /**
+     * Serializes core block support style attributes into inline CSS.
+     *
+     * @param array $attributes Block attributes.
+     * @return string Inline CSS declaration list.
+     */
+    private static function style_attr(array $attributes): string
+    {
+        $style = $attributes['style'] ?? [];
+        $declarations = [];
+        if (!\is_array($style)) {
+            return '';
+        }
+        $text_color = $style['color']['text'] ?? null;
+        if (\is_string($text_color) && $text_color !== '') {
+            $declarations[] = 'color:' . $text_color;
+        }
+        $background_color = $style['color']['background'] ?? null;
+        if (\is_string($background_color) && $background_color !== '') {
+            $declarations[] = 'background-color:' . $background_color;
+        }
+        $spacing = $style['spacing'] ?? [];
+        if (\is_array($spacing)) {
+            foreach (['margin', 'padding'] as $property) {
+                $value = $spacing[$property] ?? null;
+                if (\is_string($value) && $value !== '') {
+                    $declarations[] = $property . ':' . $value;
+                    continue;
+                }
+                if (!\is_array($value)) {
+                    continue;
+                }
+                foreach (['top', 'right', 'bottom', 'left'] as $side) {
+                    $side_value = $value[$side] ?? null;
+                    if (\is_string($side_value) && $side_value !== '') {
+                        $declarations[] = $property . '-' . $side . ':' . $side_value;
+                    }
+                }
+            }
+        }
+        return \implode(';', $declarations);
+    }
+    /**
      * Generates the complete HTML for a block without inner blocks
      *
      * @param string $name       Block name
@@ -108,8 +150,12 @@ class HTML_To_Blocks_Block_Factory
             case 'core/paragraph':
                 $content = $attributes['content'] ?? '';
                 $html_attrs = ['class' => self::merge_block_class('', $attributes)];
+                $style = self::style_attr($attributes);
                 if (!empty($attributes['align'])) {
-                    $html_attrs['style'] = 'text-align: ' . $attributes['align'];
+                    $style = \trim($style . ';text-align:' . $attributes['align'], ';');
+                }
+                if ($style !== '') {
+                    $html_attrs['style'] = $style;
                 }
                 return '<p' . self::html_attrs($html_attrs) . '>' . $content . '</p>';
             case 'core/heading':
