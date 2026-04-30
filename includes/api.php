@@ -7,6 +7,8 @@
  *   bfb_convert( $content, $from, $to, $options ) — universal conversion
  *   bfb_to_blocks( $content, $from, $options )    — block-array conversion
  *   bfb_normalize( $content, $format )      — declared-format validation
+ *   bfb_analyze_blocks( $blocks )           — block quality report
+ *   bfb_conversion_report( $content, $from ) — conversion quality report
  *   bfb_capabilities()                      — conversion substrate report
  *   bfb_get_adapter( $slug )                — registry lookup
  *
@@ -238,6 +240,125 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 		}
 
 		return $to_adapter->from_blocks( $blocks, $options );
+	}
+}
+
+if ( ! function_exists( 'bfb_analyze_blocks' ) ) {
+	/**
+	 * Analyze a parsed block tree for conversion quality signals.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed block list.
+	 * @return array<string, mixed> Quality report.
+	 */
+	function bfb_analyze_blocks( array $blocks ): array {
+		$report = array(
+			'total_blocks'     => 0,
+			'block_counts'     => array(),
+			'core_html_blocks' => 0,
+			'fallbacks'        => array(),
+		);
+
+		bfb_analyze_block_list( $blocks, $report );
+
+		return $report;
+	}
+}
+
+if ( ! function_exists( 'bfb_conversion_report' ) ) {
+	/**
+	 * Convert content to blocks and return quality metrics alongside the result.
+	 *
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param array<string, mixed> $options Per-call conversion options.
+	 * @return array<string, mixed> Conversion report.
+	 */
+	function bfb_conversion_report( string $content, string $from, array $options = array() ): array {
+		$fallback_events = array();
+		$listener        = static function ( string $html, array $context, array $block ) use ( &$fallback_events ): void {
+			$fallback_events[] = array(
+				'reason'     => isset( $context['reason'] ) ? (string) $context['reason'] : '',
+				'tag_name'   => isset( $context['tag_name'] ) ? (string) $context['tag_name'] : '',
+				'occurrence' => isset( $context['occurrence'] ) ? (int) $context['occurrence'] : null,
+				'bytes'      => strlen( $html ),
+				'preview'    => bfb_preview_html( $html ),
+				'block_name' => isset( $block['blockName'] ) ? (string) $block['blockName'] : '',
+			);
+		};
+
+		add_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10, 3 );
+		try {
+			$blocks = bfb_to_blocks( $content, $from, $options );
+		} finally {
+			remove_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10 );
+		}
+
+		$analysis                         = bfb_analyze_blocks( $blocks );
+		$analysis['from']                 = $from;
+		$analysis['source_bytes']         = strlen( $content );
+		$analysis['fallback_events']      = $fallback_events;
+		$analysis['fallback_event_count'] = count( $fallback_events );
+		$analysis['serialized_blocks']    = serialize_blocks( $blocks );
+
+		return $analysis;
+	}
+}
+
+if ( ! function_exists( 'bfb_analyze_block_list' ) ) {
+	/**
+	 * Walk parsed blocks and populate a quality report.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed block list.
+	 * @param array<string, mixed>             $report Report being populated.
+	 * @param array<int, int>                  $path   Current block path.
+	 * @return void
+	 */
+	function bfb_analyze_block_list( array $blocks, array &$report, array $path = array() ): void {
+		foreach ( $blocks as $index => $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+			if ( '' !== $name ) {
+				$report['total_blocks']++;
+				$report['block_counts'][ $name ] = isset( $report['block_counts'][ $name ] ) ? (int) $report['block_counts'][ $name ] + 1 : 1;
+			}
+
+			$block_path = array_merge( $path, array( $index ) );
+			if ( 'core/html' === $name ) {
+				$html = '';
+				if ( isset( $block['attrs']['content'] ) && is_string( $block['attrs']['content'] ) ) {
+					$html = $block['attrs']['content'];
+				} elseif ( isset( $block['innerHTML'] ) && is_string( $block['innerHTML'] ) ) {
+					$html = $block['innerHTML'];
+				}
+
+				$report['core_html_blocks']++;
+				$report['fallbacks'][] = array(
+					'path'    => implode( '.', $block_path ),
+					'bytes'   => strlen( $html ),
+					'preview' => bfb_preview_html( $html ),
+				);
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				bfb_analyze_block_list( $block['innerBlocks'], $report, $block_path );
+			}
+		}
+	}
+}
+
+if ( ! function_exists( 'bfb_preview_html' ) ) {
+	/**
+	 * Build a compact one-line preview for reports.
+	 *
+	 * @param string $html HTML fragment.
+	 * @return string Preview text.
+	 */
+	function bfb_preview_html( string $html ): string {
+		$preview = preg_replace( '/\s+/', ' ', trim( $html ) );
+		return substr( is_string( $preview ) ? $preview : trim( $html ), 0, 700 );
 	}
 }
 
