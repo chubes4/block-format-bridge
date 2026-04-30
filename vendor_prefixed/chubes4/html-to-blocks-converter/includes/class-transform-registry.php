@@ -25,7 +25,7 @@ class HTML_To_Blocks_Transform_Registry
         if (self::$transforms !== null) {
             return self::$transforms;
         }
-        self::$transforms = \array_merge(self::get_site_editor_marker_transforms(), self::get_heading_transforms(), self::get_navigation_transforms(), self::get_list_transforms(), self::get_button_transforms(), self::get_media_transforms(), self::get_image_transforms(), self::get_details_transforms(), self::get_pullquote_transforms(), self::get_quote_transforms(), self::get_code_transforms(), self::get_verse_transforms(), self::get_preformatted_transforms(), self::get_separator_transforms(), self::get_table_transforms(), self::get_layout_transforms(), self::get_paragraph_transforms());
+        self::$transforms = \array_merge(self::get_site_editor_marker_transforms(), self::get_heading_transforms(), self::get_list_transforms(), self::get_button_transforms(), self::get_media_transforms(), self::get_image_transforms(), self::get_details_transforms(), self::get_pullquote_transforms(), self::get_quote_transforms(), self::get_code_transforms(), self::get_verse_transforms(), self::get_preformatted_transforms(), self::get_separator_transforms(), self::get_table_transforms(), self::get_layout_transforms(), self::get_paragraph_transforms());
         \usort(self::$transforms, function ($a, $b) {
             return ($a['priority'] ?? 10) - ($b['priority'] ?? 10);
         });
@@ -80,145 +80,6 @@ class HTML_To_Blocks_Transform_Registry
         }
         $slug = \trim((string) $element->get_attribute('data-bfb-template-part'));
         return \preg_match('/^[a-z0-9_.-]+$/i', $slug) === 1 ? $slug : '';
-    }
-    /**
-     * Static navigation transforms for side-effect-free nav list markup.
-     *
-     * @return array Transform definitions
-     */
-    private static function get_navigation_transforms()
-    {
-        return [['blockName' => 'core/navigation', 'priority' => 9, 'selector' => 'nav', 'isMatch' => function ($element) {
-            return self::is_static_navigation_element($element);
-        }, 'transform' => function ($element) {
-            return self::create_static_navigation_block($element);
-        }]];
-    }
-    /**
-     * Checks whether a nav element is a pure static list navigation.
-     *
-     * @param HTML_To_Blocks_HTML_Element $element Element to inspect.
-     * @return bool
-     */
-    private static function is_static_navigation_element($element): bool
-    {
-        if ($element->get_tag_name() !== 'NAV') {
-            return \false;
-        }
-        $children = $element->get_child_elements();
-        if (\count($children) !== 1 || !\in_array($children[0]->get_tag_name(), ['UL', 'OL'], \true)) {
-            return \false;
-        }
-        if (self::strip_child_markup($element->get_inner_html(), [$children[0]]) !== '') {
-            return \false;
-        }
-        return !empty(self::create_navigation_items_from_list($children[0], \true));
-    }
-    /**
-     * Creates a static core/navigation block without persistent wp_navigation refs.
-     *
-     * @param HTML_To_Blocks_HTML_Element $element Nav element.
-     * @return array Block array.
-     */
-    private static function create_static_navigation_block($element): array
-    {
-        $list = $element->get_child_elements()[0];
-        $attributes = [];
-        if ($element->has_attribute('aria-label') && $element->get_attribute('aria-label') !== '') {
-            $attributes['ariaLabel'] = $element->get_attribute('aria-label');
-        }
-        if ($element->has_attribute('id') && $element->get_attribute('id') !== '') {
-            $attributes['anchor'] = $element->get_attribute('id');
-        }
-        if ($element->has_attribute('class')) {
-            $class_name = self::safe_block_class_name($element->get_attribute('class'));
-            if ($class_name !== '') {
-                $attributes['className'] = $class_name;
-            }
-        }
-        return HTML_To_Blocks_Block_Factory::create_block('core/navigation', $attributes, self::create_navigation_items_from_list($list, \true));
-    }
-    /**
-     * Creates navigation link/submenu blocks from direct list items.
-     *
-     * @param HTML_To_Blocks_HTML_Element $list_element List element.
-     * @param bool                        $is_top_level Whether links are top-level items.
-     * @return array Block arrays.
-     */
-    private static function create_navigation_items_from_list($list_element, bool $is_top_level): array
-    {
-        $items = [];
-        foreach ($list_element->get_child_elements() as $li) {
-            if ($li->get_tag_name() !== 'LI') {
-                return [];
-            }
-            $item = self::create_navigation_item_from_li($li, $is_top_level);
-            if (!$item) {
-                return [];
-            }
-            $items[] = $item;
-        }
-        return $items;
-    }
-    /**
-     * Creates a navigation-link or navigation-submenu block from one list item.
-     *
-     * @param HTML_To_Blocks_HTML_Element $li_element List item element.
-     * @param bool                        $is_top_level Whether this is a top-level link.
-     * @return array|null Block array, or null when the item is not a safe static link.
-     */
-    private static function create_navigation_item_from_li($li_element, bool $is_top_level): ?array
-    {
-        $children = $li_element->get_child_elements();
-        $anchor = null;
-        $nested_list = null;
-        foreach ($children as $child) {
-            if ($child->get_tag_name() === 'A' && !$anchor) {
-                $anchor = $child;
-                continue;
-            }
-            if (\in_array($child->get_tag_name(), ['UL', 'OL'], \true) && !$nested_list) {
-                $nested_list = $child;
-                continue;
-            }
-            return null;
-        }
-        if (!$anchor || !$anchor->has_attribute('href')) {
-            return null;
-        }
-        if (self::strip_child_markup($li_element->get_inner_html(), $children) !== '') {
-            return null;
-        }
-        $attributes = self::get_navigation_link_attributes($anchor, $is_top_level);
-        if ($nested_list) {
-            $inner_blocks = self::create_navigation_items_from_list($nested_list, \false);
-            if (empty($inner_blocks)) {
-                return null;
-            }
-            return HTML_To_Blocks_Block_Factory::create_block('core/navigation-submenu', $attributes, $inner_blocks);
-        }
-        return HTML_To_Blocks_Block_Factory::create_block('core/navigation-link', $attributes);
-    }
-    /**
-     * Gets side-effect-free navigation link attributes from an anchor.
-     *
-     * @param HTML_To_Blocks_HTML_Element $anchor Anchor element.
-     * @param bool                        $is_top_level Whether this is a top-level link.
-     * @return array Block attributes.
-     */
-    private static function get_navigation_link_attributes($anchor, bool $is_top_level): array
-    {
-        $attributes = ['label' => \trim($anchor->get_inner_html()), 'url' => $anchor->get_attribute('href'), 'kind' => 'custom', 'isTopLevel' => $is_top_level];
-        if ($anchor->has_attribute('target') && $anchor->get_attribute('target') === '_blank') {
-            $attributes['opensInNewTab'] = \true;
-        }
-        if ($anchor->has_attribute('rel') && $anchor->get_attribute('rel') !== '') {
-            $attributes['rel'] = $anchor->get_attribute('rel');
-        }
-        if ($anchor->has_attribute('title') && $anchor->get_attribute('title') !== '') {
-            $attributes['title'] = $anchor->get_attribute('title');
-        }
-        return $attributes;
     }
     /**
      * Removes known direct child markup and returns remaining meaningful content.
@@ -1289,7 +1150,7 @@ class HTML_To_Blocks_Transform_Registry
         }
         if (!empty($options['tag_name'])) {
             $tag_name = \strtolower($element->get_tag_name());
-            if (\in_array($tag_name, ['section', 'main', 'article', 'aside', 'header', 'footer', 'nav'], \true)) {
+            if (\in_array($tag_name, ['section', 'main', 'article', 'aside', 'header', 'footer'], \true)) {
                 $attributes['tagName'] = $tag_name;
             }
         }
@@ -1517,7 +1378,7 @@ class HTML_To_Blocks_Transform_Registry
         if ($tag === 'SECTION') {
             return \true;
         }
-        if (\in_array($tag, ['MAIN', 'ARTICLE', 'ASIDE', 'HEADER', 'FOOTER', 'NAV'], \true)) {
+        if (\in_array($tag, ['MAIN', 'ARTICLE', 'ASIDE', 'HEADER', 'FOOTER'], \true)) {
             return \true;
         }
         if ($tag !== 'DIV') {

@@ -45,7 +45,7 @@ $generated_blocks = [];
 foreach ($matches[1] as $block_name) {
     $generated_blocks[$block_name] = \true;
 }
-$supported_matrix = ['core/heading' => 'raw-transform', 'core/paragraph' => 'raw-transform', 'core/list' => 'raw-transform', 'core/list-item' => 'generated-inner-block', 'core/quote' => 'raw-transform', 'core/image' => 'raw-transform', 'core/code' => 'raw-transform', 'core/preformatted' => 'raw-transform', 'core/separator' => 'raw-transform', 'core/table' => 'raw-transform', 'core/shortcode' => 'raw-handler-special-case', 'core/group' => 'raw-transform', 'core/columns' => 'raw-transform', 'core/column' => 'raw-transform-and-generated-inner-block', 'core/cover' => 'raw-transform', 'core/spacer' => 'raw-transform', 'core/buttons' => 'raw-transform', 'core/button' => 'generated-inner-block', 'core/details' => 'raw-transform', 'core/pullquote' => 'raw-transform', 'core/verse' => 'raw-transform', 'core/video' => 'raw-transform', 'core/audio' => 'raw-transform', 'core/gallery' => 'raw-transform', 'core/media-text' => 'raw-transform', 'core/file' => 'raw-transform', 'core/embed' => 'raw-transform', 'core/navigation' => 'raw-transform', 'core/navigation-link' => 'generated-inner-block', 'core/navigation-submenu' => 'generated-inner-block'];
+$supported_matrix = ['core/heading' => 'raw-transform', 'core/paragraph' => 'raw-transform', 'core/list' => 'raw-transform', 'core/list-item' => 'generated-inner-block', 'core/quote' => 'raw-transform', 'core/image' => 'raw-transform', 'core/code' => 'raw-transform', 'core/preformatted' => 'raw-transform', 'core/separator' => 'raw-transform', 'core/table' => 'raw-transform', 'core/shortcode' => 'raw-handler-special-case', 'core/group' => 'raw-transform', 'core/columns' => 'raw-transform', 'core/column' => 'raw-transform-and-generated-inner-block', 'core/cover' => 'raw-transform', 'core/spacer' => 'raw-transform', 'core/buttons' => 'raw-transform', 'core/button' => 'generated-inner-block', 'core/details' => 'raw-transform', 'core/pullquote' => 'raw-transform', 'core/verse' => 'raw-transform', 'core/video' => 'raw-transform', 'core/audio' => 'raw-transform', 'core/gallery' => 'raw-transform', 'core/media-text' => 'raw-transform', 'core/file' => 'raw-transform', 'core/embed' => 'raw-transform'];
 foreach ($supported_matrix as $block_name => $coverage_kind) {
     $assert_contains($coverage_doc, '`' . $block_name . '`', 'doc-names-supported-' . $block_name);
     if (\strpos($coverage_kind, 'raw-transform') !== \false) {
@@ -58,7 +58,7 @@ foreach ($supported_matrix as $block_name => $coverage_kind) {
         $assert(isset($generated_blocks[$block_name]), 'raw-handler-generates-' . $block_name);
     }
 }
-$observed_fallbacks = ['core/html', 'Unknown `<iframe>` providers', 'Arbitrary wrappers', 'Ordinary links', 'Mixed-content navigation'];
+$observed_fallbacks = ['core/html', 'Unknown `<iframe>` providers', 'Arbitrary wrappers', 'Ordinary links', 'Navigation markup'];
 foreach ($observed_fallbacks as $fallback_label) {
     $assert_contains($coverage_doc, $fallback_label, 'doc-names-fallback-' . $fallback_label);
 }
@@ -74,11 +74,8 @@ foreach (['core/pattern', 'core/template-part'] as $doc_example) {
     $assert_contains($coverage_doc, '`' . $doc_example, 'coverage-doc-names-explicit-marker-' . $doc_example);
     $assert_contains($site_editor_doc, '`' . $doc_example, 'site-editor-doc-names-explicit-marker-' . $doc_example);
 }
-foreach (['core/navigation', 'core/navigation-link', 'core/navigation-submenu'] as $doc_example) {
-    $assert_contains($coverage_doc, '`' . $doc_example, 'coverage-doc-names-static-navigation-' . $doc_example);
-}
-$assert_contains($coverage_doc, 'Persistent `core/navigation` entities', 'coverage-doc-names-persistent-navigation-boundary');
-$assert_contains($site_editor_doc, 'Persistent `core/navigation', 'site-editor-doc-names-persistent-navigation-boundary');
+$assert_contains($coverage_doc, 'Native `core/navigation` blocks', 'coverage-doc-names-navigation-boundary');
+$assert_contains($site_editor_doc, 'Native `core/navigation', 'site-editor-doc-names-navigation-boundary');
 $assert_contains($coverage_doc, 'Theme And Context Block Classification', 'coverage-doc-classifies-theme-context-blocks');
 $assert_contains($site_editor_doc, 'Theme Block Classification', 'site-editor-doc-classifies-theme-blocks');
 $future_candidates = ['Additional embed providers', 'Additional static layout patterns', 'Static social links'];

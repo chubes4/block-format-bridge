@@ -41,14 +41,11 @@ class WP_Block_Type_Registry
     }
     public function is_registered($name)
     {
-        return \in_array($name, ['core/navigation', 'core/navigation-link', 'core/navigation-submenu', 'core/html'], \true);
+        return $name === 'core/html';
     }
     public function get_registered($name)
     {
-        $attributes = \array_fill_keys(['anchor', 'ariaLabel', 'className', 'isTopLevel', 'kind', 'label', 'opensInNewTab', 'rel', 'title', 'url'], ['type' => 'string']);
-        $attributes['isTopLevel'] = ['type' => 'boolean'];
-        $attributes['opensInNewTab'] = ['type' => 'boolean'];
-        return (object) ['attributes' => $attributes];
+        return (object) ['attributes' => ['content' => ['type' => 'string']]];
     }
 }
 \class_alias('BlockFormatBridge\Vendor\WP_Block_Type_Registry', 'WP_Block_Type_Registry', \false);
@@ -128,30 +125,20 @@ $ul = static function (array $items) {
     return new Static_Nav_Smoke_Element('ul', [], $inner_html, $items);
 };
 // -------------------------------------------------------------------------
-// Flat static nav: one direct list becomes core/navigation with link children.
+// Static nav does not claim native core/navigation in default raw conversion.
 // -------------------------------------------------------------------------
 $about = $li([$anchor('/about/', 'About')]);
 $contact = $li([$anchor('/contact/', 'Contact', ['target' => '_blank', 'rel' => 'noopener'])]);
 $flat_list = $ul([$about, $contact]);
 $flat_nav = new Static_Nav_Smoke_Element('nav', ['aria-label' => 'Primary', 'class' => 'wp-block-navigation primary alignwide'], $flat_list->get_outer_html(), [$flat_list]);
 $transform = $find_transform($flat_nav, 'core/navigation');
-$flat_block = $transform ? \call_user_func($transform['transform'], $flat_nav) : null;
-$smoke_assert($transform !== null, 'flat-nav-transform-selected');
-$smoke_assert($flat_block['blockName'] === 'core/navigation', 'flat-nav-block-name');
-$smoke_assert(($flat_block['attrs']['ariaLabel'] ?? '') === 'Primary', 'flat-nav-aria-label-preserved');
-$smoke_assert(($flat_block['attrs']['className'] ?? '') === 'primary', 'flat-nav-safe-class-preserved', \json_encode($flat_block['attrs'] ?? []));
-$smoke_assert(\str_contains($flat_block['innerHTML'], '<nav class="wp-block-navigation primary"'), 'flat-nav-class-in-saved-wrapper', $flat_block['innerHTML'] ?? '');
-$smoke_assert(\str_contains($flat_block['innerContent'][0] ?? '', '<nav class="wp-block-navigation primary"'), 'flat-nav-class-in-canonical-opening', $flat_block['innerContent'][0] ?? '');
-$smoke_assert(\count($flat_block['innerBlocks']) === 2, 'flat-nav-link-count');
-$smoke_assert($flat_block['innerBlocks'][0]['blockName'] === 'core/navigation-link', 'flat-nav-first-link-block');
-$smoke_assert($flat_block['innerBlocks'][0]['attrs']['url'] === '/about/', 'flat-nav-first-url');
-$smoke_assert($flat_block['innerBlocks'][0]['attrs']['label'] === 'About', 'flat-nav-first-label');
-$smoke_assert(\strpos($flat_block['innerBlocks'][0]['innerHTML'], '<li class="wp-block-navigation-item wp-block-navigation-link">') === 0, 'flat-nav-link-html-is-list-item');
-$smoke_assert($flat_block['innerBlocks'][1]['attrs']['opensInNewTab'] === \true, 'flat-nav-target-preserved');
-$smoke_assert($flat_block['innerBlocks'][1]['attrs']['rel'] === 'noopener', 'flat-nav-rel-preserved');
-$smoke_assert(!isset($flat_block['attrs']['ref']), 'flat-nav-has-no-persistent-ref');
+$smoke_assert($transform === null, 'flat-nav-does-not-emit-native-navigation');
+$fallback = HTML_To_Blocks_Block_Factory::create_block('core/html', ['content' => $flat_nav->get_outer_html()]);
+$smoke_assert($fallback['blockName'] === 'core/html', 'flat-nav-fallback-block-name');
+$smoke_assert(\str_contains($fallback['attrs']['content'] ?? '', '<nav'), 'flat-nav-fallback-preserves-nav');
+$smoke_assert(\str_contains($fallback['attrs']['content'] ?? '', '/contact/'), 'flat-nav-fallback-preserves-link-url');
 // -------------------------------------------------------------------------
-// Nested static nav: child lists become core/navigation-submenu blocks.
+// Nested static nav also stays out of native navigation block generation.
 // -------------------------------------------------------------------------
 $child_one = $li([$anchor('/products/a/', 'Product A')]);
 $child_two = $li([$anchor('/products/b/', 'Product B')]);
@@ -159,11 +146,8 @@ $nested_list = $ul([$child_one, $child_two]);
 $products = $li([$anchor('/products/', 'Products'), $nested_list]);
 $nested_root = $ul([$products]);
 $nested_nav = new Static_Nav_Smoke_Element('nav', [], $nested_root->get_outer_html(), [$nested_root]);
-$nested_block = \call_user_func($find_transform($nested_nav, 'core/navigation')['transform'], $nested_nav);
-$smoke_assert($nested_block['innerBlocks'][0]['blockName'] === 'core/navigation-submenu', 'nested-nav-submenu-block');
-$smoke_assert($nested_block['innerBlocks'][0]['attrs']['label'] === 'Products', 'nested-nav-submenu-label');
-$smoke_assert(\count($nested_block['innerBlocks'][0]['innerBlocks']) === 2, 'nested-nav-child-count');
-$smoke_assert($nested_block['innerBlocks'][0]['innerBlocks'][0]['attrs']['isTopLevel'] === \false, 'nested-nav-child-not-top-level');
+$smoke_assert($find_transform($nested_nav, 'core/navigation') === null, 'nested-nav-does-not-emit-native-navigation');
+$smoke_assert($find_transform($nested_nav, 'core/navigation-submenu') === null, 'nested-nav-does-not-emit-native-submenu');
 // -------------------------------------------------------------------------
 // Mixed-content nav is unsupported instead of guessed.
 // -------------------------------------------------------------------------
