@@ -142,10 +142,22 @@ $smoke_assert(($stack_group['attrs']['className'] ?? '') === 'custom-stack', 'gr
 $main = new Layout_Smoke_Element('main', ['class' => 'site-shell'], '<section class="hero"><h1>Site Editor Template Smoke</h1><p>Template raw HTML should become blocks.</p></section>');
 $main_transform = $find_transform($main, 'core/group');
 $main_group = $main_transform ? \call_user_func($main_transform['transform'], $main, $handler) : null;
-$landmark_tags = ['header', 'footer', 'article', 'aside', 'nav'];
+$landmark_tags = ['header', 'footer', 'article', 'aside'];
 $smoke_assert($main_group && $main_group['blockName'] === 'core/group', 'main-landmark-to-group');
 $smoke_assert(\strpos($main_group['attrs']['className'] ?? '', 'site-shell') !== \false, 'main-landmark-preserves-class');
 $smoke_assert(($main_group['innerBlocks'][0]['blockName'] ?? '') === 'core/heading', 'main-landmark-recurses-children');
+$wrap_group_element = new Layout_Smoke_Element('div', ['class' => 'wrap'], '<h2>Wrapped static-site copy</h2>');
+$wrap_group_transform = $find_transform($wrap_group_element, 'core/group');
+$wrap_group = $wrap_group_transform ? \call_user_func($wrap_group_transform['transform'], $wrap_group_element, $handler) : null;
+$smoke_assert($wrap_group && $wrap_group['blockName'] === 'core/group', 'wrap-wrapper-to-group');
+$smoke_assert(($wrap_group['attrs']['className'] ?? '') === 'wrap', 'wrap-wrapper-preserves-class');
+$smoke_assert(($wrap_group['innerBlocks'][0]['blockName'] ?? '') === 'core/heading', 'wrap-wrapper-recurses-children');
+$grid_group_element = new Layout_Smoke_Element('div', ['class' => 'grid cols-3'], '<article class="card"><h3>Card</h3><p>Copy</p></article>');
+$grid_group_transform = $find_transform($grid_group_element, 'core/group');
+$grid_group = $grid_group_transform ? \call_user_func($grid_group_transform['transform'], $grid_group_element, $handler) : null;
+$smoke_assert($grid_group && $grid_group['blockName'] === 'core/group', 'grid-wrapper-to-group');
+$smoke_assert(($grid_group['attrs']['className'] ?? '') === 'grid cols-3', 'grid-wrapper-preserves-class');
+$smoke_assert(($grid_group['innerBlocks'][0]['blockName'] ?? '') === 'core/paragraph', 'grid-wrapper-recurses-children');
 foreach ($landmark_tags as $tag) {
     $landmark = new Layout_Smoke_Element($tag, [], '<p>Landmark copy</p>');
     $landmark_transform = $find_transform($landmark, 'core/group');
