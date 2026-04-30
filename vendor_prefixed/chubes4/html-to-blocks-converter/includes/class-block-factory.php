@@ -59,6 +59,15 @@ class HTML_To_Blocks_Block_Factory
     {
         $classes = \preg_split('/\s+/', \trim($base . ' ' . ($attributes['className'] ?? '')));
         $classes = \is_array($classes) ? \array_filter($classes) : [];
+        $style = $attributes['style'] ?? [];
+        if (\is_array($style)) {
+            if (!empty($style['color']['text'])) {
+                $classes[] = 'has-text-color';
+            }
+            if (!empty($style['color']['background'])) {
+                $classes[] = 'has-background';
+            }
+        }
         return \implode(' ', \array_values(\array_unique($classes)));
     }
     /**
