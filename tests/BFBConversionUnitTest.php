@@ -370,6 +370,49 @@ MARKDOWN;
 	}
 
 	/**
+	 * Block analysis should expose fallback details without every consumer reimplementing metrics.
+	 */
+	public function test_block_analysis_reports_core_html_fallback_details(): void {
+		$blocks = array(
+			array(
+				'blockName'   => 'core/group',
+				'attrs'       => array(),
+				'innerBlocks' => array(
+					array(
+						'blockName' => 'core/html',
+						'attrs'     => array(
+							'content' => '<div class="widget"> Unsupported widget </div>',
+						),
+					),
+				),
+			),
+		);
+
+		$report = bfb_analyze_blocks( $blocks );
+
+		$this->assertSame( 2, $report['total_blocks'] );
+		$this->assertSame( 1, $report['core_html_blocks'] );
+		$this->assertSame( 1, $report['block_counts']['core/html'] ?? null );
+		$this->assertSame( '0.0', $report['fallbacks'][0]['path'] ?? null );
+		$this->assertStringContainsString( 'Unsupported widget', $report['fallbacks'][0]['preview'] ?? '' );
+	}
+
+	/**
+	 * Conversion reports should include h2bc fallback reasons captured during conversion.
+	 */
+	public function test_conversion_report_captures_h2bc_fallback_events(): void {
+		$report = bfb_conversion_report( '<iframe src="https://example.com/widget"></iframe>', 'html' );
+
+		$this->assertSame( 'html', $report['from'] );
+		$this->assertSame( 1, $report['total_blocks'] );
+		$this->assertSame( 1, $report['core_html_blocks'] );
+		$this->assertSame( 1, $report['fallback_event_count'] );
+		$this->assertSame( 'no_transform', $report['fallback_events'][0]['reason'] ?? null );
+		$this->assertSame( 'IFRAME', $report['fallback_events'][0]['tag_name'] ?? null );
+		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
+	}
+
+	/**
 	 * Blocks should render to HTML through WordPress' real render_block() path.
 	 */
 	public function test_blocks_to_html_renders_static_and_dynamic_blocks(): void {

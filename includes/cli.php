@@ -133,6 +133,62 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 		}
 
 		/**
+		 * Analyze conversion quality for content.
+		 *
+		 * ## OPTIONS
+		 *
+		 * --from=<format>
+		 * : Source format slug.
+		 *
+		 * [--input=<file>]
+		 * : Read input from a file instead of STDIN.
+		 *
+		 * [--format=<format>]
+		 * : Output format. Supports `json` or `summary`.
+		 * ---
+		 * default: summary
+		 * ---
+		 *
+		 * @param array<int, string>   $args       Positional arguments.
+		 * @param array<string, mixed> $assoc_args Associative arguments.
+		 * @return void
+		 */
+		public function analyze( array $args, array $assoc_args ): void {
+			unset( $args );
+
+			$from   = isset( $assoc_args['from'] ) ? (string) $assoc_args['from'] : '';
+			$format = isset( $assoc_args['format'] ) ? (string) $assoc_args['format'] : 'summary';
+
+			if ( '' === $from ) {
+				WP_CLI::error( 'Missing required --from=<format> argument.' );
+			}
+
+			if ( 'blocks' !== $from && ! bfb_get_adapter( $from ) ) {
+				WP_CLI::error( sprintf( 'No BFB adapter registered for source format: %s', $from ) );
+			}
+
+			if ( ! in_array( $format, array( 'summary', 'json' ), true ) ) {
+				WP_CLI::error( 'Unsupported --format value. Use "summary" or "json".' );
+			}
+
+			$content = $this->read_input( isset( $assoc_args['input'] ) ? (string) $assoc_args['input'] : '' );
+			$report  = bfb_conversion_report( $content, $from );
+
+			if ( 'json' === $format ) {
+				$output = wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+				if ( false === $output ) {
+					WP_CLI::error( 'Failed to encode analysis report as JSON.' );
+				}
+				WP_CLI::line( $output );
+				return;
+			}
+
+			WP_CLI::line( sprintf( 'Blocks: %d', (int) $report['total_blocks'] ) );
+			WP_CLI::line( sprintf( 'core/html blocks: %d', (int) $report['core_html_blocks'] ) );
+			WP_CLI::line( sprintf( 'h2bc fallback events: %d', (int) $report['fallback_event_count'] ) );
+		}
+
+		/**
 		 * Read command input.
 		 *
 		 * @param string $path Optional input file path.
