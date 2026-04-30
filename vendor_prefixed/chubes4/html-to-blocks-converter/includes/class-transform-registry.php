@@ -1384,7 +1384,7 @@ class HTML_To_Blocks_Transform_Registry
         if ($tag !== 'DIV') {
             return \false;
         }
-        return self::class_matches($element, '/(?:^|[-_\s])(group|section|container|wrapper|content|main|article|aside|header|footer|inner|row)(?:$|[-_\s])/i');
+        return self::class_matches($element, '/(?:^|[-_\s])(group|section|container|wrapper|wrap|content|main|article|aside|header|footer|inner|row|grid|card)(?:$|[-_\s])/i');
     }
     /**
      * Checks whether an element is a cover/hero wrapper.
