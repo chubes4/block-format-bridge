@@ -184,8 +184,31 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 			}
 
 			WP_CLI::line( sprintf( 'Blocks: %d', (int) $report['total_blocks'] ) );
+			WP_CLI::line( sprintf( 'Status: %s', isset( $report['status'] ) ? (string) $report['status'] : 'unknown' ) );
 			WP_CLI::line( sprintf( 'core/html blocks: %d', (int) $report['core_html_blocks'] ) );
 			WP_CLI::line( sprintf( 'h2bc fallback events: %d', (int) $report['fallback_event_count'] ) );
+			WP_CLI::line( sprintf( 'text retention: %.2f', isset( $report['text_retention_ratio'] ) ? (float) $report['text_retention_ratio'] : 1.0 ) );
+
+			if ( ! empty( $report['diagnostics'] ) && is_array( $report['diagnostics'] ) ) {
+				foreach ( $report['diagnostics'] as $diagnostic ) {
+					if ( ! is_array( $diagnostic ) ) {
+						continue;
+					}
+
+					WP_CLI::line(
+						sprintf(
+							'Diagnostic: %s (%s) - %s',
+							isset( $diagnostic['code'] ) ? (string) $diagnostic['code'] : 'unknown',
+							isset( $diagnostic['severity'] ) ? (string) $diagnostic['severity'] : 'info',
+							isset( $diagnostic['message'] ) ? (string) $diagnostic['message'] : ''
+						)
+					);
+				}
+			}
+
+			if ( ! empty( $report['agent_guidance'] ) ) {
+				WP_CLI::line( sprintf( 'Agent guidance: %s', (string) $report['agent_guidance'] ) );
+			}
 		}
 
 		/**
