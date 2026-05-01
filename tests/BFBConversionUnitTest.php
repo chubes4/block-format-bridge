@@ -407,9 +407,55 @@ MARKDOWN;
 		$this->assertSame( 1, $report['total_blocks'] );
 		$this->assertSame( 1, $report['core_html_blocks'] );
 		$this->assertSame( 1, $report['fallback_event_count'] );
+		$this->assertSame( 'success_with_fallbacks', $report['status'] );
+		$this->assertSame( 'core_html_fallback', $report['diagnostics'][0]['code'] ?? null );
+		$this->assertStringContainsString( 'fallback_events', $report['agent_guidance'] ?? '' );
 		$this->assertSame( 'no_transform', $report['fallback_events'][0]['reason'] ?? null );
 		$this->assertSame( 'IFRAME', $report['fallback_events'][0]['tag_name'] ?? null );
 		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
+	}
+
+	/**
+	 * Conversion diagnostics should separate warning-only suspicion from explicit fallback evidence.
+	 */
+	public function test_conversion_diagnostics_classify_warning_only_suspicion(): void {
+		$diagnostics = bfb_build_conversion_diagnostics(
+			array(
+				'total_blocks'          => 1,
+				'core_html_blocks'      => 0,
+				'fallback_event_count'  => 0,
+				'source_bytes'          => 1400,
+				'source_text_bytes'     => 900,
+				'converted_text_bytes'  => 44,
+				'text_retention_ratio'  => 0.0489,
+			)
+		);
+
+		$this->assertSame( 'warning_only_suspicion', $diagnostics['status'] );
+		$this->assertSame( 'possible_text_loss', $diagnostics['diagnostics'][0]['code'] ?? null );
+		$this->assertSame( 'warning', $diagnostics['diagnostics'][0]['severity'] ?? null );
+		$this->assertStringContainsString( 'do not work around it by manually authoring wp:html blocks', $diagnostics['agent_guidance'] );
+	}
+
+	/**
+	 * Empty block output should remain an error, not a softened warning.
+	 */
+	public function test_conversion_diagnostics_classify_failed_conversion(): void {
+		$diagnostics = bfb_build_conversion_diagnostics(
+			array(
+				'total_blocks'          => 0,
+				'core_html_blocks'      => 0,
+				'fallback_event_count'  => 0,
+				'source_bytes'          => 20,
+				'source_text_bytes'     => 12,
+				'converted_text_bytes'  => 0,
+				'text_retention_ratio'  => 0.0,
+			)
+		);
+
+		$this->assertSame( 'failed', $diagnostics['status'] );
+		$this->assertSame( 'conversion_failed', $diagnostics['diagnostics'][0]['code'] ?? null );
+		$this->assertSame( 'error', $diagnostics['diagnostics'][0]['severity'] ?? null );
 	}
 
 	/**

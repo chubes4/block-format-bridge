@@ -296,11 +296,124 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 		$analysis                         = bfb_analyze_blocks( $blocks );
 		$analysis['from']                 = $from;
 		$analysis['source_bytes']         = strlen( $content );
+		$analysis['source_text_bytes']    = bfb_text_bytes( $content );
 		$analysis['fallback_events']      = $fallback_events;
 		$analysis['fallback_event_count'] = count( $fallback_events );
 		$analysis['serialized_blocks']    = serialize_blocks( $blocks );
+		$analysis['converted_text_bytes'] = bfb_text_bytes( $analysis['serialized_blocks'] );
+		$analysis['text_retention_ratio'] = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
+
+		$diagnostics = bfb_build_conversion_diagnostics( $analysis );
+
+		$analysis['status']         = $diagnostics['status'];
+		$analysis['diagnostics']    = $diagnostics['diagnostics'];
+		$analysis['agent_guidance'] = $diagnostics['agent_guidance'];
 
 		return $analysis;
+	}
+}
+
+if ( ! function_exists( 'bfb_build_conversion_diagnostics' ) ) {
+	/**
+	 * Build structured, agent-safe diagnostics from a conversion report.
+	 *
+	 * The status values intentionally distinguish native conversion, explicit
+	 * core/html fallback, and suspected text loss so automation can react to the
+	 * right evidence without being nudged toward manually authoring wp:html blocks.
+	 *
+	 * @param array<string, mixed> $report Conversion report data.
+	 * @return array{status:string,diagnostics:array<int,array<string,mixed>>,agent_guidance:string}
+	 */
+	function bfb_build_conversion_diagnostics( array $report ): array {
+		$status      = 'success_native';
+		$diagnostics = array();
+		$guidance    = 'Conversion completed with native blocks. Continue using the conversion layer for future writes.';
+
+		$total_blocks          = isset( $report['total_blocks'] ) ? (int) $report['total_blocks'] : 0;
+		$core_html_blocks      = isset( $report['core_html_blocks'] ) ? (int) $report['core_html_blocks'] : 0;
+		$fallback_event_count  = isset( $report['fallback_event_count'] ) ? (int) $report['fallback_event_count'] : 0;
+		$source_bytes          = isset( $report['source_bytes'] ) ? (int) $report['source_bytes'] : 0;
+		$source_text_bytes     = isset( $report['source_text_bytes'] ) ? (int) $report['source_text_bytes'] : 0;
+		$converted_text_bytes  = isset( $report['converted_text_bytes'] ) ? (int) $report['converted_text_bytes'] : 0;
+		$text_retention_ratio  = isset( $report['text_retention_ratio'] ) ? (float) $report['text_retention_ratio'] : 1.0;
+		$has_fallback_evidence = $core_html_blocks > 0 || $fallback_event_count > 0;
+		$suspected_text_loss   = ! $has_fallback_evidence && $source_text_bytes >= 200 && $text_retention_ratio < 0.5;
+
+		if ( $source_bytes > 0 && 0 === $total_blocks ) {
+			$status        = 'failed';
+			$diagnostics[] = array(
+				'code'     => 'conversion_failed',
+				'severity' => 'error',
+				'message'  => 'The source content did not produce any blocks.',
+				'details'  => array(
+					'source_bytes' => $source_bytes,
+				),
+			);
+			$guidance      = 'Conversion failed. Inspect the source format and adapter availability before retrying; do not bypass conversion with manual wp:html unless raw HTML preservation is explicitly required.';
+		} elseif ( $has_fallback_evidence ) {
+			$status        = 'success_with_fallbacks';
+			$diagnostics[] = array(
+				'code'     => 'core_html_fallback',
+				'severity' => 'warning',
+				'message'  => 'Conversion completed, but some fragments were preserved as core/html fallback blocks.',
+				'details'  => array(
+					'core_html_blocks'     => $core_html_blocks,
+					'fallback_event_count' => $fallback_event_count,
+				),
+			);
+			$guidance      = 'Conversion completed with explicit fallback evidence. Review fallback_events and fallbacks to identify unsupported fragments; keep future writes routed through BFB unless the user explicitly wants raw HTML blocks.';
+		} elseif ( $suspected_text_loss ) {
+			$status        = 'warning_only_suspicion';
+			$diagnostics[] = array(
+				'code'     => 'possible_text_loss',
+				'severity' => 'warning',
+				'message'  => 'Converted block text is much smaller than source text, but no explicit core/html fallback was reported.',
+				'details'  => array(
+					'source_text_bytes'    => $source_text_bytes,
+					'converted_text_bytes' => $converted_text_bytes,
+					'text_retention_ratio' => $text_retention_ratio,
+				),
+			);
+			$guidance      = 'Potential warning-only content loss. Capture this report for the conversion substrate and retry with simpler source structure if needed; do not work around it by manually authoring wp:html blocks.';
+		}
+
+		return array(
+			'status'         => $status,
+			'diagnostics'    => $diagnostics,
+			'agent_guidance' => $guidance,
+		);
+	}
+}
+
+if ( ! function_exists( 'bfb_text_retention_ratio' ) ) {
+	/**
+	 * Calculate the ratio of converted text bytes to source text bytes.
+	 *
+	 * @param int $source_text_bytes Source text byte count.
+	 * @param int $converted_text_bytes Converted text byte count.
+	 * @return float Retention ratio in the range 0..1+.
+	 */
+	function bfb_text_retention_ratio( int $source_text_bytes, int $converted_text_bytes ): float {
+		if ( $source_text_bytes <= 0 ) {
+			return 1.0;
+		}
+
+		return round( $converted_text_bytes / $source_text_bytes, 4 );
+	}
+}
+
+if ( ! function_exists( 'bfb_text_bytes' ) ) {
+	/**
+	 * Count visible text bytes in content for loss-suspicion diagnostics.
+	 *
+	 * @param string $content Source or serialized block content.
+	 * @return int Visible text byte count.
+	 */
+	function bfb_text_bytes( string $content ): int {
+		$text = wp_strip_all_tags( $content );
+		$text = preg_replace( '/\s+/', ' ', trim( (string) $text ) );
+
+		return strlen( is_string( $text ) ? $text : '' );
 	}
 }
 
@@ -315,13 +428,9 @@ if ( ! function_exists( 'bfb_analyze_block_list' ) ) {
 	 */
 	function bfb_analyze_block_list( array $blocks, array &$report, array $path = array() ): void {
 		foreach ( $blocks as $index => $block ) {
-			if ( ! is_array( $block ) ) {
-				continue;
-			}
-
 			$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
 			if ( '' !== $name ) {
-				$report['total_blocks']++;
+				++$report['total_blocks'];
 				$report['block_counts'][ $name ] = isset( $report['block_counts'][ $name ] ) ? (int) $report['block_counts'][ $name ] + 1 : 1;
 			}
 
@@ -334,7 +443,7 @@ if ( ! function_exists( 'bfb_analyze_block_list' ) ) {
 					$html = $block['innerHTML'];
 				}
 
-				$report['core_html_blocks']++;
+				++$report['core_html_blocks'];
 				$report['fallbacks'][] = array(
 					'path'    => implode( '.', $block_path ),
 					'bytes'   => strlen( $html ),
