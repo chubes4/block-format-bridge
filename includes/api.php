@@ -88,12 +88,16 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 					'bfb_markdown_input',
 					'bfb_markdown_output',
 					'bfb_html_to_blocks_args',
+					'bfb_html_to_blocks_pre_result',
+					'bfb_html_to_blocks_result',
 					'bfb_html_to_markdown_options',
 				),
 				'actions' => array(
 					'bfb_loaded',
 					'bfb_adapters_registered',
 					'bfb_diagnostic',
+					'bfb_conversion_metadata',
+					'bfb_materialization_request',
 					'bfb_insert_conversion_measured',
 					'bfb_html_to_markdown_converter',
 				),
@@ -243,6 +247,34 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 	}
 }
 
+if ( ! function_exists( 'bfb_filter_html_to_blocks_result' ) ) {
+	/**
+	 * Filter block arrays returned by the HTML conversion substrate.
+	 *
+	 * This hook lets generic conversion substrate integrations expose a final
+	 * block array without coupling BFB to any filesystem or importer behavior.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks  Converted block list.
+	 * @param string                           $content Source HTML.
+	 * @param array<string, mixed>             $options Per-call conversion options.
+	 * @param array<string, mixed>             $args    Raw handler arguments.
+	 * @return array<int, array<string, mixed>> Filtered block list.
+	 */
+	function bfb_filter_html_to_blocks_result( array $blocks, string $content, array $options, array $args ): array {
+		/**
+		 * Filters block arrays returned by the HTML conversion substrate.
+		 *
+		 * @since 0.5.0
+		 *
+		 * @param array<int, array<string, mixed>> $blocks  Converted block list.
+		 * @param string                           $content Source HTML.
+		 * @param array<string, mixed>             $options Per-call conversion options.
+		 * @param array<string, mixed>             $args    Raw handler arguments.
+		 */
+		return (array) apply_filters( 'bfb_html_to_blocks_result', $blocks, $content, $options, $args );
+	}
+}
+
 if ( ! function_exists( 'bfb_analyze_blocks' ) ) {
 	/**
 	 * Analyze a parsed block tree for conversion quality signals.
@@ -274,8 +306,10 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 	 * @return array<string, mixed> Conversion report.
 	 */
 	function bfb_conversion_report( string $content, string $from, array $options = array() ): array {
-		$fallback_events = array();
-		$listener        = static function ( string $html, array $context, array $block ) use ( &$fallback_events ): void {
+		$fallback_events          = array();
+		$conversion_metadata      = array();
+		$materialization_requests = array();
+		$fallback_listener        = static function ( string $html, array $context, array $block ) use ( &$fallback_events ): void {
 			$fallback_events[] = array(
 				'reason'     => isset( $context['reason'] ) ? (string) $context['reason'] : '',
 				'tag_name'   => isset( $context['tag_name'] ) ? (string) $context['tag_name'] : '',
@@ -285,23 +319,54 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 				'block_name' => isset( $block['blockName'] ) ? (string) $block['blockName'] : '',
 			);
 		};
+		$metadata_listener        = static function ( array $metadata ) use ( &$conversion_metadata, &$materialization_requests ): void {
+			$normalized = bfb_normalize_conversion_metadata( $metadata );
+			if ( array() === $normalized ) {
+				return;
+			}
 
-		add_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10, 3 );
+			$conversion_metadata[] = $normalized;
+			if ( 'materialization_request' === ( $normalized['type'] ?? '' ) ) {
+				$materialization_requests[] = $normalized;
+			}
+		};
+		$request_listener         = static function ( array $request ) use ( &$conversion_metadata, &$materialization_requests ): void {
+			$normalized = bfb_normalize_conversion_metadata( array_merge( array( 'type' => 'materialization_request' ), $request ) );
+			if ( array() === $normalized ) {
+				return;
+			}
+
+			$conversion_metadata[]      = $normalized;
+			$materialization_requests[] = $normalized;
+		};
+
+		add_action( 'html_to_blocks_unsupported_html_fallback', $fallback_listener, 10, 3 );
+		add_action( 'html_to_blocks_conversion_metadata', $metadata_listener, 10, 1 );
+		add_action( 'html_to_blocks_materialization_request', $request_listener, 10, 1 );
+		add_action( 'bfb_conversion_metadata', $metadata_listener, 10, 1 );
+		add_action( 'bfb_materialization_request', $request_listener, 10, 1 );
 		try {
 			$blocks = bfb_to_blocks( $content, $from, $options );
 		} finally {
-			remove_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10 );
+			remove_action( 'html_to_blocks_unsupported_html_fallback', $fallback_listener, 10 );
+			remove_action( 'html_to_blocks_conversion_metadata', $metadata_listener, 10 );
+			remove_action( 'html_to_blocks_materialization_request', $request_listener, 10 );
+			remove_action( 'bfb_conversion_metadata', $metadata_listener, 10 );
+			remove_action( 'bfb_materialization_request', $request_listener, 10 );
 		}
 
-		$analysis                         = bfb_analyze_blocks( $blocks );
-		$analysis['from']                 = $from;
-		$analysis['source_bytes']         = strlen( $content );
-		$analysis['source_text_bytes']    = bfb_text_bytes( $content );
-		$analysis['fallback_events']      = $fallback_events;
-		$analysis['fallback_event_count'] = count( $fallback_events );
-		$analysis['serialized_blocks']    = serialize_blocks( $blocks );
-		$analysis['converted_text_bytes'] = bfb_text_bytes( $analysis['serialized_blocks'] );
-		$analysis['text_retention_ratio'] = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
+		$analysis                                  = bfb_analyze_blocks( $blocks );
+		$analysis['from']                          = $from;
+		$analysis['source_bytes']                  = strlen( $content );
+		$analysis['source_text_bytes']             = bfb_text_bytes( $content );
+		$analysis['fallback_events']               = $fallback_events;
+		$analysis['fallback_event_count']          = count( $fallback_events );
+		$analysis['conversion_metadata']           = $conversion_metadata;
+		$analysis['materialization_requests']      = $materialization_requests;
+		$analysis['materialization_request_count'] = count( $materialization_requests );
+		$analysis['serialized_blocks']             = serialize_blocks( $blocks );
+		$analysis['converted_text_bytes']          = bfb_text_bytes( $analysis['serialized_blocks'] );
+		$analysis['text_retention_ratio']          = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
 
 		$diagnostics = bfb_build_conversion_diagnostics( $analysis );
 
@@ -332,6 +397,7 @@ if ( ! function_exists( 'bfb_build_conversion_diagnostics' ) ) {
 		$total_blocks          = isset( $report['total_blocks'] ) ? (int) $report['total_blocks'] : 0;
 		$core_html_blocks      = isset( $report['core_html_blocks'] ) ? (int) $report['core_html_blocks'] : 0;
 		$fallback_event_count  = isset( $report['fallback_event_count'] ) ? (int) $report['fallback_event_count'] : 0;
+		$materialization_count = isset( $report['materialization_request_count'] ) ? (int) $report['materialization_request_count'] : 0;
 		$source_bytes          = isset( $report['source_bytes'] ) ? (int) $report['source_bytes'] : 0;
 		$source_text_bytes     = isset( $report['source_text_bytes'] ) ? (int) $report['source_text_bytes'] : 0;
 		$converted_text_bytes  = isset( $report['converted_text_bytes'] ) ? (int) $report['converted_text_bytes'] : 0;
@@ -362,6 +428,17 @@ if ( ! function_exists( 'bfb_build_conversion_diagnostics' ) ) {
 				),
 			);
 			$guidance      = 'Conversion completed with explicit fallback evidence. Review fallback_events and fallbacks to identify unsupported fragments; keep future writes routed through BFB unless the user explicitly wants raw HTML blocks.';
+		} elseif ( $materialization_count > 0 ) {
+			$status        = 'success_with_materialization_requests';
+			$diagnostics[] = array(
+				'code'     => 'materialization_requested',
+				'severity' => 'info',
+				'message'  => 'Conversion completed with downstream asset or reference materialization requests.',
+				'details'  => array(
+					'materialization_request_count' => $materialization_count,
+				),
+			);
+			$guidance      = 'Conversion completed without fallback evidence, but downstream materialization is required. Review materialization_requests, write assets in the consuming layer, and replace placeholders before final output.';
 		} elseif ( $suspected_text_loss ) {
 			$status        = 'warning_only_suspicion';
 			$diagnostics[] = array(
@@ -382,6 +459,61 @@ if ( ! function_exists( 'bfb_build_conversion_diagnostics' ) ) {
 			'diagnostics'    => $diagnostics,
 			'agent_guidance' => $guidance,
 		);
+	}
+}
+
+if ( ! function_exists( 'bfb_normalize_conversion_metadata' ) ) {
+	/**
+	 * Normalize conversion metadata emitted by conversion substrates.
+	 *
+	 * BFB stores only structured, filesystem-agnostic data. Downstream consumers
+	 * decide whether and where to write assets, then replace any placeholders.
+	 *
+	 * @param array<string, mixed> $metadata Raw metadata event.
+	 * @return array<string, mixed> Normalized metadata, or empty array when invalid.
+	 */
+	function bfb_normalize_conversion_metadata( array $metadata ): array {
+		$type = isset( $metadata['type'] ) ? sanitize_key( (string) $metadata['type'] ) : '';
+		if ( '' === $type ) {
+			return array();
+		}
+
+		$normalized  = array( 'type' => $type );
+		$scalar_keys = array(
+			'id',
+			'kind',
+			'source',
+			'placeholder',
+			'media_type',
+			'filename',
+			'alt',
+			'label',
+			'classification',
+			'encoding',
+		);
+
+		foreach ( $scalar_keys as $key ) {
+			if ( isset( $metadata[ $key ] ) && is_scalar( $metadata[ $key ] ) ) {
+				$normalized[ $key ] = (string) $metadata[ $key ];
+			}
+		}
+
+		if ( isset( $metadata['payload'] ) && is_string( $metadata['payload'] ) ) {
+			$normalized['payload']       = $metadata['payload'];
+			$normalized['payload_bytes'] = strlen( $metadata['payload'] );
+		} elseif ( isset( $metadata['payload_bytes'] ) && is_numeric( $metadata['payload_bytes'] ) ) {
+			$normalized['payload_bytes'] = max( 0, (int) $metadata['payload_bytes'] );
+		}
+
+		if ( isset( $metadata['metadata'] ) && is_array( $metadata['metadata'] ) ) {
+			$normalized['metadata'] = $metadata['metadata'];
+		}
+
+		if ( isset( $metadata['replacement'] ) && is_array( $metadata['replacement'] ) ) {
+			$normalized['replacement'] = $metadata['replacement'];
+		}
+
+		return $normalized;
 	}
 }
 
