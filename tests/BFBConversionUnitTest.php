@@ -416,6 +416,85 @@ MARKDOWN;
 	}
 
 	/**
+	 * Conversion reports should surface generic downstream materialization requests.
+	 */
+	public function test_conversion_report_surfaces_safe_svg_materialization_metadata(): void {
+		$safe_svg = '<svg viewBox="0 0 24 24" aria-label="Check"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+
+		$pre_result = static function ( $pre_result, string $content ): array {
+			unset( $pre_result );
+
+			do_action(
+				'html_to_blocks_materialization_request',
+				array(
+					'id'             => 'svg-icon-check',
+					'kind'           => 'asset',
+					'source'         => 'inline',
+					'classification' => 'safe_svg_icon',
+					'media_type'     => 'image/svg+xml',
+					'filename'       => 'svg-icon-check.svg',
+					'placeholder'    => 'bfb-materialization://svg-icon-check',
+					'payload'        => $content,
+					'alt'            => 'Check',
+					'replacement'    => array(
+						'block_name' => 'core/image',
+						'attrs'      => array(
+							'url' => 'bfb-materialization://svg-icon-check',
+							'alt' => 'Check',
+						),
+					),
+				)
+			);
+
+			return array(
+				array(
+					'blockName'    => 'core/image',
+					'attrs'        => array(
+						'url' => 'bfb-materialization://svg-icon-check',
+						'alt' => 'Check',
+					),
+					'innerBlocks'  => array(),
+					'innerHTML'    => '<figure class="wp-block-image"><img src="bfb-materialization://svg-icon-check" alt="Check"/></figure>',
+					'innerContent' => array( '<figure class="wp-block-image"><img src="bfb-materialization://svg-icon-check" alt="Check"/></figure>' ),
+				),
+			);
+		};
+
+		add_filter( 'bfb_html_to_blocks_pre_result', $pre_result, 10, 2 );
+		try {
+			$report = bfb_conversion_report( $safe_svg, 'html' );
+		} finally {
+			remove_filter( 'bfb_html_to_blocks_pre_result', $pre_result, 10 );
+		}
+
+		$this->assertSame( 1, $report['total_blocks'] );
+		$this->assertSame( 0, $report['core_html_blocks'] );
+		$this->assertSame( 0, $report['fallback_event_count'] );
+		$this->assertSame( 1, $report['materialization_request_count'] );
+		$this->assertSame( 'success_with_materialization_requests', $report['status'] );
+		$this->assertSame( 'materialization_requested', $report['diagnostics'][0]['code'] ?? null );
+		$this->assertSame( 'safe_svg_icon', $report['materialization_requests'][0]['classification'] ?? null );
+		$this->assertSame( 'image/svg+xml', $report['materialization_requests'][0]['media_type'] ?? null );
+		$this->assertStringContainsString( '<svg viewBox=', $report['materialization_requests'][0]['payload'] ?? '' );
+		$this->assertStringNotContainsString( '<!-- wp:html', $report['serialized_blocks'] );
+	}
+
+	/**
+	 * Unsafe SVG should stay on the explicit unsupported fallback path.
+	 */
+	public function test_conversion_report_keeps_unsafe_svg_as_fallback_diagnostic(): void {
+		$report = bfb_conversion_report( '<svg viewBox="0 0 24 24"><script>alert(1)</script><path d="M0 0h24v24H0z"/></svg>', 'html' );
+
+		$this->assertSame( 1, $report['core_html_blocks'] );
+		$this->assertSame( 1, $report['fallback_event_count'] );
+		$this->assertSame( 0, $report['materialization_request_count'] );
+		$this->assertSame( 'success_with_fallbacks', $report['status'] );
+		$this->assertSame( 'core_html_fallback', $report['diagnostics'][0]['code'] ?? null );
+		$this->assertSame( 'SVG', $report['fallback_events'][0]['tag_name'] ?? null );
+		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
+	}
+
+	/**
 	 * Conversion diagnostics should separate warning-only suspicion from explicit fallback evidence.
 	 */
 	public function test_conversion_diagnostics_classify_warning_only_suspicion(): void {
