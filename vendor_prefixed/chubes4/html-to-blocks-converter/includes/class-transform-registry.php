@@ -739,7 +739,10 @@ class HTML_To_Blocks_Transform_Registry
         if (\preg_match('/(?:^|\s)(?:wp-block-button__link|wp-element-button)(?:$|\s)/i', $class_name) === 1) {
             return \true;
         }
-        if (\preg_match('/(?:^|\s)btn(?:$|\s)/i', $class_name) === 1 && \preg_match('/(?:^|\s)btn-(?!cta(?:$|\s))[A-Za-z0-9_-]+(?:$|\s)/i', $class_name) === 1) {
+        if (\preg_match('/(?:^|\s)btn(?:$|\s)/i', $class_name) === 1) {
+            return \true;
+        }
+        if (\preg_match('/(?:^|\s)btn-(?!cta(?:$|\s))[A-Za-z0-9_-]+(?:$|\s)/i', $class_name) === 1) {
             return \true;
         }
         return \preg_match('/(?:^|\s)[A-Za-z0-9]+-btn(?:-[A-Za-z0-9_-]+)?(?:$|\s)/i', $class_name) === 1;
