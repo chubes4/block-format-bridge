@@ -35,8 +35,8 @@ Every adapter implements the `BFB_Format_Adapter` contract:
 ```php
 interface BFB_Format_Adapter {
     public function slug(): string;
-    public function to_blocks( string $content ): array;
-    public function from_blocks( array $blocks ): string;
+    public function to_blocks( string $content, array $options = array() ): array;
+    public function from_blocks( array $blocks, array $options = array() ): string;
     public function detect( string $content ): bool; // reserved for future use
 }
 ```
@@ -196,7 +196,24 @@ $md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
 
 // Markdown → HTML (composes via blocks)
 $html = bfb_convert( '# X', 'markdown', 'html' );
+
+// HTML → blocks with importer-neutral per-call context forwarded to h2bc args.
+$blocks = bfb_convert(
+    '<h1>Hello</h1><p>World</p>',
+    'html',
+    'blocks',
+    array(
+        'context' => array(
+            'source' => 'static-site-importer',
+            'mode'   => 'import',
+        ),
+    )
+);
 ```
+
+The optional fourth argument is a generic per-call options array. For HTML → Blocks, BFB forwards those options alongside
+the reserved `HTML` argument passed to `html_to_blocks_raw_handler()`, so downstream tools can pass structured `context`
+without BFB gaining importer-specific API.
 
 ### `bfb_to_blocks( $content, $from ): array`
 

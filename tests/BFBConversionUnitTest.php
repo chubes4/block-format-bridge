@@ -109,6 +109,22 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$default = bfb_convert( $html, 'html', 'blocks' );
 		$this->assertNotSame( '', $default, 'Default 3-argument conversion should remain supported.' );
 
+		$default_args = null;
+		$default_listener = static function ( array $args ) use ( &$default_args ): array {
+			$default_args = $args;
+			return $args;
+		};
+
+		add_filter( 'bfb_html_to_blocks_args', $default_listener, 10, 1 );
+		try {
+			bfb_convert( $html, 'html', 'blocks' );
+		} finally {
+			remove_filter( 'bfb_html_to_blocks_args', $default_listener, 10 );
+		}
+
+		$this->assertIsArray( $default_args, 'Default conversion should still expose h2bc raw-handler arguments.' );
+		$this->assertArrayNotHasKey( 'context', $default_args, 'Default conversion should not inject conversion context.' );
+
 		$seen_args = null;
 		$listener  = static function ( array $args, string $content, array $options ) use ( &$seen_args ): array {
 			$seen_args = array(
@@ -121,7 +137,18 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 
 		add_filter( 'bfb_html_to_blocks_args', $listener, 10, 3 );
 		try {
-			$with_options = bfb_convert( $html, 'html', 'blocks', array( 'mode' => 'fidelity' ) );
+			$with_options = bfb_convert(
+				$html,
+				'html',
+				'blocks',
+				array(
+					'context' => array(
+						'source' => 'static-site-importer',
+						'mode'   => 'import',
+					),
+					'mode'    => 'fidelity',
+				)
+			);
 		} finally {
 			remove_filter( 'bfb_html_to_blocks_args', $listener, 10 );
 		}
@@ -129,8 +156,26 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$this->assertNotSame( '', $with_options, '4-argument conversion should produce serialized blocks.' );
 		$this->assertIsArray( $seen_args, 'HTML adapter should expose h2bc raw-handler arguments.' );
 		$this->assertSame( 'fidelity', $seen_args['args']['mode'] ?? null, 'Mode option should be forwarded to h2bc args.' );
+		$this->assertSame(
+			array(
+				'source' => 'static-site-importer',
+				'mode'   => 'import',
+			),
+			$seen_args['args']['context'] ?? null,
+			'Generic conversion context should be forwarded to h2bc args.'
+		);
 		$this->assertSame( $html, $seen_args['args']['HTML'] ?? null, 'BFB should preserve the reserved HTML raw-handler arg.' );
-		$this->assertSame( array( 'mode' => 'fidelity' ), $seen_args['options'] ?? null, 'HTML adapter should receive public conversion options.' );
+		$this->assertSame(
+			array(
+				'context' => array(
+					'source' => 'static-site-importer',
+					'mode'   => 'import',
+				),
+				'mode'    => 'fidelity',
+			),
+			$seen_args['options'] ?? null,
+			'HTML adapter should receive public conversion options.'
+		);
 
 		$probe = new class() implements BFB_Format_Adapter {
 			/**
