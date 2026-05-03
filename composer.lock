@@ -722,16 +722,16 @@
     "packages-dev": [
         {
             "name": "chubes4/html-to-blocks-converter",
-            "version": "v0.6.16",
+            "version": "v0.6.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chubes4/html-to-blocks-converter.git",
-                "reference": "e320cb11fc278bfb833a5a9d4427daf8dd515679"
+                "reference": "a4b2fb0eb44e6b70794f4c88cec94bc049fcbb2d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/e320cb11fc278bfb833a5a9d4427daf8dd515679",
-                "reference": "e320cb11fc278bfb833a5a9d4427daf8dd515679",
+                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/a4b2fb0eb44e6b70794f4c88cec94bc049fcbb2d",
+                "reference": "a4b2fb0eb44e6b70794f4c88cec94bc049fcbb2d",
                 "shasum": ""
             },
             "require": {
@@ -755,10 +755,10 @@
             "description": "Convert raw HTML into Gutenberg block arrays using WordPress' HTML API.",
             "homepage": "https://github.com/chubes4/html-to-blocks-converter",
             "support": {
-                "source": "https://github.com/chubes4/html-to-blocks-converter/tree/v0.6.16",
+                "source": "https://github.com/chubes4/html-to-blocks-converter/tree/v0.6.17",
                 "issues": "https://github.com/chubes4/html-to-blocks-converter/issues"
             },
-            "time": "2026-05-03T19:52:14+00:00"
+            "time": "2026-05-03T20:52:41+00:00"
         },
         {
             "name": "fidry/console",
