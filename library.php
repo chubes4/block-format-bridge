@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $bfb_library_path    = __DIR__;
-$bfb_library_version = '0.7.0';
+$bfb_library_version = '0.7.1';
 
 // Load Composer/php-scoper dependencies as soon as the bridge package is
 // included, not when the winning BFB version initializes on
