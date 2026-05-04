@@ -43,6 +43,7 @@ foreach ( new DirectoryIterator( $root ) as $vendor_dir ) {
 		if ( ! is_file( $composer ) ) {
 			continue;
 		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Build tool reads Composer metadata from local vendor packages.
 		$data = json_decode( (string) file_get_contents( $composer ), true );
 		if ( ! is_array( $data ) || empty( $data['autoload'] ) ) {
 			continue;
@@ -144,6 +145,7 @@ if ( ! empty( $files_to_load ) ) {
 	}
 }
 
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Build tool writes the generated local autoloader.
 file_put_contents( $root . '/autoload.php', $autoload );
 echo "Wrote $root/autoload.php\n";
 

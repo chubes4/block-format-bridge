@@ -57,6 +57,7 @@ function has_action( string $hook_name, $callback = false ) {
 
 $hooks_file    = __DIR__ . '/../vendor_prefixed/chubes4/html-to-blocks-converter/includes/hooks.php';
 $versions_file = __DIR__ . '/../vendor_prefixed/chubes4/html-to-blocks-converter/includes/class-html-to-blocks-versions.php';
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Static smoke reads local bundled source.
 $hooks_source_raw = file_get_contents( $hooks_file );
 
 if ( ! is_string( $hooks_source_raw ) ) {
