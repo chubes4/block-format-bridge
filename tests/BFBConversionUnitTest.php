@@ -388,6 +388,62 @@ MARKDOWN;
 	}
 
 	/**
+	 * Import-grade Markdown bodies should become native blocks without SSI-specific APIs.
+	 */
+	public function test_markdown_to_blocks_covers_import_grade_body_fixtures(): void {
+		$fixtures = array(
+			'docs'    => array(
+				'file'     => 'import-grade-docs.md',
+				'blocks'   => array( 'core/heading', 'core/paragraph', 'core/list', 'core/list-item', 'core/table', 'core/code', 'core/quote' ),
+				'snippets' => array(
+					'<!-- wp:heading {"level":1} -->',
+					'<h2 class="wp-block-heading">Preflight</h2>',
+					'<td>Markdown</td><td>Native blocks</td>',
+					'const format = &#039;markdown&#039;;',
+				),
+			),
+			'article' => array(
+				'file'     => 'import-grade-article.md',
+				'blocks'   => array( 'core/heading', 'core/paragraph', 'core/quote', 'core/list', 'core/list-item', 'core/code' ),
+				'snippets' => array(
+					'<h1 class="wp-block-heading">The Import-Grade Article</h1>',
+					'<img src="https://example.com/migration-diagram.png" alt="Migration diagram"',
+					'<strong>bold decisions</strong>',
+					'bfb_convert( $markdown, &#039;markdown&#039;, &#039;blocks&#039; );',
+				),
+			),
+			'landing' => array(
+				'file'     => 'import-grade-landing.md',
+				'blocks'   => array( 'core/heading', 'core/paragraph', 'core/list', 'core/list-item', 'core/separator', 'core/table', 'core/quote' ),
+				'snippets' => array(
+					'<h1 class="wp-block-heading">Ship Cleaner Imports</h1>',
+					'<a href="https://example.com/start">Start the import</a>',
+					'<!-- wp:separator -->',
+					'<td>Landing pages</td><td>Content blocks</td>',
+				),
+			),
+		);
+
+		foreach ( $fixtures as $label => $fixture ) {
+			$markdown   = $this->markdown_fixture( $fixture['file'] );
+			$serialized = bfb_convert( $markdown, 'markdown', 'blocks' );
+			$blocks     = parse_blocks( $serialized );
+			$flat       = $this->flatten_blocks( $blocks );
+
+			$this->assertNotSame( '', $serialized, "{$label} fixture should produce serialized blocks." );
+			$this->assertNotContains( 'core/html', $flat, "{$label} fixture should not fall back to raw HTML blocks." );
+
+			foreach ( $fixture['blocks'] as $block_name ) {
+				$this->assertContains( $block_name, $flat, "{$label} fixture should include {$block_name}." );
+			}
+
+			foreach ( $fixture['snippets'] as $snippet ) {
+				$this->assertStringContainsString( $snippet, $serialized, "{$label} fixture should serialize {$snippet}." );
+			}
+		}
+	}
+
+	/**
 	 * Compiler consumers should get block arrays without reaching into adapters.
 	 */
 	public function test_bfb_to_blocks_exposes_compiler_facing_block_array_helper(): void {
@@ -794,6 +850,22 @@ MARKDOWN;
 		$this->assertNotSame( '', $serialized, "{$from} conversion should produce serialized blocks." );
 
 		return parse_blocks( $serialized );
+	}
+
+	/**
+	 * Load a Markdown fixture body.
+	 *
+	 * @param string $file Fixture filename.
+	 * @return string Fixture contents.
+	 */
+	private function markdown_fixture( string $file ): string {
+		$path = __DIR__ . '/fixtures/markdown/' . $file;
+		$this->assertFileExists( $path );
+
+		$contents = file_get_contents( $path );
+		$this->assertIsString( $contents );
+
+		return $contents;
 	}
 
 	/**
