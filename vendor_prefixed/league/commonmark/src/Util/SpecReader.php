@@ -52,8 +52,8 @@ final class SpecReader {
 	 * @throws IOException if the file cannot be loaded
 	 */
 	public static function readFile(string $filename): iterable {
-		global $wp_filesystem;
-		if ( ( $data = $wp_filesystem->get_contents( $filename ) ) === \false ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored CommonMark spec reader requires native filesystem access.
+		if ( ( $data = file_get_contents($filename) ) === \false ) {
 			throw new IOException(\sprintf('Failed to load spec from %s', $filename));
 		}
 		return self::read($data);

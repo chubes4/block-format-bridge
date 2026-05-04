@@ -60,8 +60,10 @@ class CoreBlockInventoryUnitTest extends WP_UnitTestCase
     {
         global $wp_filesystem;
         $classification = $this->read_json(\dirname(__DIR__) . '/docs/core-block-classification.json');
-		$registry_source = $wp_filesystem->get_contents( \dirname(__DIR__ ) . '/includes/class-transform-registry.php');
-		$raw_source = $wp_filesystem->get_contents( \dirname(__DIR__ ) . '/raw-handler.php');
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored test reads local source fixtures.
+		$registry_source = file_get_contents( \dirname(__DIR__ ) . '/includes/class-transform-registry.php');
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored test reads local source fixtures.
+		$raw_source = file_get_contents( \dirname(__DIR__ ) . '/raw-handler.php');
         $this->assertIsString($registry_source);
         $this->assertIsString($raw_source);
         $raw_transform_blocks = array();
@@ -92,7 +94,8 @@ class CoreBlockInventoryUnitTest extends WP_UnitTestCase
     private function read_json(string $path): array
     {
         global $wp_filesystem;
-		$raw = $wp_filesystem->get_contents( $path );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored test reads local JSON fixtures.
+		$raw = file_get_contents( $path );
         $this->assertIsString($raw, 'Unable to read ' . $path);
         $data = \json_decode($raw, \true);
         $this->assertIsArray($data, 'Invalid JSON in ' . $path);

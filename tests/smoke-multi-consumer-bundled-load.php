@@ -198,13 +198,13 @@ function bfb_smoke_copy_path( string $source, string $target ): void {
 }
 
 function bfb_smoke_copy_package( string $source_root, string $target_root, string $version, bool $with_normalization = true ): void {
-	global $wp_filesystem;
 	mkdir( $target_root, 0777, true );
 	copy( $source_root . '/library.php', $target_root . '/library.php' );
 	bfb_smoke_copy_path( $source_root . '/includes', $target_root . '/includes' );
 	bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
 
-	$library_raw = $wp_filesystem->get_contents( $target_root . '/library.php' );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Static smoke patches a temporary local copy.
+	$library_raw = file_get_contents( $target_root . '/library.php' );
 	if ( ! is_string( $library_raw ) ) {
 		bfb_smoke_assert( false, 'Temp library.php should be readable.' );
 	}
@@ -216,7 +216,8 @@ function bfb_smoke_copy_package( string $source_root, string $target_root, strin
 		bfb_smoke_assert( 1 === $removed, 'Stale temp library.php should remove the bfb_normalize() include.' );
 		wp_delete_file( $target_root . '/includes/normalization.php' );
 	}
-	$wp_filesystem->put_contents( $target_root . '/library.php', $library );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Static smoke patches a temporary local copy.
+	file_put_contents( $target_root . '/library.php', $library );
 }
 
 function bfb_smoke_remove_path( string $path ): void {

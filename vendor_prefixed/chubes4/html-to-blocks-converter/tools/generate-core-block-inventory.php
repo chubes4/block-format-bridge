@@ -26,7 +26,8 @@ if (!\function_exists('BlockFormatBridge\Vendor\html_to_blocks_generate_core_blo
         }
         $blocks = [];
         foreach ($files as $file) {
-			$raw = $wp_filesystem->get_contents( $file );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored build tool reads local block metadata.
+			$raw = file_get_contents( $file );
             $data = \is_string($raw) ? \json_decode($raw, \true) : null;
             if (!\is_array($data) || empty($data['name'])) {
                 throw new \RuntimeException("Invalid block metadata: {$file}");

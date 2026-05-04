@@ -20,7 +20,8 @@ $assert = static function ($condition, $label, $detail = '') use (&$failures, &$
 };
 $read_json = static function (string $path) use ($assert): array {
     global $wp_filesystem;
-	$raw = $wp_filesystem->get_contents( $path );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored smoke reads local JSON fixtures.
+	$raw = file_get_contents( $path );
     $assert(\is_string($raw) && '' !== $raw, \basename($path) . '-readable', 'Unable to read ' . $path);
     $data = \is_string($raw) ? \json_decode($raw, \true) : null;
     $assert(\is_array($data), \basename($path) . '-valid-json', 'Invalid JSON in ' . $path);
@@ -28,7 +29,8 @@ $read_json = static function (string $path) use ($assert): array {
 };
 $read_required_file = static function (string $path) use ($assert): string {
     global $wp_filesystem;
-	$contents = $wp_filesystem->get_contents( $path );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored smoke reads local source fixtures.
+	$contents = file_get_contents( $path );
     $assert(\is_string($contents) && '' !== $contents, \basename($path) . '-readable', 'Unable to read ' . $path);
     return \is_string($contents) ? $contents : '';
 };

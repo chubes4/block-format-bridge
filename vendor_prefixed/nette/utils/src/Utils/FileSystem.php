@@ -118,8 +118,8 @@ final class FileSystem {
 	 */
 	public static function read(string $file): string {
 		if ( is_readable( $file ) ) {
-			global $wp_filesystem;
-			$content = $wp_filesystem->get_contents( $file );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored filesystem abstraction intentionally wraps native file IO.
+			$content = file_get_contents( $file );
 		} else {
 			$content = false;
 		}
@@ -157,8 +157,8 @@ final class FileSystem {
 	 */
 	public static function write(string $file, string $content, ?int $mode = 0666): void {
 		self::createDir(dirname($file));
-		if ( @$wp_filesystem->put_contents( $file, $content ) === \false ) {
-			global $wp_filesystem;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Vendored filesystem abstraction intentionally wraps native file IO.
+		if ( @file_put_contents($file, $content) === \false ) {
 			// @ is escalated to exception
 			throw new Nette\IOException(sprintf("Unable to write file '%s'. %s", self::normalizePath($file), Helpers::getLastError()));
 		}

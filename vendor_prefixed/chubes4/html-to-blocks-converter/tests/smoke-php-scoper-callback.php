@@ -60,7 +60,8 @@ $smoke_assert = function ($condition, $label, $detail = '') use (&$failures, &$a
 };
 $read_required_file = static function (string $path) use ($smoke_assert): string {
     global $wp_filesystem;
-	$contents = $wp_filesystem->get_contents( $path );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored smoke reads local source fixtures.
+	$contents = file_get_contents( $path );
     $smoke_assert(\is_string($contents) && '' !== $contents, \basename($path) . '-readable', "Unable to read {$path}");
     return \is_string($contents) ? $contents : '';
 };

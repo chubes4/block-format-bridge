@@ -149,7 +149,8 @@ final class Reflection {
 			if ( $class_name->isInternal() ) {
 				$cache[ $name ] = array();
 			} else {
-				$code  = (string) $wp_filesystem->get_contents( (string) $class_name->getFileName());
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored reflection helper reads PHP source files directly.
+				$code  = (string) file_get_contents((string) $class_name->getFileName());
 				$cache = self::parseUseStatements($code, $name) + $cache;
 			}
 		}

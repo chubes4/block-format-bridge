@@ -14,8 +14,10 @@ function bfb_cli_smoke_assert( bool $condition, string $message ): void {
 	}
 }
 
-$cli_source = $wp_filesystem->get_contents( __DIR__ . '/../includes/cli.php' );
-$library    = $wp_filesystem->get_contents( __DIR__ . '/../library.php' );
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Static smoke reads local source files.
+$cli_source = file_get_contents( __DIR__ . '/../includes/cli.php' );
+// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Static smoke reads local source files.
+$library    = file_get_contents( __DIR__ . '/../library.php' );
 
 bfb_cli_smoke_assert( is_string( $cli_source ), 'CLI source should be readable.' );
 bfb_cli_smoke_assert( is_string( $library ), 'Library source should be readable.' );
@@ -36,8 +38,8 @@ bfb_cli_smoke_assert( strpos( $cli_source, 'Status: %s' ) !== false, 'Analyze su
 bfb_cli_smoke_assert( strpos( $cli_source, 'Diagnostic: %s (%s) - %s' ) !== false, 'Analyze summary should surface structured diagnostics.' );
 bfb_cli_smoke_assert( strpos( $cli_source, 'Agent guidance: %s' ) !== false, 'Analyze summary should surface agent-safe guidance.' );
 bfb_cli_smoke_assert( strpos( $cli_source, "file_get_contents( 'php://stdin' )" ) !== false, 'CLI should read STDIN when --input is omitted.' );
-bfb_cli_smoke_assert( strpos( $cli_source, '$wp_filesystem->get_contents( $path )' ) !== false, 'CLI should read file input when --input is present.' );
-bfb_cli_smoke_assert( strpos( $cli_source, '$wp_filesystem->put_contents( $path, $content )' ) !== false, 'CLI should write file output when --output is present.' );
+bfb_cli_smoke_assert( strpos( $cli_source, 'file_get_contents( $path )' ) !== false, 'CLI should read file input when --input is present.' );
+bfb_cli_smoke_assert( strpos( $cli_source, 'file_put_contents( $path, $content )' ) !== false, 'CLI should write file output when --output is present.' );
 bfb_cli_smoke_assert( strpos( $cli_source, 'WP_CLI::line( $content )' ) !== false, 'CLI should write STDOUT when --output is omitted.' );
 bfb_cli_smoke_assert( strpos( $cli_source, 'bfb_convert( $content, $from, $to )' ) !== false, 'Content output should wrap bfb_convert().' );
 bfb_cli_smoke_assert( strpos( $cli_source, 'bfb_to_blocks( $content, $from )' ) !== false, 'JSON block output should wrap bfb_to_blocks().' );

@@ -45,7 +45,8 @@ class GutenbergRawHandlerParityUnitTest extends WP_UnitTestCase
     public function test_parity_document_names_scope_boundary(): void
     {
         global $wp_filesystem;
-		$doc = $wp_filesystem->get_contents( \dirname(__DIR__ ) . '/docs/gutenberg-rawhandler-parity.md');
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored test reads local docs fixtures.
+		$doc = file_get_contents( \dirname(__DIR__ ) . '/docs/gutenberg-rawhandler-parity.md');
         $this->assertIsString($doc);
         $this->assertStringContainsString('deterministic static HTML', $doc);
         $this->assertStringContainsString('Google Docs', $doc);
