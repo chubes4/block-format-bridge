@@ -47,6 +47,12 @@ return [
 				);
 			}
 
+			$contents = str_replace(
+				"'html_to_blocks_raw_handler'",
+				"'{$prefix}\\html_to_blocks_raw_handler'",
+				$contents
+			);
+
 			return $contents;
 		},
 	],

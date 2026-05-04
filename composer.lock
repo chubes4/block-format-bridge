@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b757b1e180efb071bc5ca93cd0faf866",
+    "content-hash": "337cf370d621dae8f4895840f29c6940",
     "packages": [
         {
             "name": "dflydev/dot-access-data",
@@ -722,16 +722,16 @@
     "packages-dev": [
         {
             "name": "chubes4/html-to-blocks-converter",
-            "version": "v0.6.17",
+            "version": "v0.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chubes4/html-to-blocks-converter.git",
-                "reference": "a4b2fb0eb44e6b70794f4c88cec94bc049fcbb2d"
+                "reference": "094b24fd1e2c51db5f86e8bb3b6c902480116fc2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/a4b2fb0eb44e6b70794f4c88cec94bc049fcbb2d",
-                "reference": "a4b2fb0eb44e6b70794f4c88cec94bc049fcbb2d",
+                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/094b24fd1e2c51db5f86e8bb3b6c902480116fc2",
+                "reference": "094b24fd1e2c51db5f86e8bb3b6c902480116fc2",
                 "shasum": ""
             },
             "require": {
@@ -755,10 +755,10 @@
             "description": "Convert raw HTML into Gutenberg block arrays using WordPress' HTML API.",
             "homepage": "https://github.com/chubes4/html-to-blocks-converter",
             "support": {
-                "source": "https://github.com/chubes4/html-to-blocks-converter/tree/v0.6.17",
+                "source": "https://github.com/chubes4/html-to-blocks-converter/tree/v0.7.0",
                 "issues": "https://github.com/chubes4/html-to-blocks-converter/issues"
             },
-            "time": "2026-05-03T20:52:41+00:00"
+            "time": "2026-05-04T15:04:58+00:00"
         },
         {
             "name": "fidry/console",
