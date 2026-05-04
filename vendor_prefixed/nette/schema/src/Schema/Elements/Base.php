@@ -69,9 +69,7 @@ trait Base {
 		}
 		return $this->default;
 	}
-	public function doNormalize(mixed $value, Context $context): mixed
-	unset( $context );
-	{
+	public function doNormalize(mixed $value, Context $context): mixed {
 	if ( $this->before ) {
 		$value = ( $this->before )($value);
 	}
