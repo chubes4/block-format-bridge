@@ -16,28 +16,32 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\ParagraphParser;
 /**
  * @internal You should rely on the interface instead
  */
-final class MarkdownParserState implements MarkdownParserStateInterface {
-
-	/** @psalm-readonly */
-	private BlockContinueParserInterface $activeBlockParser;
-	/** @psalm-readonly */
-	private BlockContinueParserInterface $lastMatchedBlockParser;
-	public function __construct(BlockContinueParserInterface $activeBlockParser, BlockContinueParserInterface $lastMatchedBlockParser) {
-		$this->activeBlockParser      = $activeBlockParser;
-		$this->lastMatchedBlockParser = $lastMatchedBlockParser;
-	}
-	public function getActiveBlockParser(): BlockContinueParserInterface {
-		return $this->activeBlockParser;
-	}
-	public function getLastMatchedBlockParser(): BlockContinueParserInterface {
-		return $this->lastMatchedBlockParser;
-	}
-	public function getParagraphContent(): ?string {
-		if ( ! $this->lastMatchedBlockParser instanceof ParagraphParser ) {
-			return null;
-		}
-		$paragraphParser = $this->lastMatchedBlockParser;
-		$content         = $paragraphParser->getContentString();
-		return '' === $content ? null : $content;
-	}
+final class MarkdownParserState implements MarkdownParserStateInterface
+{
+    /** @psalm-readonly */
+    private BlockContinueParserInterface $activeBlockParser;
+    /** @psalm-readonly */
+    private BlockContinueParserInterface $lastMatchedBlockParser;
+    public function __construct(BlockContinueParserInterface $activeBlockParser, BlockContinueParserInterface $lastMatchedBlockParser)
+    {
+        $this->activeBlockParser = $activeBlockParser;
+        $this->lastMatchedBlockParser = $lastMatchedBlockParser;
+    }
+    public function getActiveBlockParser(): BlockContinueParserInterface
+    {
+        return $this->activeBlockParser;
+    }
+    public function getLastMatchedBlockParser(): BlockContinueParserInterface
+    {
+        return $this->lastMatchedBlockParser;
+    }
+    public function getParagraphContent(): ?string
+    {
+        if (!$this->lastMatchedBlockParser instanceof ParagraphParser) {
+            return null;
+        }
+        $paragraphParser = $this->lastMatchedBlockParser;
+        $content = $paragraphParser->getContentString();
+        return $content === '' ? null : $content;
+    }
 }

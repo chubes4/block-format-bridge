@@ -11,8 +11,8 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Block;
 
-interface TightBlockInterface {
-
-	public function isTight(): bool;
-	public function setTight(bool $tight): void;
+interface TightBlockInterface
+{
+    public function isTight(): bool;
+    public function setTight(bool $tight): void;
 }

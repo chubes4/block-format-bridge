@@ -13,13 +13,15 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\B
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\StringContainerInterface;
-final class IndentedCode extends AbstractBlock implements StringContainerInterface {
-
-	private string $literal = '';
-	public function getLiteral(): string {
-		return $this->literal;
-	}
-	public function setLiteral(string $literal): void {
-		$this->literal = $literal;
-	}
+final class IndentedCode extends AbstractBlock implements StringContainerInterface
+{
+    private string $literal = '';
+    public function getLiteral(): string
+    {
+        return $this->literal;
+    }
+    public function setLiteral(string $literal): void
+    {
+        $this->literal = $literal;
+    }
 }

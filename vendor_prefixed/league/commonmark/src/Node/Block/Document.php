@@ -17,25 +17,30 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Block;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Reference\ReferenceMap;
 use BlockFormatBridge\Vendor\League\CommonMark\Reference\ReferenceMapInterface;
-class Document extends AbstractBlock {
-
-	/** @psalm-readonly */
-	protected ReferenceMapInterface $referenceMap;
-	public function __construct(?ReferenceMapInterface $referenceMap = null) {
-		parent::__construct();
-		$this->setStartLine(1);
-		$this->referenceMap = $referenceMap ?? new ReferenceMap();
-	}
-	public function getReferenceMap(): ReferenceMapInterface {
-		return $this->referenceMap;
-	}
-	public function canContain(AbstractBlock $block): bool {
-		return \true;
-	}
-	public function isCode(): bool {
-		return \false;
-	}
-	public function matchesNextLine(Cursor $cursor): bool {
-		return \true;
-	}
+class Document extends AbstractBlock
+{
+    /** @psalm-readonly */
+    protected ReferenceMapInterface $referenceMap;
+    public function __construct(?ReferenceMapInterface $referenceMap = null)
+    {
+        parent::__construct();
+        $this->setStartLine(1);
+        $this->referenceMap = $referenceMap ?? new ReferenceMap();
+    }
+    public function getReferenceMap(): ReferenceMapInterface
+    {
+        return $this->referenceMap;
+    }
+    public function canContain(AbstractBlock $block): bool
+    {
+        return \true;
+    }
+    public function isCode(): bool
+    {
+        return \false;
+    }
+    public function matchesNextLine(Cursor $cursor): bool
+    {
+        return \true;
+    }
 }

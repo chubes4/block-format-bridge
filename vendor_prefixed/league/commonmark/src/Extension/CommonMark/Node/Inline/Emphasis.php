@@ -16,17 +16,20 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\I
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\DelimitedInterface;
-final class Emphasis extends AbstractInline implements DelimitedInterface {
-
-	private string $delimiter;
-	public function __construct(string $delimiter = '_') {
-		parent::__construct();
-		$this->delimiter = $delimiter;
-	}
-	public function getOpeningDelimiter(): string {
-		return $this->delimiter;
-	}
-	public function getClosingDelimiter(): string {
-		return $this->delimiter;
-	}
+final class Emphasis extends AbstractInline implements DelimitedInterface
+{
+    private string $delimiter;
+    public function __construct(string $delimiter = '_')
+    {
+        parent::__construct();
+        $this->delimiter = $delimiter;
+    }
+    public function getOpeningDelimiter(): string
+    {
+        return $this->delimiter;
+    }
+    public function getClosingDelimiter(): string
+    {
+        return $this->delimiter;
+    }
 }

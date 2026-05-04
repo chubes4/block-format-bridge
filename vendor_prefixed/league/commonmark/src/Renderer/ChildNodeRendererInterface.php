@@ -15,12 +15,12 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 /**
  * Renders multiple nodes by delegating to the individual node renderers and adding spacing where needed
  */
-interface ChildNodeRendererInterface {
-
-	/**
-	 * @param Node[] $nodes
-	 */
-	public function renderNodes(iterable $nodes): string;
-	public function getBlockSeparator(): string;
-	public function getInnerSeparator(): string;
+interface ChildNodeRendererInterface
+{
+    /**
+     * @param Node[] $nodes
+     */
+    public function renderNodes(iterable $nodes): string;
+    public function getBlockSeparator(): string;
+    public function getInnerSeparator(): string;
 }

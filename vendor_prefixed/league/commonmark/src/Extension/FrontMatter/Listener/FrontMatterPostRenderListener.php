@@ -13,13 +13,14 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Liste
 
 use BlockFormatBridge\Vendor\League\CommonMark\Event\DocumentRenderedEvent;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Output\RenderedContentWithFrontMatter;
-final class FrontMatterPostRenderListener {
-
-	public function __invoke(DocumentRenderedEvent $event): void {
-		if ( $event->getOutput()->getDocument()->data->get('front_matter', null) === null ) {
-			return;
-		}
-		$frontMatter = $event->getOutput()->getDocument()->data->get('front_matter');
-		$event->replaceOutput(new RenderedContentWithFrontMatter($event->getOutput()->getDocument(), $event->getOutput()->getContent(), $frontMatter));
-	}
+final class FrontMatterPostRenderListener
+{
+    public function __invoke(DocumentRenderedEvent $event): void
+    {
+        if ($event->getOutput()->getDocument()->data->get('front_matter', null) === null) {
+            return;
+        }
+        $frontMatter = $event->getOutput()->getDocument()->data->get('front_matter');
+        $event->replaceOutput(new RenderedContentWithFrontMatter($event->getOutput()->getDocument(), $event->getOutput()->getContent(), $frontMatter));
+    }
 }

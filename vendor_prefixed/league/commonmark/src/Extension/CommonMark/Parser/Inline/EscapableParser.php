@@ -20,26 +20,28 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\RegexHelper;
-final class EscapableParser implements InlineParserInterface {
-
-	public function getMatchDefinition(): InlineParserMatch {
-		return InlineParserMatch::string('\\');
-	}
-	public function parse(InlineParserContext $inlineContext): bool {
-		$cursor   = $inlineContext->getCursor();
-		$nextChar = $cursor->peek();
-		if ( "\n" === $nextChar ) {
-			$cursor->advanceBy(2);
-			$inlineContext->getContainer()->appendChild(new Newline(Newline::HARDBREAK));
-			return \true;
-		}
-		if ( null !== $nextChar && RegexHelper::isEscapable($nextChar) ) {
-			$cursor->advanceBy(2);
-			$inlineContext->getContainer()->appendChild(new Text($nextChar));
-			return \true;
-		}
-		$cursor->advanceBy(1);
-		$inlineContext->getContainer()->appendChild(new Text('\\'));
-		return \true;
-	}
+final class EscapableParser implements InlineParserInterface
+{
+    public function getMatchDefinition(): InlineParserMatch
+    {
+        return InlineParserMatch::string('\\');
+    }
+    public function parse(InlineParserContext $inlineContext): bool
+    {
+        $cursor = $inlineContext->getCursor();
+        $nextChar = $cursor->peek();
+        if ($nextChar === "\n") {
+            $cursor->advanceBy(2);
+            $inlineContext->getContainer()->appendChild(new Newline(Newline::HARDBREAK));
+            return \true;
+        }
+        if ($nextChar !== null && RegexHelper::isEscapable($nextChar)) {
+            $cursor->advanceBy(2);
+            $inlineContext->getContainer()->appendChild(new Text($nextChar));
+            return \true;
+        }
+        $cursor->advanceBy(1);
+        $inlineContext->getContainer()->appendChild(new Text('\\'));
+        return \true;
+    }
 }

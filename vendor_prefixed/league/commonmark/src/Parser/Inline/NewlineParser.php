@@ -17,28 +17,30 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\Newline;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\Text;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
-final class NewlineParser implements InlineParserInterface {
-
-	public function getMatchDefinition(): InlineParserMatch {
-		return InlineParserMatch::regex('\n');
-	}
-	public function parse(InlineParserContext $inlineContext): bool {
-		$inlineContext->getCursor()->advanceBy(1);
-		// Check previous inline for trailing spaces
-		$spaces     = 0;
-		$lastInline = $inlineContext->getContainer()->lastChild();
-		if ( $lastInline instanceof Text ) {
-			$trimmed = \rtrim($lastInline->getLiteral(), ' ');
-			$spaces  = \strlen($lastInline->getLiteral()) - \strlen($trimmed);
-			if ( $spaces ) {
-				$lastInline->setLiteral($trimmed);
-			}
-		}
-		if ( $spaces >= 2 ) {
-			$inlineContext->getContainer()->appendChild(new Newline(Newline::HARDBREAK));
-		} else {
-			$inlineContext->getContainer()->appendChild(new Newline(Newline::SOFTBREAK));
-		}
-		return \true;
-	}
+final class NewlineParser implements InlineParserInterface
+{
+    public function getMatchDefinition(): InlineParserMatch
+    {
+        return InlineParserMatch::regex('\n');
+    }
+    public function parse(InlineParserContext $inlineContext): bool
+    {
+        $inlineContext->getCursor()->advanceBy(1);
+        // Check previous inline for trailing spaces
+        $spaces = 0;
+        $lastInline = $inlineContext->getContainer()->lastChild();
+        if ($lastInline instanceof Text) {
+            $trimmed = \rtrim($lastInline->getLiteral(), ' ');
+            $spaces = \strlen($lastInline->getLiteral()) - \strlen($trimmed);
+            if ($spaces) {
+                $lastInline->setLiteral($trimmed);
+            }
+        }
+        if ($spaces >= 2) {
+            $inlineContext->getContainer()->appendChild(new Newline(Newline::HARDBREAK));
+        } else {
+            $inlineContext->getContainer()->appendChild(new Newline(Newline::SOFTBREAK));
+        }
+        return \true;
+    }
 }

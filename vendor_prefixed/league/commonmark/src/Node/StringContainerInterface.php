@@ -17,8 +17,8 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Node;
 /**
  * Interface for a node which directly contains line(s) of text
  */
-interface StringContainerInterface {
-
-	public function setLiteral(string $literal): void;
-	public function getLiteral(): string;
+interface StringContainerInterface
+{
+    public function setLiteral(string $literal): void;
+    public function getLiteral(): string;
 }

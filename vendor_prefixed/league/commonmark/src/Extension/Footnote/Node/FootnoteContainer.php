@@ -13,6 +13,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Footnote\Node;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-final class FootnoteContainer extends AbstractBlock {
-
+final class FootnoteContainer extends AbstractBlock
+{
 }

@@ -17,29 +17,34 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\AbstractBlockContinu
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinue;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
-final class BlockQuoteParser extends AbstractBlockContinueParser {
-
-	/** @psalm-readonly */
-	private BlockQuote $block;
-	public function __construct() {
-		$this->block = new BlockQuote();
-	}
-	public function getBlock(): BlockQuote {
-		return $this->block;
-	}
-	public function isContainer(): bool {
-		return \true;
-	}
-	public function canContain(AbstractBlock $childBlock): bool {
-		return \true;
-	}
-	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
-		if ( ! $cursor->isIndented() && $cursor->getNextNonSpaceCharacter() === '>' ) {
-			$cursor->advanceToNextNonSpaceOrTab();
-			$cursor->advanceBy(1);
-			$cursor->advanceBySpaceOrTab();
-			return BlockContinue::at($cursor);
-		}
-		return BlockContinue::none();
-	}
+final class BlockQuoteParser extends AbstractBlockContinueParser
+{
+    /** @psalm-readonly */
+    private BlockQuote $block;
+    public function __construct()
+    {
+        $this->block = new BlockQuote();
+    }
+    public function getBlock(): BlockQuote
+    {
+        return $this->block;
+    }
+    public function isContainer(): bool
+    {
+        return \true;
+    }
+    public function canContain(AbstractBlock $childBlock): bool
+    {
+        return \true;
+    }
+    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
+    {
+        if (!$cursor->isIndented() && $cursor->getNextNonSpaceCharacter() === '>') {
+            $cursor->advanceToNextNonSpaceOrTab();
+            $cursor->advanceBy(1);
+            $cursor->advanceBySpaceOrTab();
+            return BlockContinue::at($cursor);
+        }
+        return BlockContinue::none();
+    }
 }

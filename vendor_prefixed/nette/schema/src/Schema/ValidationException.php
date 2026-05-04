@@ -11,25 +11,28 @@ use BlockFormatBridge\Vendor\Nette;
 /**
  * Validation error.
  */
-class ValidationException extends Nette\InvalidStateException {
-
-	public function __construct(
-		?string $message,
-		/** @var list<Message> */
-		private array $messages = array()
-	) {
-		parent::__construct($message ?? $messages[0]->toString());
-	}
-	/** @return list<string> */
-	public function getMessages(): array {
-		$res = array();
-		foreach ( $this->messages as $message ) {
-			$res[] = $message->toString();
-		}
-		return $res;
-	}
-	/** @return list<Message> */
-	public function getMessageObjects(): array {
-		return $this->messages;
-	}
+class ValidationException extends Nette\InvalidStateException
+{
+    public function __construct(
+        ?string $message,
+        /** @var list<Message> */
+        private array $messages = []
+    )
+    {
+        parent::__construct($message ?? $messages[0]->toString());
+    }
+    /** @return list<string> */
+    public function getMessages(): array
+    {
+        $res = [];
+        foreach ($this->messages as $message) {
+            $res[] = $message->toString();
+        }
+        return $res;
+    }
+    /** @return list<Message> */
+    public function getMessageObjects(): array
+    {
+        return $this->messages;
+    }
 }

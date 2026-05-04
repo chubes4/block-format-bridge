@@ -20,33 +20,36 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class HeadingRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param Heading $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		Heading::assertInstanceOf($node);
-		$tag   = 'h' . $node->getLevel();
-		$attrs = $node->data->get('attributes');
-		return new HtmlElement($tag, $attrs, $childRenderer->renderNodes($node->children()));
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'heading';
-	}
-	/**
-	 * @param Heading $node
-	 *
-	 * @return array<string, scalar>
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function getXmlAttributes(Node $node): array {
-		Heading::assertInstanceOf($node);
-		return array( 'level' => $node->getLevel() );
-	}
+final class HeadingRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param Heading $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        Heading::assertInstanceOf($node);
+        $tag = 'h' . $node->getLevel();
+        $attrs = $node->data->get('attributes');
+        return new HtmlElement($tag, $attrs, $childRenderer->renderNodes($node->children()));
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'heading';
+    }
+    /**
+     * @param Heading $node
+     *
+     * @return array<string, scalar>
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        Heading::assertInstanceOf($node);
+        return ['level' => $node->getLevel()];
+    }
 }

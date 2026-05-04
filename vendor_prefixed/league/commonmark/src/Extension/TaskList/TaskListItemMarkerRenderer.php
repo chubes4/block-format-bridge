@@ -16,41 +16,44 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class TaskListItemMarkerRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param TaskListItemMarker $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		TaskListItemMarker::assertInstanceOf($node);
-		$attrs    = $node->data->get('attributes');
-		$checkbox = new HtmlElement('input', $attrs, '', \true);
-		if ( $node->isChecked() ) {
-			$checkbox->setAttribute('checked', '');
-		}
-		$checkbox->setAttribute('disabled', '');
-		$checkbox->setAttribute('type', 'checkbox');
-		return $checkbox;
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'task_list_item_marker';
-	}
-	/**
-	 * @param TaskListItemMarker $node
-	 *
-	 * @return array<string, scalar>
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function getXmlAttributes(Node $node): array {
-		TaskListItemMarker::assertInstanceOf($node);
-		if ( $node->isChecked() ) {
-			return array( 'checked' => 'checked' );
-		}
-		return array();
-	}
+final class TaskListItemMarkerRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param TaskListItemMarker $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        TaskListItemMarker::assertInstanceOf($node);
+        $attrs = $node->data->get('attributes');
+        $checkbox = new HtmlElement('input', $attrs, '', \true);
+        if ($node->isChecked()) {
+            $checkbox->setAttribute('checked', '');
+        }
+        $checkbox->setAttribute('disabled', '');
+        $checkbox->setAttribute('type', 'checkbox');
+        return $checkbox;
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'task_list_item_marker';
+    }
+    /**
+     * @param TaskListItemMarker $node
+     *
+     * @return array<string, scalar>
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        TaskListItemMarker::assertInstanceOf($node);
+        if ($node->isChecked()) {
+            return ['checked' => 'checked'];
+        }
+        return [];
+    }
 }

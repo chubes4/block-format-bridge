@@ -14,25 +14,25 @@ namespace BlockFormatBridge\Vendor;
  * Requires at least: 6.4
  * Requires PHP: 7.4
  */
-if ( ! \defined('ABSPATH') ) {
-	exit;
+if (!\defined('ABSPATH')) {
+    exit;
 }
-if ( ! \defined('HTML_TO_BLOCKS_CONVERTER_PATH') ) {
-	\define('HTML_TO_BLOCKS_CONVERTER_PATH', plugin_dir_path(__FILE__));
+if (!\defined('HTML_TO_BLOCKS_CONVERTER_PATH')) {
+    \define('HTML_TO_BLOCKS_CONVERTER_PATH', plugin_dir_path(__FILE__));
 }
-if ( ! \defined('HTML_TO_BLOCKS_CONVERTER_MIN_WP') ) {
-	\define('HTML_TO_BLOCKS_CONVERTER_MIN_WP', '6.4');
+if (!\defined('HTML_TO_BLOCKS_CONVERTER_MIN_WP')) {
+    \define('HTML_TO_BLOCKS_CONVERTER_MIN_WP', '6.4');
 }
-if ( \version_compare(get_bloginfo('version'), \HTML_TO_BLOCKS_CONVERTER_MIN_WP, '<') ) {
-	\add_action('admin_notices', function () {
-		echo '<div class="notice notice-error"><p>';
-		\printf(
-			/* translators: %s: minimum WordPress version */
-			esc_html__('HTML to Blocks Converter requires WordPress %s or higher.', 'block-format-bridge'),
-			esc_html(\HTML_TO_BLOCKS_CONVERTER_MIN_WP)
-		);
-		echo '</p></div>';
-	});
-	return;
+if (\version_compare(get_bloginfo('version'), \HTML_TO_BLOCKS_CONVERTER_MIN_WP, '<')) {
+    \add_action('admin_notices', function () {
+        echo '<div class="notice notice-error"><p>';
+        \printf(
+            /* translators: %s: minimum WordPress version */
+            esc_html__('HTML to Blocks Converter requires WordPress %s or higher.', 'html-to-blocks-converter'),
+            esc_html(\HTML_TO_BLOCKS_CONVERTER_MIN_WP)
+        );
+        echo '</p></div>';
+    });
+    return;
 }
 require_once \HTML_TO_BLOCKS_CONVERTER_PATH . 'library.php';

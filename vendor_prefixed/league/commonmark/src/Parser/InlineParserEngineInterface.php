@@ -15,10 +15,10 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
 /**
  * Parser for inline content (text, links, emphasized text, etc).
  */
-interface InlineParserEngineInterface {
-
-	/**
-	 * Parse the given contents as inlines and insert them into the given block
-	 */
-	public function parse(string $contents, AbstractBlock $block): void;
+interface InlineParserEngineInterface
+{
+    /**
+     * Parse the given contents as inlines and insert them into the given block
+     */
+    public function parse(string $contents, AbstractBlock $block): void;
 }

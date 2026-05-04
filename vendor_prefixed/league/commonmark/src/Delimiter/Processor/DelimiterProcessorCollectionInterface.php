@@ -18,24 +18,24 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Delimiter\Processor;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\InvalidArgumentException;
-interface DelimiterProcessorCollectionInterface extends \Countable {
-
-	/**
-	 * Add the given delim processor to the collection
-	 *
-	 * @param DelimiterProcessorInterface $processor The delim processor to add
-	 *
-	 * @throws InvalidArgumentException Exception will be thrown if attempting to add multiple processors for the same character
-	 */
-	public function add(DelimiterProcessorInterface $processor): void;
-	/**
-	 * Returns the delim processor which handles the given character if one exists
-	 */
-	public function getDelimiterProcessor(string $char): ?DelimiterProcessorInterface;
-	/**
-	 * Returns an array of delimiter characters who have associated processors
-	 *
-	 * @return string[]
-	 */
-	public function getDelimiterCharacters(): array;
+interface DelimiterProcessorCollectionInterface extends \Countable
+{
+    /**
+     * Add the given delim processor to the collection
+     *
+     * @param DelimiterProcessorInterface $processor The delim processor to add
+     *
+     * @throws InvalidArgumentException Exception will be thrown if attempting to add multiple processors for the same character
+     */
+    public function add(DelimiterProcessorInterface $processor): void;
+    /**
+     * Returns the delim processor which handles the given character if one exists
+     */
+    public function getDelimiterProcessor(string $char): ?DelimiterProcessorInterface;
+    /**
+     * Returns an array of delimiter characters who have associated processors
+     *
+     * @return string[]
+     */
+    public function getDelimiterCharacters(): array;
 }

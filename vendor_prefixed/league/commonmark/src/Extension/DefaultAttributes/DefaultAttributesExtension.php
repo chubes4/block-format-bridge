@@ -16,16 +16,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Event\DocumentParsedEvent;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ConfigurableExtensionInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationBuilderInterface;
 use BlockFormatBridge\Vendor\Nette\Schema\Expect;
-final class DefaultAttributesExtension implements ConfigurableExtensionInterface {
-
-	public function configureSchema(ConfigurationBuilderInterface $builder): void {
-		$builder->addSchema('default_attributes', Expect::arrayOf(Expect::arrayOf(
-			Expect::type('string|string[]|bool|callable'),
-			// attribute value(s)
-			'string'
-		), 'string')->default(array()));
-	}
-	public function register(EnvironmentBuilderInterface $environment): void {
-		$environment->addEventListener(DocumentParsedEvent::class, array( new ApplyDefaultAttributesProcessor(), 'onDocumentParsed' ));
-	}
+final class DefaultAttributesExtension implements ConfigurableExtensionInterface
+{
+    public function configureSchema(ConfigurationBuilderInterface $builder): void
+    {
+        $builder->addSchema('default_attributes', Expect::arrayOf(Expect::arrayOf(
+            Expect::type('string|string[]|bool|callable'),
+            // attribute value(s)
+            'string'
+        ), 'string')->default([]));
+    }
+    public function register(EnvironmentBuilderInterface $environment): void
+    {
+        $environment->addEventListener(DocumentParsedEvent::class, [new ApplyDefaultAttributesProcessor(), 'onDocumentParsed']);
+    }
 }

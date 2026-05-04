@@ -20,44 +20,46 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Util;
  * @phpstan-template T
  * @phpstan-implements \IteratorAggregate<T>
  */
-final class PrioritizedList implements \IteratorAggregate {
-
-	/**
-	 * @var array<int, array<mixed>>
-	 * @phpstan-var array<int, array<T>>
-	 */
-	private array $list = array();
-	/**
-	 * @var \Traversable<mixed>|null
-	 * @phpstan-var \Traversable<T>|null
-	 */
-	private ?\Traversable $optimized = null;
-	/**
-	 * @param mixed $item
-	 *
-	 * @phpstan-param T $item
-	 */
-	public function add($item, int $priority): void {
-		$this->list[ $priority ][] = $item;
-		$this->optimized           = null;
-	}
-	/**
-	 * @return \Traversable<int, mixed>
-	 *
-	 * @phpstan-return \Traversable<int, T>
-	 */
-	#[\ReturnTypeWillChange]
-	public function getIterator(): \Traversable {
-		if ( null === $this->optimized ) {
-			\krsort($this->list);
-			$sorted = array();
-			foreach ( $this->list as $group ) {
-				foreach ( $group as $item ) {
-					$sorted[] = $item;
-				}
-			}
-			$this->optimized = new \ArrayIterator($sorted);
-		}
-		return $this->optimized;
-	}
+final class PrioritizedList implements \IteratorAggregate
+{
+    /**
+     * @var array<int, array<mixed>>
+     * @phpstan-var array<int, array<T>>
+     */
+    private array $list = [];
+    /**
+     * @var \Traversable<mixed>|null
+     * @phpstan-var \Traversable<T>|null
+     */
+    private ?\Traversable $optimized = null;
+    /**
+     * @param mixed $item
+     *
+     * @phpstan-param T $item
+     */
+    public function add($item, int $priority): void
+    {
+        $this->list[$priority][] = $item;
+        $this->optimized = null;
+    }
+    /**
+     * @return \Traversable<int, mixed>
+     *
+     * @phpstan-return \Traversable<int, T>
+     */
+    #[\ReturnTypeWillChange]
+    public function getIterator(): \Traversable
+    {
+        if ($this->optimized === null) {
+            \krsort($this->list);
+            $sorted = [];
+            foreach ($this->list as $group) {
+                foreach ($group as $item) {
+                    $sorted[] = $item;
+                }
+            }
+            $this->optimized = new \ArrayIterator($sorted);
+        }
+        return $this->optimized;
+    }
 }

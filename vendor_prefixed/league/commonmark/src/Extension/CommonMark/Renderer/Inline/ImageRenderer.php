@@ -26,61 +26,63 @@ use BlockFormatBridge\Vendor\League\CommonMark\Util\RegexHelper;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationAwareInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationInterface;
-final class ImageRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface {
-
-	/** @psalm-readonly-allow-private-mutation */
-	private ConfigurationInterface $config;
-	/**
-	 * @param Image $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		Image::assertInstanceOf($node);
-		$attrs             = $node->data->get('attributes');
-		$forbidUnsafeLinks = ! $this->config->get('allow_unsafe_links');
-		if ( $forbidUnsafeLinks && RegexHelper::isLinkPotentiallyUnsafe($node->getUrl()) ) {
-			$attrs['src'] = '';
-		} else {
-			$attrs['src'] = $node->getUrl();
-		}
-		$attrs['alt'] = $this->getAltText($node);
-		if ( ( $title = $node->getTitle() ) !== null ) {
-			$attrs['title'] = $title;
-		}
-		return new HtmlElement('img', $attrs, '', \true);
-	}
-	public function setConfiguration(ConfigurationInterface $configuration): void {
-		$this->config = $configuration;
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'image';
-	}
-	/**
-	 * @param Image $node
-	 *
-	 * @return array<string, scalar>
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function getXmlAttributes(Node $node): array {
-		Image::assertInstanceOf($node);
-		return array(
-			'destination' => $node->getUrl(),
-			'title'       => $node->getTitle() ?? '',
-		);
-	}
-	private function getAltText(Image $node): string {
-		$altText = '';
-		foreach ( new NodeIterator($node) as $n ) {
-			if ( $n instanceof StringContainerInterface ) {
-				$altText .= $n->getLiteral();
-			} elseif ( $n instanceof Newline ) {
-				$altText .= "\n";
-			}
-		}
-		return $altText;
-	}
+final class ImageRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface
+{
+    /** @psalm-readonly-allow-private-mutation */
+    private ConfigurationInterface $config;
+    /**
+     * @param Image $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        Image::assertInstanceOf($node);
+        $attrs = $node->data->get('attributes');
+        $forbidUnsafeLinks = !$this->config->get('allow_unsafe_links');
+        if ($forbidUnsafeLinks && RegexHelper::isLinkPotentiallyUnsafe($node->getUrl())) {
+            $attrs['src'] = '';
+        } else {
+            $attrs['src'] = $node->getUrl();
+        }
+        $attrs['alt'] = $this->getAltText($node);
+        if (($title = $node->getTitle()) !== null) {
+            $attrs['title'] = $title;
+        }
+        return new HtmlElement('img', $attrs, '', \true);
+    }
+    public function setConfiguration(ConfigurationInterface $configuration): void
+    {
+        $this->config = $configuration;
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'image';
+    }
+    /**
+     * @param Image $node
+     *
+     * @return array<string, scalar>
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        Image::assertInstanceOf($node);
+        return ['destination' => $node->getUrl(), 'title' => $node->getTitle() ?? ''];
+    }
+    private function getAltText(Image $node): string
+    {
+        $altText = '';
+        foreach (new NodeIterator($node) as $n) {
+            if ($n instanceof StringContainerInterface) {
+                $altText .= $n->getLiteral();
+            } elseif ($n instanceof Newline) {
+                $altText .= "\n";
+            }
+        }
+        return $altText;
+    }
 }

@@ -20,18 +20,21 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Data\LibYam
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Data\SymfonyYamlFrontMatterParser;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Listener\FrontMatterPostRenderListener;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Listener\FrontMatterPreParser;
-final class FrontMatterExtension implements ExtensionInterface {
-
-	/** @psalm-readonly */
-	private FrontMatterParserInterface $frontMatterParser;
-	public function __construct(?FrontMatterDataParserInterface $dataParser = null) {
-		$this->frontMatterParser = new FrontMatterParser($dataParser ?? LibYamlFrontMatterParser::capable() ?? new SymfonyYamlFrontMatterParser());
-	}
-	public function getFrontMatterParser(): FrontMatterParserInterface {
-		return $this->frontMatterParser;
-	}
-	public function register(EnvironmentBuilderInterface $environment): void {
-		$environment->addEventListener(DocumentPreParsedEvent::class, new FrontMatterPreParser($this->frontMatterParser));
-		$environment->addEventListener(DocumentRenderedEvent::class, new FrontMatterPostRenderListener(), -500);
-	}
+final class FrontMatterExtension implements ExtensionInterface
+{
+    /** @psalm-readonly */
+    private FrontMatterParserInterface $frontMatterParser;
+    public function __construct(?FrontMatterDataParserInterface $dataParser = null)
+    {
+        $this->frontMatterParser = new FrontMatterParser($dataParser ?? LibYamlFrontMatterParser::capable() ?? new SymfonyYamlFrontMatterParser());
+    }
+    public function getFrontMatterParser(): FrontMatterParserInterface
+    {
+        return $this->frontMatterParser;
+    }
+    public function register(EnvironmentBuilderInterface $environment): void
+    {
+        $environment->addEventListener(DocumentPreParsedEvent::class, new FrontMatterPreParser($this->frontMatterParser));
+        $environment->addEventListener(DocumentRenderedEvent::class, new FrontMatterPostRenderListener(), -500);
+    }
 }

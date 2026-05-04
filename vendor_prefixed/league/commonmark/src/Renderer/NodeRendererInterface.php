@@ -13,12 +13,12 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Renderer;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\InvalidArgumentException;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
-interface NodeRendererInterface {
-
-	/**
-	 * @return \Stringable|string|null
-	 *
-	 * @throws InvalidArgumentException if the wrong type of Node is provided
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer);
+interface NodeRendererInterface
+{
+    /**
+     * @return \Stringable|string|null
+     *
+     * @throws InvalidArgumentException if the wrong type of Node is provided
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer);
 }

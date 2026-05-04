@@ -15,6 +15,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Inline;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractStringContainer;
-class Code extends AbstractStringContainer {
-
+class Code extends AbstractStringContainer
+{
 }

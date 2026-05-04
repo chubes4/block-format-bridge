@@ -12,51 +12,60 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Delimiter;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
-final class Bracket {
-
-	private Node $node;
-	private ?Bracket $previous;
-	private bool $hasNext = \false;
-	private int $position;
-	private bool $image;
-	private bool $active = \true;
-	public function __construct(Node $node, ?Bracket $previous, int $position, bool $image) {
-		$this->node     = $node;
-		$this->previous = $previous;
-		$this->position = $position;
-		$this->image    = $image;
-	}
-	public function getNode(): Node {
-		return $this->node;
-	}
-	public function getPrevious(): ?Bracket {
-		return $this->previous;
-	}
-	public function hasNext(): bool {
-		return $this->hasNext;
-	}
-	public function getPosition(): int {
-		return $this->position;
-	}
-	public function isImage(): bool {
-		return $this->image;
-	}
-	/**
-	 * Only valid in the context of non-images (links)
-	 */
-	public function isActive(): bool {
-		return $this->active;
-	}
-	/**
-	 * @internal
-	 */
-	public function setHasNext(bool $hasNext): void {
-		$this->hasNext = $hasNext;
-	}
-	/**
-	 * @internal
-	 */
-	public function setActive(bool $active): void {
-		$this->active = $active;
-	}
+final class Bracket
+{
+    private Node $node;
+    private ?Bracket $previous;
+    private bool $hasNext = \false;
+    private int $position;
+    private bool $image;
+    private bool $active = \true;
+    public function __construct(Node $node, ?Bracket $previous, int $position, bool $image)
+    {
+        $this->node = $node;
+        $this->previous = $previous;
+        $this->position = $position;
+        $this->image = $image;
+    }
+    public function getNode(): Node
+    {
+        return $this->node;
+    }
+    public function getPrevious(): ?Bracket
+    {
+        return $this->previous;
+    }
+    public function hasNext(): bool
+    {
+        return $this->hasNext;
+    }
+    public function getPosition(): int
+    {
+        return $this->position;
+    }
+    public function isImage(): bool
+    {
+        return $this->image;
+    }
+    /**
+     * Only valid in the context of non-images (links)
+     */
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+    /**
+     * @internal
+     */
+    public function setHasNext(bool $hasNext): void
+    {
+        $this->hasNext = $hasNext;
+    }
+    /**
+     * @internal
+     */
+    public function setActive(bool $active): void
+    {
+        $this->active = $active;
+    }
 }

@@ -20,27 +20,30 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class ThematicBreakRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param ThematicBreak $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		ThematicBreak::assertInstanceOf($node);
-		$attrs = $node->data->get('attributes');
-		return new HtmlElement('hr', $attrs, '', \true);
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'thematic_break';
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class ThematicBreakRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param ThematicBreak $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        ThematicBreak::assertInstanceOf($node);
+        $attrs = $node->data->get('attributes');
+        return new HtmlElement('hr', $attrs, '', \true);
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'thematic_break';
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

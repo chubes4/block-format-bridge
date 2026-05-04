@@ -13,7 +13,7 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\TableOfContents;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\TableOfContents\Node\TableOfContents;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\Document;
-interface TableOfContentsGeneratorInterface {
-
-	public function generate(Document $document): ?TableOfContents;
+interface TableOfContentsGeneratorInterface
+{
+    public function generate(Document $document): ?TableOfContents;
 }

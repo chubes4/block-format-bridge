@@ -17,26 +17,30 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Reference;
 /**
  * @psalm-immutable
  */
-final class Reference implements ReferenceInterface {
-
-	/** @psalm-readonly */
-	private string $label;
-	/** @psalm-readonly */
-	private string $destination;
-	/** @psalm-readonly */
-	private string $title;
-	public function __construct(string $label, string $destination, string $title) {
-		$this->label       = $label;
-		$this->destination = $destination;
-		$this->title       = $title;
-	}
-	public function getLabel(): string {
-		return $this->label;
-	}
-	public function getDestination(): string {
-		return $this->destination;
-	}
-	public function getTitle(): string {
-		return $this->title;
-	}
+final class Reference implements ReferenceInterface
+{
+    /** @psalm-readonly */
+    private string $label;
+    /** @psalm-readonly */
+    private string $destination;
+    /** @psalm-readonly */
+    private string $title;
+    public function __construct(string $label, string $destination, string $title)
+    {
+        $this->label = $label;
+        $this->destination = $destination;
+        $this->title = $title;
+    }
+    public function getLabel(): string
+    {
+        return $this->label;
+    }
+    public function getDestination(): string
+    {
+        return $this->destination;
+    }
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
 }

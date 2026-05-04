@@ -12,14 +12,14 @@ namespace BlockFormatBridge\Vendor\League\HTMLToMarkdown;
  *
  * @license http://www.opensource.org/licenses/mit-license.php MIT
  */
-interface HtmlConverterInterface {
-
-	/**
-	 * Convert the given $html to Markdown
-	 *
-	 * @return string The Markdown version of the html
-	 *
-	 * @throws \InvalidArgumentException
-	 */
-	public function convert(string $html): string;
+interface HtmlConverterInterface
+{
+    /**
+     * Convert the given $html to Markdown
+     *
+     * @return string The Markdown version of the html
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function convert(string $html): string;
 }

@@ -15,40 +15,42 @@ use BlockFormatBridge\Vendor\League\CommonMark\Event\DocumentParsedEvent;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Attributes\Util\AttributesHelper;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationAwareInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationInterface;
-final class ApplyDefaultAttributesProcessor implements ConfigurationAwareInterface {
-
-	private ConfigurationInterface $config;
-	public function onDocumentParsed(DocumentParsedEvent $event): void {
-		/** @var array<string, array<string, mixed>> $map */
-		$map = $this->config->get('default_attributes');
-		// Don't bother iterating if no default attributes are configured
-		if ( ! $map ) {
-			return;
-		}
-		foreach ( $event->getDocument()->iterator() as $node ) {
-			// Check to see if any default attributes were defined
-			if ( ( $attributesToApply = $map[ \get_class($node) ] ?? array() ) === array() ) {
-				continue;
-			}
-			$newAttributes = array();
-			foreach ( $attributesToApply as $name => $value ) {
-				if ( \is_callable($value) ) {
-					$value = $value($node);
-					// Callables are allowed to return `null` indicating that no changes should be made
-					if ( null !== $value ) {
-						$newAttributes[ $name ] = $value;
-					}
-				} else {
-					$newAttributes[ $name ] = $value;
-				}
-			}
-			// Merge these attributes into the node
-			if ( \count($newAttributes) > 0 ) {
-				$node->data->set('attributes', AttributesHelper::mergeAttributes($node, $newAttributes));
-			}
-		}
-	}
-	public function setConfiguration(ConfigurationInterface $configuration): void {
-		$this->config = $configuration;
-	}
+final class ApplyDefaultAttributesProcessor implements ConfigurationAwareInterface
+{
+    private ConfigurationInterface $config;
+    public function onDocumentParsed(DocumentParsedEvent $event): void
+    {
+        /** @var array<string, array<string, mixed>> $map */
+        $map = $this->config->get('default_attributes');
+        // Don't bother iterating if no default attributes are configured
+        if (!$map) {
+            return;
+        }
+        foreach ($event->getDocument()->iterator() as $node) {
+            // Check to see if any default attributes were defined
+            if (($attributesToApply = $map[\get_class($node)] ?? []) === []) {
+                continue;
+            }
+            $newAttributes = [];
+            foreach ($attributesToApply as $name => $value) {
+                if (\is_callable($value)) {
+                    $value = $value($node);
+                    // Callables are allowed to return `null` indicating that no changes should be made
+                    if ($value !== null) {
+                        $newAttributes[$name] = $value;
+                    }
+                } else {
+                    $newAttributes[$name] = $value;
+                }
+            }
+            // Merge these attributes into the node
+            if (\count($newAttributes) > 0) {
+                $node->data->set('attributes', AttributesHelper::mergeAttributes($node, $newAttributes));
+            }
+        }
+    }
+    public function setConfiguration(ConfigurationInterface $configuration): void
+    {
+        $this->config = $configuration;
+    }
 }

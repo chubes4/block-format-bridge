@@ -15,23 +15,26 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Inline;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\StringContainerInterface;
-abstract class AbstractStringContainer extends AbstractInline implements StringContainerInterface {
-
-	protected string $literal = '';
-	/**
-	 * @param array<string, mixed> $data
-	 */
-	public function __construct(string $contents = '', array $data = array()) {
-		parent::__construct();
-		$this->literal = $contents;
-		if ( \count($data) > 0 ) {
-			$this->data->import($data);
-		}
-	}
-	public function getLiteral(): string {
-		return $this->literal;
-	}
-	public function setLiteral(string $literal): void {
-		$this->literal = $literal;
-	}
+abstract class AbstractStringContainer extends AbstractInline implements StringContainerInterface
+{
+    protected string $literal = '';
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function __construct(string $contents = '', array $data = [])
+    {
+        parent::__construct();
+        $this->literal = $contents;
+        if (\count($data) > 0) {
+            $this->data->import($data);
+        }
+    }
+    public function getLiteral(): string
+    {
+        return $this->literal;
+    }
+    public function setLiteral(string $literal): void
+    {
+        $this->literal = $literal;
+    }
 }

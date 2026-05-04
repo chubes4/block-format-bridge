@@ -16,43 +16,43 @@ namespace BlockFormatBridge\Vendor;
  *
  * @package HTML_To_Blocks_Converter
  */
-if ( ! \defined('ABSPATH') ) {
-	return;
+if (!\defined('ABSPATH')) {
+    return;
 }
-$html_to_blocks_library_path    = __DIR__;
+$html_to_blocks_library_path = __DIR__;
 $html_to_blocks_library_version = '0.6.12';
-if ( ! \class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Versions', \false) ) {
-	require_once $html_to_blocks_library_path . '/includes/class-html-to-blocks-versions.php';
+if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Versions', \false)) {
+    require_once $html_to_blocks_library_path . '/includes/class-html-to-blocks-versions.php';
 }
 $html_to_blocks_initializer = static function () use ($html_to_blocks_library_path): void {
-	if ( ! \class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_HTML_Element', \false) ) {
-		require_once $html_to_blocks_library_path . '/includes/class-html-element.php';
-	}
-	if ( ! \class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Block_Factory', \false) ) {
-		require_once $html_to_blocks_library_path . '/includes/class-block-factory.php';
-	}
-	if ( ! \class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Attribute_Parser', \false) ) {
-		require_once $html_to_blocks_library_path . '/includes/class-attribute-parser.php';
-	}
-	if ( ! \class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_SVG_Icon_Classifier', \false) ) {
-		require_once $html_to_blocks_library_path . '/includes/class-svg-icon-classifier.php';
-	}
-	if ( ! \class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Transform_Registry', \false) ) {
-		require_once $html_to_blocks_library_path . '/includes/class-transform-registry.php';
-	}
-	$html_to_blocks_raw_handler_callback = __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_raw_handler' : 'html_to_blocks_raw_handler';
-	if ( ! \function_exists($html_to_blocks_raw_handler_callback) ) {
-		require_once $html_to_blocks_library_path . '/raw-handler.php';
-	}
-	require_once $html_to_blocks_library_path . '/includes/hooks.php';
+    if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_HTML_Element', \false)) {
+        require_once $html_to_blocks_library_path . '/includes/class-html-element.php';
+    }
+    if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Block_Factory', \false)) {
+        require_once $html_to_blocks_library_path . '/includes/class-block-factory.php';
+    }
+    if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Attribute_Parser', \false)) {
+        require_once $html_to_blocks_library_path . '/includes/class-attribute-parser.php';
+    }
+    if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_SVG_Icon_Classifier', \false)) {
+        require_once $html_to_blocks_library_path . '/includes/class-svg-icon-classifier.php';
+    }
+    if (!\class_exists('BlockFormatBridge\Vendor\HTML_To_Blocks_Transform_Registry', \false)) {
+        require_once $html_to_blocks_library_path . '/includes/class-transform-registry.php';
+    }
+    $html_to_blocks_raw_handler_callback = __NAMESPACE__ ? __NAMESPACE__ . '\html_to_blocks_raw_handler' : 'html_to_blocks_raw_handler';
+    if (!\function_exists($html_to_blocks_raw_handler_callback)) {
+        require_once $html_to_blocks_library_path . '/raw-handler.php';
+    }
+    require_once $html_to_blocks_library_path . '/includes/hooks.php';
 };
-$html_to_blocks_register    = static function () use ($html_to_blocks_library_version, $html_to_blocks_initializer): void {
-	HTML_To_Blocks_Versions::instance()->register($html_to_blocks_library_version, $html_to_blocks_initializer);
+$html_to_blocks_register = static function () use ($html_to_blocks_library_version, $html_to_blocks_initializer): void {
+    HTML_To_Blocks_Versions::instance()->register($html_to_blocks_library_version, $html_to_blocks_initializer);
 };
 HTML_To_Blocks_Versions::register_hooks();
-if ( did_action('plugins_loaded') && ! doing_action('plugins_loaded') ) {
-	$html_to_blocks_register();
-	HTML_To_Blocks_Versions::initialize_latest_version();
+if (did_action('plugins_loaded') && !doing_action('plugins_loaded')) {
+    $html_to_blocks_register();
+    HTML_To_Blocks_Versions::initialize_latest_version();
 } else {
-	\add_action('plugins_loaded', $html_to_blocks_register, 0);
+    \add_action('plugins_loaded', $html_to_blocks_register, 0);
 }

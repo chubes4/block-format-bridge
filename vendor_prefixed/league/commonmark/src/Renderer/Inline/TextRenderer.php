@@ -20,26 +20,29 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\Xml;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class TextRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param Text $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): string {
-		Text::assertInstanceOf($node);
-		return Xml::escape($node->getLiteral());
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'text';
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class TextRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param Text $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): string
+    {
+        Text::assertInstanceOf($node);
+        return Xml::escape($node->getLiteral());
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'text';
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

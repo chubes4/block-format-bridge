@@ -12,22 +12,25 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Event;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Output\RenderedContentInterface;
-final class DocumentRenderedEvent extends AbstractEvent {
-
-	private RenderedContentInterface $output;
-	public function __construct(RenderedContentInterface $output) {
-		$this->output = $output;
-	}
-	/**
-	 * @psalm-mutation-free
-	 */
-	public function getOutput(): RenderedContentInterface {
-		return $this->output;
-	}
-	/**
-	 * @psalm-external-mutation-free
-	 */
-	public function replaceOutput(RenderedContentInterface $output): void {
-		$this->output = $output;
-	}
+final class DocumentRenderedEvent extends AbstractEvent
+{
+    private RenderedContentInterface $output;
+    public function __construct(RenderedContentInterface $output)
+    {
+        $this->output = $output;
+    }
+    /**
+     * @psalm-mutation-free
+     */
+    public function getOutput(): RenderedContentInterface
+    {
+        return $this->output;
+    }
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function replaceOutput(RenderedContentInterface $output): void
+    {
+        $this->output = $output;
+    }
 }

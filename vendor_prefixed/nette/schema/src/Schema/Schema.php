@@ -7,25 +7,25 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\Nette\Schema;
 
-interface Schema {
-
-	/**
-	 * Normalization.
-	 * @return mixed
-	 */
-	function normalize(mixed $value, Context $context);
-	/**
-	 * Merging.
-	 * @return mixed
-	 */
-	function merge(mixed $value, mixed $base);
-	/**
-	 * Validation and finalization.
-	 * @return mixed
-	 */
-	function complete(mixed $value, Context $context);
-	/**
-	 * @return mixed
-	 */
-	function completeDefault(Context $context);
+interface Schema
+{
+    /**
+     * Normalization.
+     * @return mixed
+     */
+    function normalize(mixed $value, Context $context);
+    /**
+     * Merging.
+     * @return mixed
+     */
+    function merge(mixed $value, mixed $base);
+    /**
+     * Validation and finalization.
+     * @return mixed
+     */
+    function complete(mixed $value, Context $context);
+    /**
+     * @return mixed
+     */
+    function completeDefault(Context $context);
 }

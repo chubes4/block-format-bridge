@@ -13,10 +13,10 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Parser;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\CommonMarkException;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\Document;
-interface MarkdownParserInterface {
-
-	/**
-	 * @throws CommonMarkException
-	 */
-	public function parse(string $input): Document;
+interface MarkdownParserInterface
+{
+    /**
+     * @throws CommonMarkException
+     */
+    public function parse(string $input): Document;
 }

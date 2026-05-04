@@ -20,28 +20,28 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationProviderInterface;
 use BlockFormatBridge\Vendor\Psr\EventDispatcher\EventDispatcherInterface;
-interface EnvironmentInterface extends ConfigurationProviderInterface, EventDispatcherInterface {
-
-	/**
-	 * Get all registered extensions
-	 *
-	 * @return ExtensionInterface[]
-	 */
-	public function getExtensions(): iterable;
-	/**
-	 * @return iterable<BlockStartParserInterface>
-	 */
-	public function getBlockStartParsers(): iterable;
-	/**
-	 * @return iterable<InlineParserInterface>
-	 */
-	public function getInlineParsers(): iterable;
-	public function getDelimiterProcessors(): DelimiterProcessorCollection;
-	/**
-	 * @psalm-param class-string<Node> $nodeClass
-	 *
-	 * @return iterable<NodeRendererInterface>
-	 */
-	public function getRenderersForClass(string $nodeClass): iterable;
-	public function getSlugNormalizer(): TextNormalizerInterface;
+interface EnvironmentInterface extends ConfigurationProviderInterface, EventDispatcherInterface
+{
+    /**
+     * Get all registered extensions
+     *
+     * @return ExtensionInterface[]
+     */
+    public function getExtensions(): iterable;
+    /**
+     * @return iterable<BlockStartParserInterface>
+     */
+    public function getBlockStartParsers(): iterable;
+    /**
+     * @return iterable<InlineParserInterface>
+     */
+    public function getInlineParsers(): iterable;
+    public function getDelimiterProcessors(): DelimiterProcessorCollection;
+    /**
+     * @psalm-param class-string<Node> $nodeClass
+     *
+     * @return iterable<NodeRendererInterface>
+     */
+    public function getRenderersForClass(string $nodeClass): iterable;
+    public function getSlugNormalizer(): TextNormalizerInterface;
 }

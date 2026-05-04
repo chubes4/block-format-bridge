@@ -16,17 +16,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
-final class DescriptionTermRenderer implements NodeRendererInterface {
-
-	/**
-	 * @param DescriptionTerm $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		DescriptionTerm::assertInstanceOf($node);
-		return new HtmlElement('dt', array(), $childRenderer->renderNodes($node->children()));
-	}
+final class DescriptionTermRenderer implements NodeRendererInterface
+{
+    /**
+     * @param DescriptionTerm $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        DescriptionTerm::assertInstanceOf($node);
+        return new HtmlElement('dt', [], $childRenderer->renderNodes($node->children()));
+    }
 }

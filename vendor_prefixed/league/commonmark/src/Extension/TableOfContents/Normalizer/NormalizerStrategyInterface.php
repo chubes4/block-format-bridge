@@ -12,7 +12,7 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\TableOfContents\Normalizer;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Block\ListItem;
-interface NormalizerStrategyInterface {
-
-	public function addItem(int $level, ListItem $listItemToAdd): void;
+interface NormalizerStrategyInterface
+{
+    public function addItem(int $level, ListItem $listItemToAdd): void;
 }

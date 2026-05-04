@@ -12,8 +12,8 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
-interface InlineParserInterface {
-
-	public function getMatchDefinition(): InlineParserMatch;
-	public function parse(InlineParserContext $inlineContext): bool;
+interface InlineParserInterface
+{
+    public function getMatchDefinition(): InlineParserMatch;
+    public function parse(InlineParserContext $inlineContext): bool;
 }

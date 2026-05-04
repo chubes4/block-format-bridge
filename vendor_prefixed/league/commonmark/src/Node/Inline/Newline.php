@@ -14,19 +14,21 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Inline;
 
-final class Newline extends AbstractInline {
-
-	// Any changes to these constants should be reflected in .phpstorm.meta.php
-	public const HARDBREAK = 0;
-	public const SOFTBREAK = 1;
-	/** @psalm-readonly */
-	private int $type;
-	public function __construct(int $breakType = self::HARDBREAK) {
-		parent::__construct();
-		$this->type = $breakType;
-	}
-	/** @psalm-immutable */
-	public function getType(): int {
-		return $this->type;
-	}
+final class Newline extends AbstractInline
+{
+    // Any changes to these constants should be reflected in .phpstorm.meta.php
+    public const HARDBREAK = 0;
+    public const SOFTBREAK = 1;
+    /** @psalm-readonly */
+    private int $type;
+    public function __construct(int $breakType = self::HARDBREAK)
+    {
+        parent::__construct();
+        $this->type = $breakType;
+    }
+    /** @psalm-immutable */
+    public function getType(): int
+    {
+        return $this->type;
+    }
 }

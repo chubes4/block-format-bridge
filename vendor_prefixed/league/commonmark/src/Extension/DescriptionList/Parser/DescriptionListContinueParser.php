@@ -19,22 +19,27 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\AbstractBlockContinu
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinue;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
-final class DescriptionListContinueParser extends AbstractBlockContinueParser {
-
-	private DescriptionList $block;
-	public function __construct() {
-		$this->block = new DescriptionList();
-	}
-	public function getBlock(): DescriptionList {
-		return $this->block;
-	}
-	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
-		return BlockContinue::at($cursor);
-	}
-	public function isContainer(): bool {
-		return \true;
-	}
-	public function canContain(AbstractBlock $childBlock): bool {
-		return $childBlock instanceof DescriptionTerm || $childBlock instanceof Description;
-	}
+final class DescriptionListContinueParser extends AbstractBlockContinueParser
+{
+    private DescriptionList $block;
+    public function __construct()
+    {
+        $this->block = new DescriptionList();
+    }
+    public function getBlock(): DescriptionList
+    {
+        return $this->block;
+    }
+    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
+    {
+        return BlockContinue::at($cursor);
+    }
+    public function isContainer(): bool
+    {
+        return \true;
+    }
+    public function canContain(AbstractBlock $childBlock): bool
+    {
+        return $childBlock instanceof DescriptionTerm || $childBlock instanceof Description;
+    }
 }

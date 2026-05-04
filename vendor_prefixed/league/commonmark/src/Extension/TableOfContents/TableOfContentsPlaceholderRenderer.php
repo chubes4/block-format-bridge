@@ -15,18 +15,21 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class TableOfContentsPlaceholderRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): string {
-		return '<!-- table of contents -->';
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'table_of_contents_placeholder';
-	}
-	/**
-	 * @return array<string, scalar>
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class TableOfContentsPlaceholderRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): string
+    {
+        return '<!-- table of contents -->';
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'table_of_contents_placeholder';
+    }
+    /**
+     * @return array<string, scalar>
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

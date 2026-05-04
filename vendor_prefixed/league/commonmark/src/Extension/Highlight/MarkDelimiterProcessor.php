@@ -14,38 +14,44 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Highlight;
 use BlockFormatBridge\Vendor\League\CommonMark\Delimiter\DelimiterInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Delimiter\Processor\DelimiterProcessorInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractStringContainer;
-class MarkDelimiterProcessor implements DelimiterProcessorInterface {
-
-	public function getOpeningCharacter(): string {
-		return '=';
-	}
-	public function getClosingCharacter(): string {
-		return '=';
-	}
-	public function getMinLength(): int {
-		return 2;
-	}
-	public function getDelimiterUse(DelimiterInterface $opener, DelimiterInterface $closer): int {
-		if ( $opener->getLength() > 2 && $closer->getLength() > 2 ) {
-			return 0;
-		}
-		if ( $opener->getLength() !== $closer->getLength() ) {
-			return 0;
-		}
-		// $opener and $closer are the same length so we just return one of them
-		return $opener->getLength();
-	}
-	public function process(AbstractStringContainer $opener, AbstractStringContainer $closer, int $delimiterUse): void {
-		$mark = new Mark(\str_repeat('=', $delimiterUse));
-		$next = $opener->next();
-		while ( null !== $next && $next !== $closer ) {
-			$tmp = $next->next();
-			$mark->appendChild($next);
-			$next = $tmp;
-		}
-		$opener->insertAfter($mark);
-	}
-	public function getCacheKey(DelimiterInterface $closer): string {
-		return '=' . $closer->getLength();
-	}
+class MarkDelimiterProcessor implements DelimiterProcessorInterface
+{
+    public function getOpeningCharacter(): string
+    {
+        return '=';
+    }
+    public function getClosingCharacter(): string
+    {
+        return '=';
+    }
+    public function getMinLength(): int
+    {
+        return 2;
+    }
+    public function getDelimiterUse(DelimiterInterface $opener, DelimiterInterface $closer): int
+    {
+        if ($opener->getLength() > 2 && $closer->getLength() > 2) {
+            return 0;
+        }
+        if ($opener->getLength() !== $closer->getLength()) {
+            return 0;
+        }
+        // $opener and $closer are the same length so we just return one of them
+        return $opener->getLength();
+    }
+    public function process(AbstractStringContainer $opener, AbstractStringContainer $closer, int $delimiterUse): void
+    {
+        $mark = new Mark(\str_repeat('=', $delimiterUse));
+        $next = $opener->next();
+        while ($next !== null && $next !== $closer) {
+            $tmp = $next->next();
+            $mark->appendChild($next);
+            $next = $tmp;
+        }
+        $opener->insertAfter($mark);
+    }
+    public function getCacheKey(DelimiterInterface $closer): string
+    {
+        return '=' . $closer->getLength();
+    }
 }

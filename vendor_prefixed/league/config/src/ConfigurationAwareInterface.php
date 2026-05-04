@@ -14,7 +14,7 @@ namespace BlockFormatBridge\Vendor\League\Config;
 /**
  * Implement this class to facilitate setter injection of the configuration where needed
  */
-interface ConfigurationAwareInterface {
-
-	public function setConfiguration(ConfigurationInterface $configuration): void;
+interface ConfigurationAwareInterface
+{
+    public function setConfiguration(ConfigurationInterface $configuration): void;
 }

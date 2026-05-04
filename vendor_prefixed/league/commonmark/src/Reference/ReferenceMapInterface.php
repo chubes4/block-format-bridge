@@ -19,9 +19,9 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Reference;
  *
  * @phpstan-extends \IteratorAggregate<ReferenceInterface>
  */
-interface ReferenceMapInterface extends \IteratorAggregate, \Countable {
-
-	public function add(ReferenceInterface $reference): void;
-	public function contains(string $label): bool;
-	public function get(string $label): ?ReferenceInterface;
+interface ReferenceMapInterface extends \IteratorAggregate, \Countable
+{
+    public function add(ReferenceInterface $reference): void;
+    public function contains(string $label): bool;
+    public function get(string $label): ?ReferenceInterface;
 }

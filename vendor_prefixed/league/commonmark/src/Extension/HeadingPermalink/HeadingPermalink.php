@@ -15,15 +15,17 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
 /**
  * Represents an anchor link within a heading
  */
-final class HeadingPermalink extends AbstractInline {
-
-	/** @psalm-readonly */
-	private string $slug;
-	public function __construct(string $slug) {
-		parent::__construct();
-		$this->slug = $slug;
-	}
-	public function getSlug(): string {
-		return $this->slug;
-	}
+final class HeadingPermalink extends AbstractInline
+{
+    /** @psalm-readonly */
+    private string $slug;
+    public function __construct(string $slug)
+    {
+        parent::__construct();
+        $this->slug = $slug;
+    }
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
 }

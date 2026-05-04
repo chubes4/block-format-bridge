@@ -17,13 +17,14 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\DisallowedRawHtml\Disal
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Strikethrough\StrikethroughExtension;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Table\TableExtension;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\TaskList\TaskListExtension;
-final class GithubFlavoredMarkdownExtension implements ExtensionInterface {
-
-	public function register(EnvironmentBuilderInterface $environment): void {
-		$environment->addExtension(new AutolinkExtension());
-		$environment->addExtension(new DisallowedRawHtmlExtension());
-		$environment->addExtension(new StrikethroughExtension());
-		$environment->addExtension(new TableExtension());
-		$environment->addExtension(new TaskListExtension());
-	}
+final class GithubFlavoredMarkdownExtension implements ExtensionInterface
+{
+    public function register(EnvironmentBuilderInterface $environment): void
+    {
+        $environment->addExtension(new AutolinkExtension());
+        $environment->addExtension(new DisallowedRawHtmlExtension());
+        $environment->addExtension(new StrikethroughExtension());
+        $environment->addExtension(new TableExtension());
+        $environment->addExtension(new TaskListExtension());
+    }
 }

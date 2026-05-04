@@ -15,7 +15,7 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Environment\EnvironmentBuilderInterface;
-interface ExtensionInterface {
-
-	public function register(EnvironmentBuilderInterface $environment): void;
+interface ExtensionInterface
+{
+    public function register(EnvironmentBuilderInterface $environment): void;
 }

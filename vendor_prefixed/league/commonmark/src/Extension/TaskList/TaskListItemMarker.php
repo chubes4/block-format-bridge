@@ -12,18 +12,21 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\TaskList;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
-final class TaskListItemMarker extends AbstractInline {
-
-	/** @psalm-readonly-allow-private-mutation */
-	private bool $checked;
-	public function __construct(bool $isCompleted) {
-		parent::__construct();
-		$this->checked = $isCompleted;
-	}
-	public function isChecked(): bool {
-		return $this->checked;
-	}
-	public function setChecked(bool $checked): void {
-		$this->checked = $checked;
-	}
+final class TaskListItemMarker extends AbstractInline
+{
+    /** @psalm-readonly-allow-private-mutation */
+    private bool $checked;
+    public function __construct(bool $isCompleted)
+    {
+        parent::__construct();
+        $this->checked = $isCompleted;
+    }
+    public function isChecked(): bool
+    {
+        return $this->checked;
+    }
+    public function setChecked(bool $checked): void
+    {
+        $this->checked = $checked;
+    }
 }

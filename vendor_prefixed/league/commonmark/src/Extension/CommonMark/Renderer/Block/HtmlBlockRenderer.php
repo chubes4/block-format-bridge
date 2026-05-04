@@ -22,32 +22,36 @@ use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlFilter;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationAwareInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationInterface;
-final class HtmlBlockRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface {
-
-	/** @psalm-readonly-allow-private-mutation */
-	private ConfigurationInterface $config;
-	/**
-	 * @param HtmlBlock $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): string {
-		HtmlBlock::assertInstanceOf($node);
-		$htmlInput = $this->config->get('html_input');
-		return HtmlFilter::filter($node->getLiteral(), $htmlInput);
-	}
-	public function setConfiguration(ConfigurationInterface $configuration): void {
-		$this->config = $configuration;
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'html_block';
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class HtmlBlockRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface
+{
+    /** @psalm-readonly-allow-private-mutation */
+    private ConfigurationInterface $config;
+    /**
+     * @param HtmlBlock $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): string
+    {
+        HtmlBlock::assertInstanceOf($node);
+        $htmlInput = $this->config->get('html_input');
+        return HtmlFilter::filter($node->getLiteral(), $htmlInput);
+    }
+    public function setConfiguration(ConfigurationInterface $configuration): void
+    {
+        $this->config = $configuration;
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'html_block';
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

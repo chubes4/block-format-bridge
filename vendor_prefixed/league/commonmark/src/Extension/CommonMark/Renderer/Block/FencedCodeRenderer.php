@@ -21,43 +21,46 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\Xml;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class FencedCodeRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param FencedCode $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		FencedCode::assertInstanceOf($node);
-		$attrs     = $node->data->getData('attributes');
-		$infoWords = $node->getInfoWords();
-		if ( \count($infoWords) !== 0 && '' !== $infoWords[0] ) {
-			$class = $infoWords[0];
-			if ( ! \str_starts_with($class, 'language-') ) {
-				$class = 'language-' . $class;
-			}
-			$attrs->append('class', $class);
-		}
-		return new HtmlElement('pre', array(), new HtmlElement('code', $attrs->export(), Xml::escape($node->getLiteral())));
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'code_block';
-	}
-	/**
-	 * @param FencedCode $node
-	 *
-	 * @return array<string, scalar>
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function getXmlAttributes(Node $node): array {
-		FencedCode::assertInstanceOf($node);
-		if ( ( $info = $node->getInfo() ) === null || '' === $info ) {
-			return array();
-		}
-		return array( 'info' => $info );
-	}
+final class FencedCodeRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param FencedCode $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        FencedCode::assertInstanceOf($node);
+        $attrs = $node->data->getData('attributes');
+        $infoWords = $node->getInfoWords();
+        if (\count($infoWords) !== 0 && $infoWords[0] !== '') {
+            $class = $infoWords[0];
+            if (!\str_starts_with($class, 'language-')) {
+                $class = 'language-' . $class;
+            }
+            $attrs->append('class', $class);
+        }
+        return new HtmlElement('pre', [], new HtmlElement('code', $attrs->export(), Xml::escape($node->getLiteral())));
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'code_block';
+    }
+    /**
+     * @param FencedCode $node
+     *
+     * @return array<string, scalar>
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        FencedCode::assertInstanceOf($node);
+        if (($info = $node->getInfo()) === null || $info === '') {
+            return [];
+        }
+        return ['info' => $info];
+    }
 }

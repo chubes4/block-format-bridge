@@ -18,28 +18,31 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class TableRowRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param TableRow $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		TableRow::assertInstanceOf($node);
-		$attrs     = $node->data->get('attributes');
-		$separator = $childRenderer->getInnerSeparator();
-		return new HtmlElement('tr', $attrs, $separator . $childRenderer->renderNodes($node->children()) . $separator);
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'table_row';
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class TableRowRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param TableRow $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        TableRow::assertInstanceOf($node);
+        $attrs = $node->data->get('attributes');
+        $separator = $childRenderer->getInnerSeparator();
+        return new HtmlElement('tr', $attrs, $separator . $childRenderer->renderNodes($node->children()) . $separator);
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'table_row';
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

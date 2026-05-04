@@ -20,15 +20,17 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\Html5EntityDecoder;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\RegexHelper;
-final class EntityParser implements InlineParserInterface {
-
-	public function getMatchDefinition(): InlineParserMatch {
-		return InlineParserMatch::regex(RegexHelper::PARTIAL_ENTITY);
-	}
-	public function parse(InlineParserContext $inlineContext): bool {
-		$entity = $inlineContext->getFullMatch();
-		$inlineContext->getCursor()->advanceBy($inlineContext->getFullMatchLength());
-		$inlineContext->getContainer()->appendChild(new Text(Html5EntityDecoder::decode($entity)));
-		return \true;
-	}
+final class EntityParser implements InlineParserInterface
+{
+    public function getMatchDefinition(): InlineParserMatch
+    {
+        return InlineParserMatch::regex(RegexHelper::PARTIAL_ENTITY);
+    }
+    public function parse(InlineParserContext $inlineContext): bool
+    {
+        $entity = $inlineContext->getFullMatch();
+        $inlineContext->getCursor()->advanceBy($inlineContext->getFullMatchLength());
+        $inlineContext->getContainer()->appendChild(new Text(Html5EntityDecoder::decode($entity)));
+        return \true;
+    }
 }

@@ -23,14 +23,15 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\Rendere
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\Renderer\DescriptionRenderer;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\Renderer\DescriptionTermRenderer;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ExtensionInterface;
-final class DescriptionListExtension implements ExtensionInterface {
-
-	public function register(EnvironmentBuilderInterface $environment): void {
-		$environment->addBlockStartParser(new DescriptionStartParser());
-		$environment->addEventListener(DocumentParsedEvent::class, new LooseDescriptionHandler(), 1001);
-		$environment->addEventListener(DocumentParsedEvent::class, new ConsecutiveDescriptionListMerger(), 1000);
-		$environment->addRenderer(DescriptionList::class, new DescriptionListRenderer());
-		$environment->addRenderer(DescriptionTerm::class, new DescriptionTermRenderer());
-		$environment->addRenderer(Description::class, new DescriptionRenderer());
-	}
+final class DescriptionListExtension implements ExtensionInterface
+{
+    public function register(EnvironmentBuilderInterface $environment): void
+    {
+        $environment->addBlockStartParser(new DescriptionStartParser());
+        $environment->addEventListener(DocumentParsedEvent::class, new LooseDescriptionHandler(), 1001);
+        $environment->addEventListener(DocumentParsedEvent::class, new ConsecutiveDescriptionListMerger(), 1000);
+        $environment->addRenderer(DescriptionList::class, new DescriptionListRenderer());
+        $environment->addRenderer(DescriptionTerm::class, new DescriptionTermRenderer());
+        $environment->addRenderer(Description::class, new DescriptionRenderer());
+    }
 }

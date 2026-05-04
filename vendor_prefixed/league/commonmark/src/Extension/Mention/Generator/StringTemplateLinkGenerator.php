@@ -13,14 +13,16 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention\Generator
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention\Mention;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
-final class StringTemplateLinkGenerator implements MentionGeneratorInterface {
-
-	private string $urlTemplate;
-	public function __construct(string $urlTemplate) {
-		$this->urlTemplate = $urlTemplate;
-	}
-	public function generateMention(Mention $mention): ?AbstractInline {
-		$mention->setUrl(\sprintf($this->urlTemplate, $mention->getIdentifier()));
-		return $mention;
-	}
+final class StringTemplateLinkGenerator implements MentionGeneratorInterface
+{
+    private string $urlTemplate;
+    public function __construct(string $urlTemplate)
+    {
+        $this->urlTemplate = $urlTemplate;
+    }
+    public function generateMention(Mention $mention): ?AbstractInline
+    {
+        $mention->setUrl(\sprintf($this->urlTemplate, $mention->getIdentifier()));
+        return $mention;
+    }
 }

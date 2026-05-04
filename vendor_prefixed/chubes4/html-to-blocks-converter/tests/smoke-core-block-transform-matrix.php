@@ -20,17 +20,15 @@ $assertions = 0;
 $assert = static function ($condition, $label, $detail = '') use (&$failures, &$assertions) {
     $assertions++;
     if (!$condition) {
-        $failures[] = 'FAIL [' . $label . ']' . ('' !== $detail ? ': ' . $detail : '');
+        $failures[] = 'FAIL [' . $label . ']' . ($detail !== '' ? ': ' . $detail : '');
     }
 };
 $assert_contains = static function (string $haystack, string $needle, string $label) use ($assert) {
     $assert(\strpos($haystack, $needle) !== \false, $label, 'Missing ' . $needle);
 };
 $read_required_file = static function (string $path) use ($assert): string {
-    global $wp_filesystem;
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored smoke reads local source fixtures.
-	$contents = file_get_contents( $path );
-    $assert(\is_string($contents) && '' !== $contents, \basename($path) . '-readable', 'Unable to read ' . $path);
+    $contents = \file_get_contents($path);
+    $assert(\is_string($contents) && $contents !== '', \basename($path) . '-readable', 'Unable to read ' . $path);
     return \is_string($contents) ? $contents : '';
 };
 $registry_source = $read_required_file($repo_root . '/includes/class-transform-registry.php');
@@ -56,7 +54,7 @@ foreach ($supported_matrix as $block_name => $coverage_kind) {
     if (\strpos($coverage_kind, 'generated-inner-block') !== \false) {
         $assert(isset($generated_blocks[$block_name]), 'source-generates-' . $block_name);
     }
-    if ('raw-handler-special-case' === $coverage_kind) {
+    if ($coverage_kind === 'raw-handler-special-case') {
         $assert(isset($generated_blocks[$block_name]), 'raw-handler-generates-' . $block_name);
     }
 }

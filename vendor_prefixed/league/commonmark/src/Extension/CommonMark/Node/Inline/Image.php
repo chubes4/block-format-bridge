@@ -15,23 +15,26 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Inline;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\Text;
-class Image extends AbstractWebResource {
-
-	protected ?string $title = null;
-	public function __construct(string $url, ?string $label = null, ?string $title = null) {
-		parent::__construct($url);
-		if ( null !== $label && '' !== $label ) {
-			$this->appendChild(new Text($label));
-		}
-		$this->title = $title;
-	}
-	public function getTitle(): ?string {
-		if ( '' === $this->title ) {
-			return null;
-		}
-		return $this->title;
-	}
-	public function setTitle(?string $title): void {
-		$this->title = $title;
-	}
+class Image extends AbstractWebResource
+{
+    protected ?string $title = null;
+    public function __construct(string $url, ?string $label = null, ?string $title = null)
+    {
+        parent::__construct($url);
+        if ($label !== null && $label !== '') {
+            $this->appendChild(new Text($label));
+        }
+        $this->title = $title;
+    }
+    public function getTitle(): ?string
+    {
+        if ($this->title === '') {
+            return null;
+        }
+        return $this->title;
+    }
+    public function setTitle(?string $title): void
+    {
+        $this->title = $title;
+    }
 }

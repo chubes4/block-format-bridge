@@ -11,40 +11,46 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Reference;
 
-final class MemoryLimitedReferenceMap implements ReferenceMapInterface {
-
-	private ReferenceMapInterface $decorated;
-	private const MINIMUM_SIZE = 100000;
-	private int $remaining;
-	public function __construct(ReferenceMapInterface $decorated, int $maxSize) {
-		$this->decorated = $decorated;
-		$this->remaining = \max(self::MINIMUM_SIZE, $maxSize);
-	}
-	public function add(ReferenceInterface $reference): void {
-		$this->decorated->add($reference);
-	}
-	public function contains(string $label): bool {
-		return $this->decorated->contains($label);
-	}
-	public function get(string $label): ?ReferenceInterface {
-		$reference = $this->decorated->get($label);
-		if ( null === $reference ) {
-			return null;
-		}
-		// Check for expansion limit
-		$this->remaining -= \strlen($reference->getDestination()) + \strlen($reference->getTitle());
-		if ( $this->remaining < 0 ) {
-			return null;
-		}
-		return $reference;
-	}
-	/**
-	 * @return \Traversable<string, ReferenceInterface>
-	 */
-	public function getIterator(): \Traversable {
-		return $this->decorated->getIterator();
-	}
-	public function count(): int {
-		return $this->decorated->count();
-	}
+final class MemoryLimitedReferenceMap implements ReferenceMapInterface
+{
+    private ReferenceMapInterface $decorated;
+    private const MINIMUM_SIZE = 100000;
+    private int $remaining;
+    public function __construct(ReferenceMapInterface $decorated, int $maxSize)
+    {
+        $this->decorated = $decorated;
+        $this->remaining = \max(self::MINIMUM_SIZE, $maxSize);
+    }
+    public function add(ReferenceInterface $reference): void
+    {
+        $this->decorated->add($reference);
+    }
+    public function contains(string $label): bool
+    {
+        return $this->decorated->contains($label);
+    }
+    public function get(string $label): ?ReferenceInterface
+    {
+        $reference = $this->decorated->get($label);
+        if ($reference === null) {
+            return null;
+        }
+        // Check for expansion limit
+        $this->remaining -= \strlen($reference->getDestination()) + \strlen($reference->getTitle());
+        if ($this->remaining < 0) {
+            return null;
+        }
+        return $reference;
+    }
+    /**
+     * @return \Traversable<string, ReferenceInterface>
+     */
+    public function getIterator(): \Traversable
+    {
+        return $this->decorated->getIterator();
+    }
+    public function count(): int
+    {
+        return $this->decorated->count();
+    }
 }

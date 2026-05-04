@@ -15,17 +15,20 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Block;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-final class Heading extends AbstractBlock {
-
-	private int $level;
-	public function __construct(int $level) {
-		parent::__construct();
-		$this->level = $level;
-	}
-	public function getLevel(): int {
-		return $this->level;
-	}
-	public function setLevel(int $level): void {
-		$this->level = $level;
-	}
+final class Heading extends AbstractBlock
+{
+    private int $level;
+    public function __construct(int $level)
+    {
+        parent::__construct();
+        $this->level = $level;
+    }
+    public function getLevel(): int
+    {
+        return $this->level;
+    }
+    public function setLevel(int $level): void
+    {
+        $this->level = $level;
+    }
 }

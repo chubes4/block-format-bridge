@@ -12,18 +12,20 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\Config\Exception;
 
 use BlockFormatBridge\Vendor\Nette\Schema\ValidationException as NetteException;
-final class ValidationException extends InvalidConfigurationException {
-
-	/** @var string[] */
-	private array $messages;
-	public function __construct(NetteException $innerException) {
-		parent::__construct($innerException->getMessage(), (int) $innerException->getCode(), $innerException);
-		$this->messages = $innerException->getMessages();
-	}
-	/**
-	 * @return string[]
-	 */
-	public function getMessages(): array {
-		return $this->messages;
-	}
+final class ValidationException extends InvalidConfigurationException
+{
+    /** @var string[] */
+    private array $messages;
+    public function __construct(NetteException $innerException)
+    {
+        parent::__construct($innerException->getMessage(), (int) $innerException->getCode(), $innerException);
+        $this->messages = $innerException->getMessages();
+    }
+    /**
+     * @return string[]
+     */
+    public function getMessages(): array
+    {
+        return $this->messages;
+    }
 }

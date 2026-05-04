@@ -15,15 +15,17 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Footnote\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
 use BlockFormatBridge\Vendor\League\CommonMark\Reference\ReferenceInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Reference\ReferenceableInterface;
-final class Footnote extends AbstractBlock implements ReferenceableInterface {
-
-	/** @psalm-readonly */
-	private ReferenceInterface $reference;
-	public function __construct(ReferenceInterface $reference) {
-		parent::__construct();
-		$this->reference = $reference;
-	}
-	public function getReference(): ReferenceInterface {
-		return $this->reference;
-	}
+final class Footnote extends AbstractBlock implements ReferenceableInterface
+{
+    /** @psalm-readonly */
+    private ReferenceInterface $reference;
+    public function __construct(ReferenceInterface $reference)
+    {
+        parent::__construct();
+        $this->reference = $reference;
+    }
+    public function getReference(): ReferenceInterface
+    {
+        return $this->reference;
+    }
 }

@@ -13,17 +13,20 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\N
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\TightBlockInterface;
-class Description extends AbstractBlock implements TightBlockInterface {
-
-	private bool $tight;
-	public function __construct(bool $tight = \false) {
-		parent::__construct();
-		$this->tight = $tight;
-	}
-	public function isTight(): bool {
-		return $this->tight;
-	}
-	public function setTight(bool $tight): void {
-		$this->tight = $tight;
-	}
+class Description extends AbstractBlock implements TightBlockInterface
+{
+    private bool $tight;
+    public function __construct(bool $tight = \false)
+    {
+        parent::__construct();
+        $this->tight = $tight;
+    }
+    public function isTight(): bool
+    {
+        return $this->tight;
+    }
+    public function setTight(bool $tight): void
+    {
+        $this->tight = $tight;
+    }
 }

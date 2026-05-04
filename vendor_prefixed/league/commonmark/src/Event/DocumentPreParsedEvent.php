@@ -16,22 +16,26 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\Document;
 /**
  * Event dispatched when the document is about to be parsed
  */
-final class DocumentPreParsedEvent extends AbstractEvent {
-
-	/** @psalm-readonly */
-	private Document $document;
-	private MarkdownInputInterface $markdown;
-	public function __construct(Document $document, MarkdownInputInterface $markdown) {
-		$this->document = $document;
-		$this->markdown = $markdown;
-	}
-	public function getDocument(): Document {
-		return $this->document;
-	}
-	public function getMarkdown(): MarkdownInputInterface {
-		return $this->markdown;
-	}
-	public function replaceMarkdown(MarkdownInputInterface $markdownInput): void {
-		$this->markdown = $markdownInput;
-	}
+final class DocumentPreParsedEvent extends AbstractEvent
+{
+    /** @psalm-readonly */
+    private Document $document;
+    private MarkdownInputInterface $markdown;
+    public function __construct(Document $document, MarkdownInputInterface $markdown)
+    {
+        $this->document = $document;
+        $this->markdown = $markdown;
+    }
+    public function getDocument(): Document
+    {
+        return $this->document;
+    }
+    public function getMarkdown(): MarkdownInputInterface
+    {
+        return $this->markdown;
+    }
+    public function replaceMarkdown(MarkdownInputInterface $markdownInput): void
+    {
+        $this->markdown = $markdownInput;
+    }
 }

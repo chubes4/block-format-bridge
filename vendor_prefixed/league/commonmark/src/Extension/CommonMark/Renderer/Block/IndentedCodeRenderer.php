@@ -21,27 +21,30 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\Xml;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class IndentedCodeRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param IndentedCode $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		IndentedCode::assertInstanceOf($node);
-		$attrs = $node->data->get('attributes');
-		return new HtmlElement('pre', array(), new HtmlElement('code', $attrs, Xml::escape($node->getLiteral())));
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'code_block';
-	}
-	/**
-	 * @return array<string, scalar>
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class IndentedCodeRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param IndentedCode $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        IndentedCode::assertInstanceOf($node);
+        $attrs = $node->data->get('attributes');
+        return new HtmlElement('pre', [], new HtmlElement('code', $attrs, Xml::escape($node->getLiteral())));
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'code_block';
+    }
+    /**
+     * @return array<string, scalar>
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

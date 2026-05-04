@@ -10,9 +10,9 @@ namespace BlockFormatBridge\Vendor;
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-if ( \PHP_VERSION_ID < 80000 ) {
-	class ValueError extends \Error {
-
-	}
-	\class_alias('BlockFormatBridge\Vendor\ValueError', 'ValueError', \false);
+if (\PHP_VERSION_ID < 80000) {
+    class ValueError extends \Error
+    {
+    }
+    \class_alias('BlockFormatBridge\Vendor\ValueError', 'ValueError', \false);
 }

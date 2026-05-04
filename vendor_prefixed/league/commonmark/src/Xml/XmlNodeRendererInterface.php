@@ -12,13 +12,13 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Xml;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
-interface XmlNodeRendererInterface {
-
-	public function getXmlTagName(Node $node): string;
-	/**
-	 * @return array<string, string|int|float|bool>
-	 *
-	 * @psalm-return array<string, scalar>
-	 */
-	public function getXmlAttributes(Node $node): array;
+interface XmlNodeRendererInterface
+{
+    public function getXmlTagName(Node $node): string;
+    /**
+     * @return array<string, string|int|float|bool>
+     *
+     * @psalm-return array<string, scalar>
+     */
+    public function getXmlAttributes(Node $node): array;
 }

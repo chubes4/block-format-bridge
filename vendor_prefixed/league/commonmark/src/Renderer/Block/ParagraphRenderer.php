@@ -21,40 +21,44 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class ParagraphRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/**
-	 * @param Paragraph $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer) {
-		Paragraph::assertInstanceOf($node);
-		if ( $this->inTightList($node) ) {
-			return $childRenderer->renderNodes($node->children());
-		}
-		$attrs = $node->data->get('attributes');
-		return new HtmlElement('p', $attrs, $childRenderer->renderNodes($node->children()));
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'paragraph';
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
-	private function inTightList(Paragraph $node): bool {
-		// Only check up to two (2) levels above this for tightness
-		$i = 2;
-		while ( ( $node = $node->parent() ) && $i-- ) {
-			if ( $node instanceof TightBlockInterface ) {
-				return $node->isTight();
-			}
-		}
-		return \false;
-	}
+final class ParagraphRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /**
+     * @param Paragraph $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer)
+    {
+        Paragraph::assertInstanceOf($node);
+        if ($this->inTightList($node)) {
+            return $childRenderer->renderNodes($node->children());
+        }
+        $attrs = $node->data->get('attributes');
+        return new HtmlElement('p', $attrs, $childRenderer->renderNodes($node->children()));
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'paragraph';
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
+    private function inTightList(Paragraph $node): bool
+    {
+        // Only check up to two (2) levels above this for tightness
+        $i = 2;
+        while (($node = $node->parent()) && $i--) {
+            if ($node instanceof TightBlockInterface) {
+                return $node->isTight();
+            }
+        }
+        return \false;
+    }
 }

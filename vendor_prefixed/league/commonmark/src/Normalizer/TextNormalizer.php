@@ -18,22 +18,23 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Normalizer;
  *
  * @psalm-immutable
  */
-final class TextNormalizer implements TextNormalizerInterface {
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @psalm-pure
-	 */
-	public function normalize(string $text, array $context = array()): string {
-		// Collapse internal whitespace to single space and remove
-		// leading/trailing whitespace
-		$text = \preg_replace('/[ \t\r\n]+/', ' ', \trim($text));
-		\assert(\is_string($text));
-		// Is it strictly ASCII? If so, we can use strtolower() instead (faster)
-		if ( \mb_check_encoding($text, 'ASCII') ) {
-			return \strtolower($text);
-		}
-		return \mb_convert_case($text, \MB_CASE_FOLD, 'UTF-8');
-	}
+final class TextNormalizer implements TextNormalizerInterface
+{
+    /**
+     * {@inheritDoc}
+     *
+     * @psalm-pure
+     */
+    public function normalize(string $text, array $context = []): string
+    {
+        // Collapse internal whitespace to single space and remove
+        // leading/trailing whitespace
+        $text = \preg_replace('/[ \t\r\n]+/', ' ', \trim($text));
+        \assert(\is_string($text));
+        // Is it strictly ASCII? If so, we can use strtolower() instead (faster)
+        if (\mb_check_encoding($text, 'ASCII')) {
+            return \strtolower($text);
+        }
+        return \mb_convert_case($text, \MB_CASE_FOLD, 'UTF-8');
+    }
 }

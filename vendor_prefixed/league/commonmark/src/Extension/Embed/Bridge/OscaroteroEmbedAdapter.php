@@ -15,27 +15,29 @@ use BlockFormatBridge\Vendor\Embed\Embed as EmbedLib;
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\MissingDependencyException;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Embed\Embed;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Embed\EmbedAdapterInterface;
-final class OscaroteroEmbedAdapter implements EmbedAdapterInterface {
-
-	private EmbedLib $embedLib;
-	public function __construct(?EmbedLib $embed = null) {
-		if ( null === $embed ) {
-			if ( ! \class_exists(EmbedLib::class) ) {
-				throw new MissingDependencyException('The embed/embed package is not installed. Please install it with Composer to use this adapter.');
-			}
-			$embed = new EmbedLib();
-		}
-		$this->embedLib = $embed;
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function updateEmbeds(array $embeds): void {
-		$extractors = $this->embedLib->getMulti(...\array_map(static fn(Embed $embed) => $embed->getUrl(), $embeds));
-		foreach ( $extractors as $i => $extractor ) {
-			if ( null !== $extractor->code ) {
-				$embeds[ $i ]->setEmbedCode($extractor->code->html);
-			}
-		}
-	}
+final class OscaroteroEmbedAdapter implements EmbedAdapterInterface
+{
+    private EmbedLib $embedLib;
+    public function __construct(?EmbedLib $embed = null)
+    {
+        if ($embed === null) {
+            if (!\class_exists(EmbedLib::class)) {
+                throw new MissingDependencyException('The embed/embed package is not installed. Please install it with Composer to use this adapter.');
+            }
+            $embed = new EmbedLib();
+        }
+        $this->embedLib = $embed;
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function updateEmbeds(array $embeds): void
+    {
+        $extractors = $this->embedLib->getMulti(...\array_map(static fn(Embed $embed) => $embed->getUrl(), $embeds));
+        foreach ($extractors as $i => $extractor) {
+            if ($extractor->code !== null) {
+                $embeds[$i]->setEmbedCode($extractor->code->html);
+            }
+        }
+    }
 }

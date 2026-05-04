@@ -17,21 +17,23 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\GithubFlavoredMarkdownE
 /**
  * Converts GitHub Flavored Markdown to HTML.
  */
-final class GithubFlavoredMarkdownConverter extends MarkdownConverter {
-
-	/**
-	 * Create a new Markdown converter pre-configured for GFM
-	 *
-	 * @param array<string, mixed> $config
-	 */
-	public function __construct(array $config = array()) {
-		$environment = new Environment($config);
-		$environment->addExtension(new CommonMarkCoreExtension());
-		$environment->addExtension(new GithubFlavoredMarkdownExtension());
-		parent::__construct($environment);
-	}
-	public function getEnvironment(): Environment {
-		\assert($this->environment instanceof Environment);
-		return $this->environment;
-	}
+final class GithubFlavoredMarkdownConverter extends MarkdownConverter
+{
+    /**
+     * Create a new Markdown converter pre-configured for GFM
+     *
+     * @param array<string, mixed> $config
+     */
+    public function __construct(array $config = [])
+    {
+        $environment = new Environment($config);
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new GithubFlavoredMarkdownExtension());
+        parent::__construct($environment);
+    }
+    public function getEnvironment(): Environment
+    {
+        \assert($this->environment instanceof Environment);
+        return $this->environment;
+    }
 }

@@ -10,30 +10,30 @@ namespace BlockFormatBridge\Vendor\Nette\Utils;
 /**
  * An error occurred while working with the image.
  */
-class ImageException extends \Exception {
-
+class ImageException extends \Exception
+{
 }
 /**
  * The image file is invalid or in an unsupported format.
  */
-class UnknownImageFileException extends ImageException {
-
+class UnknownImageFileException extends ImageException
+{
 }
 /**
  * JSON encoding or decoding failed.
  */
-class JsonException extends \JsonException {
-
+class JsonException extends \JsonException
+{
 }
 /**
  * Regular expression pattern or execution failed.
  */
-class RegexpException extends \Exception {
-
+class RegexpException extends \Exception
+{
 }
 /**
  * Type validation failed. The value doesn't match the expected type constraints.
  */
-class AssertionException extends \Exception {
-
+class AssertionException extends \Exception
+{
 }

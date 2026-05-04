@@ -18,22 +18,26 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserI
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserWithInlinesInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserEngineInterface;
-final class HeadingParser extends AbstractBlockContinueParser implements BlockContinueParserWithInlinesInterface {
-
-	/** @psalm-readonly */
-	private Heading $block;
-	private string $content;
-	public function __construct(int $level, string $content) {
-		$this->block   = new Heading($level);
-		$this->content = $content;
-	}
-	public function getBlock(): Heading {
-		return $this->block;
-	}
-	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
-		return BlockContinue::none();
-	}
-	public function parseInlines(InlineParserEngineInterface $inlineParser): void {
-		$inlineParser->parse($this->content, $this->block);
-	}
+final class HeadingParser extends AbstractBlockContinueParser implements BlockContinueParserWithInlinesInterface
+{
+    /** @psalm-readonly */
+    private Heading $block;
+    private string $content;
+    public function __construct(int $level, string $content)
+    {
+        $this->block = new Heading($level);
+        $this->content = $content;
+    }
+    public function getBlock(): Heading
+    {
+        return $this->block;
+    }
+    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
+    {
+        return BlockContinue::none();
+    }
+    public function parseInlines(InlineParserEngineInterface $inlineParser): void
+    {
+        $inlineParser->parse($this->content, $this->block);
+    }
 }

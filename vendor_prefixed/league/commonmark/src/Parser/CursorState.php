@@ -23,28 +23,30 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Parser;
  *
  * @psalm-immutable
  */
-final class CursorState {
-
-	/**
-	 * @var array<int, mixed>
-	 *
-	 * @psalm-readonly
-	 */
-	private array $state;
-	/**
-	 * @internal
-	 *
-	 * @param array<int, mixed> $state
-	 */
-	public function __construct(array $state) {
-		$this->state = $state;
-	}
-	/**
-	 * @internal
-	 *
-	 * @return array<int, mixed>
-	 */
-	public function toArray(): array {
-		return $this->state;
-	}
+final class CursorState
+{
+    /**
+     * @var array<int, mixed>
+     *
+     * @psalm-readonly
+     */
+    private array $state;
+    /**
+     * @internal
+     *
+     * @param array<int, mixed> $state
+     */
+    public function __construct(array $state)
+    {
+        $this->state = $state;
+    }
+    /**
+     * @internal
+     *
+     * @return array<int, mixed>
+     */
+    public function toArray(): array
+    {
+        return $this->state;
+    }
 }

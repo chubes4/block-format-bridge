@@ -15,29 +15,37 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinue;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
-class EmbedParser implements BlockContinueParserInterface {
-
-	private Embed $embed;
-	public function __construct(string $url) {
-		$this->embed = new Embed($url);
-	}
-	public function getBlock(): AbstractBlock {
-		return $this->embed;
-	}
-	public function isContainer(): bool {
-		return \false;
-	}
-	public function canHaveLazyContinuationLines(): bool {
-		return \false;
-	}
-	public function canContain(AbstractBlock $childBlock): bool {
-		return \false;
-	}
-	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
-		return BlockContinue::none();
-	}
-	public function addLine(string $line): void {
-	}
-	public function closeBlock(): void {
-	}
+class EmbedParser implements BlockContinueParserInterface
+{
+    private Embed $embed;
+    public function __construct(string $url)
+    {
+        $this->embed = new Embed($url);
+    }
+    public function getBlock(): AbstractBlock
+    {
+        return $this->embed;
+    }
+    public function isContainer(): bool
+    {
+        return \false;
+    }
+    public function canHaveLazyContinuationLines(): bool
+    {
+        return \false;
+    }
+    public function canContain(AbstractBlock $childBlock): bool
+    {
+        return \false;
+    }
+    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
+    {
+        return BlockContinue::none();
+    }
+    public function addLine(string $line): void
+    {
+    }
+    public function closeBlock(): void
+    {
+    }
 }

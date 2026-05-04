@@ -27,13 +27,14 @@ use BlockFormatBridge\Vendor\League\CommonMark\Util\RegexHelper;
  * By implementing this optimization as a block parser instead, users wanting custom blocks starting with letters
  * can instead register their block parser with a higher priority to ensure their parser is always called first.
  */
-final class SkipLinesStartingWithLettersParser implements BlockStartParserInterface {
-
-	public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart {
-		if ( ! $cursor->isIndented() && RegexHelper::isLetter($cursor->getNextNonSpaceCharacter()) ) {
-			$cursor->advanceToNextNonSpaceOrTab();
-			return BlockStart::abort();
-		}
-		return BlockStart::none();
-	}
+final class SkipLinesStartingWithLettersParser implements BlockStartParserInterface
+{
+    public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart
+    {
+        if (!$cursor->isIndented() && RegexHelper::isLetter($cursor->getNextNonSpaceCharacter())) {
+            $cursor->advanceToNextNonSpaceOrTab();
+            return BlockStart::abort();
+        }
+        return BlockStart::none();
+    }
 }

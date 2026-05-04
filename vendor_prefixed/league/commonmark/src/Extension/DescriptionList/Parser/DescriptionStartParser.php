@@ -17,41 +17,43 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStart;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStartParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\MarkdownParserStateInterface;
-final class DescriptionStartParser implements BlockStartParserInterface {
-
-	public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart {
-		if ( $cursor->isIndented() ) {
-			return BlockStart::none();
-		}
-		$cursor->advanceToNextNonSpaceOrTab();
-		if ( $cursor->match('/^:[ \t]+/') === null ) {
-			return BlockStart::none();
-		}
-		$terms       = $parserState->getParagraphContent();
-		$activeBlock = $parserState->getActiveBlockParser()->getBlock();
-		if ( null !== $terms && '' !== $terms ) {
-			// New description; tight; term(s) sitting in pending block that we will replace
-			return BlockStart::of(...array( new DescriptionListContinueParser() ), ...self::splitTerms($terms), ...array( new DescriptionContinueParser(\true, $cursor->getPosition()) ))->at($cursor)->replaceActiveBlockParser();
-		}
-		if ( $activeBlock instanceof Paragraph && $activeBlock->parent() instanceof Description ) {
-			// Additional description in the same list as the parent description
-			return BlockStart::of(new DescriptionContinueParser(\true, $cursor->getPosition()))->at($cursor);
-		}
-		if ( $activeBlock->lastChild() instanceof Paragraph ) {
-			// New description; loose; term(s) sitting in previous closed paragraph block
-			return BlockStart::of(new DescriptionContinueParser(\false, $cursor->getPosition()))->at($cursor);
-		}
-		// No preceding terms
-		return BlockStart::none();
-	}
-	/**
-	 * @return array<int, DescriptionTermContinueParser>
-	 */
-	private static function splitTerms(string $terms): array {
-		$ret = array();
-		foreach ( \explode("\n", $terms) as $term ) {
-			$ret[] = new DescriptionTermContinueParser($term);
-		}
-		return $ret;
-	}
+final class DescriptionStartParser implements BlockStartParserInterface
+{
+    public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart
+    {
+        if ($cursor->isIndented()) {
+            return BlockStart::none();
+        }
+        $cursor->advanceToNextNonSpaceOrTab();
+        if ($cursor->match('/^:[ \t]+/') === null) {
+            return BlockStart::none();
+        }
+        $terms = $parserState->getParagraphContent();
+        $activeBlock = $parserState->getActiveBlockParser()->getBlock();
+        if ($terms !== null && $terms !== '') {
+            // New description; tight; term(s) sitting in pending block that we will replace
+            return BlockStart::of(...[new DescriptionListContinueParser()], ...self::splitTerms($terms), ...[new DescriptionContinueParser(\true, $cursor->getPosition())])->at($cursor)->replaceActiveBlockParser();
+        }
+        if ($activeBlock instanceof Paragraph && $activeBlock->parent() instanceof Description) {
+            // Additional description in the same list as the parent description
+            return BlockStart::of(new DescriptionContinueParser(\true, $cursor->getPosition()))->at($cursor);
+        }
+        if ($activeBlock->lastChild() instanceof Paragraph) {
+            // New description; loose; term(s) sitting in previous closed paragraph block
+            return BlockStart::of(new DescriptionContinueParser(\false, $cursor->getPosition()))->at($cursor);
+        }
+        // No preceding terms
+        return BlockStart::none();
+    }
+    /**
+     * @return array<int, DescriptionTermContinueParser>
+     */
+    private static function splitTerms(string $terms): array
+    {
+        $ret = [];
+        foreach (\explode("\n", $terms) as $term) {
+            $ret[] = new DescriptionTermContinueParser($term);
+        }
+        return $ret;
+    }
 }

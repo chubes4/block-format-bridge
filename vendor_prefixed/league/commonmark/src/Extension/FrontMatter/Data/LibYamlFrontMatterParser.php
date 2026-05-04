@@ -13,25 +13,27 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Data;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\MissingDependencyException;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Exception\InvalidFrontMatterException;
-final class LibYamlFrontMatterParser implements FrontMatterDataParserInterface {
-
-	public static function capable(): ?LibYamlFrontMatterParser {
-		if ( ! \extension_loaded('yaml') ) {
-			return null;
-		}
-		return new LibYamlFrontMatterParser();
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function parse(string $frontMatter) {
-		if ( ! \extension_loaded('yaml') ) {
-			throw new MissingDependencyException('Failed to parse yaml: "ext-yaml" extension is missing');
-		}
-		$result = @\yaml_parse($frontMatter);
-		if ( \false === $result ) {
-			throw new InvalidFrontMatterException('Failed to parse front matter');
-		}
-		return $result;
-	}
+final class LibYamlFrontMatterParser implements FrontMatterDataParserInterface
+{
+    public static function capable(): ?LibYamlFrontMatterParser
+    {
+        if (!\extension_loaded('yaml')) {
+            return null;
+        }
+        return new LibYamlFrontMatterParser();
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function parse(string $frontMatter)
+    {
+        if (!\extension_loaded('yaml')) {
+            throw new MissingDependencyException('Failed to parse yaml: "ext-yaml" extension is missing');
+        }
+        $result = @\yaml_parse($frontMatter);
+        if ($result === \false) {
+            throw new InvalidFrontMatterException('Failed to parse front matter');
+        }
+        return $result;
+    }
 }

@@ -12,10 +12,10 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Parser\Block;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserEngineInterface;
-interface BlockContinueParserWithInlinesInterface extends BlockContinueParserInterface {
-
-	/**
-	 * Parse any inlines inside of the current block
-	 */
-	public function parseInlines(InlineParserEngineInterface $inlineParser): void;
+interface BlockContinueParserWithInlinesInterface extends BlockContinueParserInterface
+{
+    /**
+     * Parse any inlines inside of the current block
+     */
+    public function parseInlines(InlineParserEngineInterface $inlineParser): void;
 }

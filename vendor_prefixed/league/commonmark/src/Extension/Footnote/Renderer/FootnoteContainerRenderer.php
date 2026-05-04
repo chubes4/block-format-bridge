@@ -20,37 +20,41 @@ use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationAwareInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationInterface;
-final class FootnoteContainerRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface {
-
-	private ConfigurationInterface $config;
-	/**
-	 * @param FootnoteContainer $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		FootnoteContainer::assertInstanceOf($node);
-		$attrs = $node->data->getData('attributes');
-		$attrs->append('class', $this->config->get('footnote/container_class'));
-		$attrs->set('role', 'doc-endnotes');
-		$contents = new HtmlElement('ol', array(), $childRenderer->renderNodes($node->children()));
-		if ( $this->config->get('footnote/container_add_hr') ) {
-			$contents = array( new HtmlElement('hr', array(), null, \true), $contents );
-		}
-		return new HtmlElement('div', $attrs->export(), $contents);
-	}
-	public function setConfiguration(ConfigurationInterface $configuration): void {
-		$this->config = $configuration;
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'footnote_container';
-	}
-	/**
-	 * @return array<string, scalar>
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return array();
-	}
+final class FootnoteContainerRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface
+{
+    private ConfigurationInterface $config;
+    /**
+     * @param FootnoteContainer $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        FootnoteContainer::assertInstanceOf($node);
+        $attrs = $node->data->getData('attributes');
+        $attrs->append('class', $this->config->get('footnote/container_class'));
+        $attrs->set('role', 'doc-endnotes');
+        $contents = new HtmlElement('ol', [], $childRenderer->renderNodes($node->children()));
+        if ($this->config->get('footnote/container_add_hr')) {
+            $contents = [new HtmlElement('hr', [], null, \true), $contents];
+        }
+        return new HtmlElement('div', $attrs->export(), $contents);
+    }
+    public function setConfiguration(ConfigurationInterface $configuration): void
+    {
+        $this->config = $configuration;
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'footnote_container';
+    }
+    /**
+     * @return array<string, scalar>
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return [];
+    }
 }

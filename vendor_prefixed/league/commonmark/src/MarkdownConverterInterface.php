@@ -18,14 +18,14 @@ use BlockFormatBridge\Vendor\League\CommonMark\Output\RenderedContentInterface;
  *
  * @deprecated since 2.2; use {@link ConverterInterface} instead
  */
-interface MarkdownConverterInterface {
-
-	/**
-	 * Converts Markdown to HTML.
-	 *
-	 * @deprecated since 2.2; use {@link ConverterInterface::convert()} instead
-	 *
-	 * @throws CommonMarkException
-	 */
-	public function convertToHtml(string $markdown): RenderedContentInterface;
+interface MarkdownConverterInterface
+{
+    /**
+     * Converts Markdown to HTML.
+     *
+     * @deprecated since 2.2; use {@link ConverterInterface::convert()} instead
+     *
+     * @throws CommonMarkException
+     */
+    public function convertToHtml(string $markdown): RenderedContentInterface;
 }

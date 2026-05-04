@@ -12,9 +12,10 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Exception;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\CommonMarkException;
-class InvalidFrontMatterException extends \RuntimeException implements CommonMarkException {
-
-	public static function wrap(\Throwable $t): self {
-		return new InvalidFrontMatterException('Failed to parse front matter: ' . $t->getMessage(), 0, $t);
-	}
+class InvalidFrontMatterException extends \RuntimeException implements CommonMarkException
+{
+    public static function wrap(\Throwable $t): self
+    {
+        return new InvalidFrontMatterException('Failed to parse front matter: ' . $t->getMessage(), 0, $t);
+    }
 }

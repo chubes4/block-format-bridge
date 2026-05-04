@@ -15,31 +15,35 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class TableOfContentsRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	/** @var NodeRendererInterface&XmlNodeRendererInterface */
-	private $innerRenderer;
-	/**
-	 * @psalm-param NodeRendererInterface&XmlNodeRendererInterface $innerRenderer
-	 *
-	 * @phpstan-param NodeRendererInterface&XmlNodeRendererInterface $innerRenderer
-	 */
-	public function __construct(NodeRendererInterface $innerRenderer) {
-		$this->innerRenderer = $innerRenderer;
-	}
-	/**
-	 * {@inheritDoc}
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer) {
-		return $this->innerRenderer->render($node, $childRenderer);
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'table_of_contents';
-	}
-	/**
-	 * @return array<string, scalar>
-	 */
-	public function getXmlAttributes(Node $node): array {
-		return $this->innerRenderer->getXmlAttributes($node);
-	}
+final class TableOfContentsRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    /** @var NodeRendererInterface&XmlNodeRendererInterface */
+    private $innerRenderer;
+    /**
+     * @psalm-param NodeRendererInterface&XmlNodeRendererInterface $innerRenderer
+     *
+     * @phpstan-param NodeRendererInterface&XmlNodeRendererInterface $innerRenderer
+     */
+    public function __construct(NodeRendererInterface $innerRenderer)
+    {
+        $this->innerRenderer = $innerRenderer;
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer)
+    {
+        return $this->innerRenderer->render($node, $childRenderer);
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'table_of_contents';
+    }
+    /**
+     * @return array<string, scalar>
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        return $this->innerRenderer->getXmlAttributes($node);
+    }
 }

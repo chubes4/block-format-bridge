@@ -12,20 +12,20 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Parser;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
-interface MarkdownParserStateInterface {
-
-	/**
-	 * Returns the deepest open block parser
-	 */
-	public function getActiveBlockParser(): BlockContinueParserInterface;
-	/**
-	 * Open block parser that was last matched during the continue phase. This is different from the currently active
-	 * block parser, as an unmatched block is only closed when a new block is started.
-	 */
-	public function getLastMatchedBlockParser(): BlockContinueParserInterface;
-	/**
-	 * Returns the current content of the paragraph if the matched block is a paragraph. The content can be multiple
-	 * lines separated by newlines.
-	 */
-	public function getParagraphContent(): ?string;
+interface MarkdownParserStateInterface
+{
+    /**
+     * Returns the deepest open block parser
+     */
+    public function getActiveBlockParser(): BlockContinueParserInterface;
+    /**
+     * Open block parser that was last matched during the continue phase. This is different from the currently active
+     * block parser, as an unmatched block is only closed when a new block is started.
+     */
+    public function getLastMatchedBlockParser(): BlockContinueParserInterface;
+    /**
+     * Returns the current content of the paragraph if the matched block is a paragraph. The content can be multiple
+     * lines separated by newlines.
+     */
+    public function getParagraphContent(): ?string;
 }

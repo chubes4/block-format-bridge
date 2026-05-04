@@ -14,6 +14,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Table;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-final class TableRow extends AbstractBlock {
-
+final class TableRow extends AbstractBlock
+{
 }

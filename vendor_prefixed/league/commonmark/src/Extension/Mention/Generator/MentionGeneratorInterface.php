@@ -13,7 +13,7 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention\Generator
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention\Mention;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
-interface MentionGeneratorInterface {
-
-	public function generateMention(Mention $mention): ?AbstractInline;
+interface MentionGeneratorInterface
+{
+    public function generateMention(Mention $mention): ?AbstractInline;
 }

@@ -14,10 +14,10 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Embed;
 /**
  * Interface for a service which updates the embed code(s) for the given array of embeds
  */
-interface EmbedAdapterInterface {
-
-	/**
-	 * @param Embed[] $embeds
-	 */
-	public function updateEmbeds(array $embeds): void;
+interface EmbedAdapterInterface
+{
+    /**
+     * @param Embed[] $embeds
+     */
+    public function updateEmbeds(array $embeds): void;
 }

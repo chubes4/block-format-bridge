@@ -20,16 +20,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\Attributes\Parser\Attri
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ConfigurableExtensionInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationBuilderInterface;
 use BlockFormatBridge\Vendor\Nette\Schema\Expect;
-final class AttributesExtension implements ConfigurableExtensionInterface {
-
-	public function configureSchema(ConfigurationBuilderInterface $builder): void {
-		$builder->addSchema('attributes', Expect::structure(array( 'allow' => Expect::arrayOf('string')->default(array()) )));
-	}
-	public function register(EnvironmentBuilderInterface $environment): void {
-		$allowList        = $environment->getConfiguration()->get('attributes.allow');
-		$allowUnsafeLinks = $environment->getConfiguration()->get('allow_unsafe_links');
-		$environment->addBlockStartParser(new AttributesBlockStartParser());
-		$environment->addInlineParser(new AttributesInlineParser());
-		$environment->addEventListener(DocumentParsedEvent::class, array( new AttributesListener($allowList, $allowUnsafeLinks), 'processDocument' ));
-	}
+final class AttributesExtension implements ConfigurableExtensionInterface
+{
+    public function configureSchema(ConfigurationBuilderInterface $builder): void
+    {
+        $builder->addSchema('attributes', Expect::structure(['allow' => Expect::arrayOf('string')->default([])]));
+    }
+    public function register(EnvironmentBuilderInterface $environment): void
+    {
+        $allowList = $environment->getConfiguration()->get('attributes.allow');
+        $allowUnsafeLinks = $environment->getConfiguration()->get('allow_unsafe_links');
+        $environment->addBlockStartParser(new AttributesBlockStartParser());
+        $environment->addInlineParser(new AttributesInlineParser());
+        $environment->addEventListener(DocumentParsedEvent::class, [new AttributesListener($allowList, $allowUnsafeLinks), 'processDocument']);
+    }
 }

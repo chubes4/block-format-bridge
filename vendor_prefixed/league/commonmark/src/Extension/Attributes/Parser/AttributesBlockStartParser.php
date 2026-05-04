@@ -17,17 +17,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStart;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStartParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\MarkdownParserStateInterface;
-final class AttributesBlockStartParser implements BlockStartParserInterface {
-
-	public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart {
-		$originalPosition = $cursor->getPosition();
-		$attributes       = AttributesHelper::parseAttributes($cursor);
-		if ( $attributes === array() && $originalPosition === $cursor->getPosition() ) {
-			return BlockStart::none();
-		}
-		if ( $cursor->getNextNonSpaceCharacter() !== null ) {
-			return BlockStart::none();
-		}
-		return BlockStart::of(new AttributesBlockContinueParser($attributes, $parserState->getActiveBlockParser()->getBlock()))->at($cursor);
-	}
+final class AttributesBlockStartParser implements BlockStartParserInterface
+{
+    public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart
+    {
+        $originalPosition = $cursor->getPosition();
+        $attributes = AttributesHelper::parseAttributes($cursor);
+        if ($attributes === [] && $originalPosition === $cursor->getPosition()) {
+            return BlockStart::none();
+        }
+        if ($cursor->getNextNonSpaceCharacter() !== null) {
+            return BlockStart::none();
+        }
+        return BlockStart::of(new AttributesBlockContinueParser($attributes, $parserState->getActiveBlockParser()->getBlock()))->at($cursor);
+    }
 }

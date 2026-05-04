@@ -15,15 +15,17 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Block;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-class ListItem extends AbstractBlock {
-
-	/** @psalm-readonly */
-	protected ListData $listData;
-	public function __construct(ListData $listData) {
-		parent::__construct();
-		$this->listData = $listData;
-	}
-	public function getListData(): ListData {
-		return $this->listData;
-	}
+class ListItem extends AbstractBlock
+{
+    /** @psalm-readonly */
+    protected ListData $listData;
+    public function __construct(ListData $listData)
+    {
+        parent::__construct();
+        $this->listData = $listData;
+    }
+    public function getListData(): ListData
+    {
+        return $this->listData;
+    }
 }

@@ -19,12 +19,13 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Util;
  *
  * @psalm-immutable
  */
-final class Xml {
-
-	/**
-	 * @psalm-pure
-	 */
-	public static function escape(string $string_value): string {
-		return \str_replace(array( '&', '<', '>', '"' ), array( '&amp;', '&lt;', '&gt;', '&quot;' ), $string_value);
-	}
+final class Xml
+{
+    /**
+     * @psalm-pure
+     */
+    public static function escape(string $string): string
+    {
+        return \str_replace(['&', '<', '>', '"'], ['&amp;', '&lt;', '&gt;', '&quot;'], $string);
+    }
 }

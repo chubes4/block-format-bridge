@@ -17,45 +17,48 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Util;
 /**
  * @psalm-immutable
  */
-final class Html5EntityDecoder {
-
-	/**
-	 * @psalm-pure
-	 */
-	public static function decode(string $entity): string {
-		if ( \substr($entity, -1) !== ';' ) {
-			return $entity;
-		}
-		if ( \substr($entity, 0, 2) === '&#' ) {
-			if ( \strtolower(\substr($entity, 2, 1)) === 'x' ) {
-				return self::fromHex(\substr($entity, 3, -1));
-			}
-			return self::fromDecimal(\substr($entity, 2, -1));
-		}
-		return \html_entity_decode($entity, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
-	}
-	/**
-	 * @param mixed $number
-	 *
-	 * @psalm-pure
-	 */
-	private static function fromDecimal($number): string {
-		// Only convert code points within planes 0-2, excluding NULL
+final class Html5EntityDecoder
+{
+    /**
+     * @psalm-pure
+     */
+    public static function decode(string $entity): string
+    {
+        if (\substr($entity, -1) !== ';') {
+            return $entity;
+        }
+        if (\substr($entity, 0, 2) === '&#') {
+            if (\strtolower(\substr($entity, 2, 1)) === 'x') {
+                return self::fromHex(\substr($entity, 3, -1));
+            }
+            return self::fromDecimal(\substr($entity, 2, -1));
+        }
+        return \html_entity_decode($entity, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
+    }
+    /**
+     * @param mixed $number
+     *
+     * @psalm-pure
+     */
+    private static function fromDecimal($number): string
+    {
+        // Only convert code points within planes 0-2, excluding NULL
         // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found
-		if ( empty($number) || $number > 0x2ffff ) {
-			return self::fromHex('fffd');
-		}
-		$entity    = '&#' . $number . ';';
-		$converted = \mb_decode_numericentity($entity, array( 0x0, 0x2ffff, 0, 0xffff ), 'UTF-8');
-		if ( $converted === $entity ) {
-			return self::fromHex('fffd');
-		}
-		return $converted;
-	}
-	/**
-	 * @psalm-pure
-	 */
-	private static function fromHex(string $hexChars): string {
-		return self::fromDecimal(\hexdec($hexChars));
-	}
+        if (empty($number) || $number > 0x2ffff) {
+            return self::fromHex('fffd');
+        }
+        $entity = '&#' . $number . ';';
+        $converted = \mb_decode_numericentity($entity, [0x0, 0x2ffff, 0, 0xffff], 'UTF-8');
+        if ($converted === $entity) {
+            return self::fromHex('fffd');
+        }
+        return $converted;
+    }
+    /**
+     * @psalm-pure
+     */
+    private static function fromHex(string $hexChars): string
+    {
+        return self::fromDecimal(\hexdec($hexChars));
+    }
 }

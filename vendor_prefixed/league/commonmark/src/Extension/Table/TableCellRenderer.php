@@ -19,53 +19,53 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class TableCellRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
-
-	private const DEFAULT_ATTRIBUTES = array(
-		TableCell::ALIGN_LEFT   => array( 'align' => 'left' ),
-		TableCell::ALIGN_CENTER => array( 'align' => 'center' ),
-		TableCell::ALIGN_RIGHT  => array( 'align' => 'right' ),
-	);
-	/** @var array<TableCell::ALIGN_*, array<string, string|string[]|bool>> */
-	private array $alignmentAttributes;
-	/**
-	 * @param array<TableCell::ALIGN_*, array<string, string|string[]|bool>> $alignmentAttributes
-	 */
-	public function __construct(array $alignmentAttributes = self::DEFAULT_ATTRIBUTES) {
-		$this->alignmentAttributes = $alignmentAttributes;
-	}
-	/**
-	 * @param TableCell $node
-	 *
-	 * {@inheritDoc}
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
-		TableCell::assertInstanceOf($node);
-		$attrs = $node->data->get('attributes');
-		if ( ( $alignment = $node->getAlign() ) !== null ) {
-			$attrs = AttributesHelper::mergeAttributes($attrs, $this->alignmentAttributes[ $alignment ]);
-		}
-		$tag = $node->getType() === TableCell::TYPE_HEADER ? 'th' : 'td';
-		return new HtmlElement($tag, $attrs, $childRenderer->renderNodes($node->children()));
-	}
-	public function getXmlTagName(Node $node): string {
-		return 'table_cell';
-	}
-	/**
-	 * @param TableCell $node
-	 *
-	 * @return array<string, scalar>
-	 *
-	 * @psalm-suppress MoreSpecificImplementedParamType
-	 */
-	public function getXmlAttributes(Node $node): array {
-		TableCell::assertInstanceOf($node);
-		$ret = array( 'type' => $node->getType() );
-		if ( ( $align = $node->getAlign() ) !== null ) {
-			$ret['align'] = $align;
-		}
-		return $ret;
-	}
+final class TableCellRenderer implements NodeRendererInterface, XmlNodeRendererInterface
+{
+    private const DEFAULT_ATTRIBUTES = [TableCell::ALIGN_LEFT => ['align' => 'left'], TableCell::ALIGN_CENTER => ['align' => 'center'], TableCell::ALIGN_RIGHT => ['align' => 'right']];
+    /** @var array<TableCell::ALIGN_*, array<string, string|string[]|bool>> */
+    private array $alignmentAttributes;
+    /**
+     * @param array<TableCell::ALIGN_*, array<string, string|string[]|bool>> $alignmentAttributes
+     */
+    public function __construct(array $alignmentAttributes = self::DEFAULT_ATTRIBUTES)
+    {
+        $this->alignmentAttributes = $alignmentAttributes;
+    }
+    /**
+     * @param TableCell $node
+     *
+     * {@inheritDoc}
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
+    {
+        TableCell::assertInstanceOf($node);
+        $attrs = $node->data->get('attributes');
+        if (($alignment = $node->getAlign()) !== null) {
+            $attrs = AttributesHelper::mergeAttributes($attrs, $this->alignmentAttributes[$alignment]);
+        }
+        $tag = $node->getType() === TableCell::TYPE_HEADER ? 'th' : 'td';
+        return new HtmlElement($tag, $attrs, $childRenderer->renderNodes($node->children()));
+    }
+    public function getXmlTagName(Node $node): string
+    {
+        return 'table_cell';
+    }
+    /**
+     * @param TableCell $node
+     *
+     * @return array<string, scalar>
+     *
+     * @psalm-suppress MoreSpecificImplementedParamType
+     */
+    public function getXmlAttributes(Node $node): array
+    {
+        TableCell::assertInstanceOf($node);
+        $ret = ['type' => $node->getType()];
+        if (($align = $node->getAlign()) !== null) {
+            $ret['align'] = $align;
+        }
+        return $ret;
+    }
 }

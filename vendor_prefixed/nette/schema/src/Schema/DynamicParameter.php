@@ -7,6 +7,6 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\Nette\Schema;
 
-interface DynamicParameter {
-
+interface DynamicParameter
+{
 }
