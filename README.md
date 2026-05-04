@@ -48,6 +48,11 @@ BFB includes two adapters:
 - **`BFB_Markdown_Adapter`** — `to_blocks()` runs CommonMark + GFM and routes the resulting HTML through the HTML
   adapter. `from_blocks()` renders blocks via `render_block()` and pipes the HTML through league/html-to-markdown.
 
+Markdown input is treated as a content body only. BFB does not parse YAML frontmatter, TOML frontmatter, or any other
+document metadata envelope; callers that import files are responsible for stripping and interpreting frontmatter before
+passing the body to `bfb_convert( $markdown, 'markdown', 'blocks' )`. BFB also does not support MDX component syntax unless
+a future dedicated adapter is registered for it.
+
 Every cross-format conversion routes through the block-array pivot:
 
 ```
