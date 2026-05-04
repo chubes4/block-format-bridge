@@ -16,29 +16,26 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Event;
  *
  * @psalm-immutable
  */
-final class ListenerData
-{
-    /** @var class-string */
-    private string $event;
-    /** @var callable */
-    private $listener;
-    /**
-     * @param class-string $event
-     */
-    public function __construct(string $event, callable $listener)
-    {
-        $this->event = $event;
-        $this->listener = $listener;
-    }
-    /**
-     * @return class-string
-     */
-    public function getEvent(): string
-    {
-        return $this->event;
-    }
-    public function getListener(): callable
-    {
-        return $this->listener;
-    }
+final class ListenerData {
+
+	/** @var class-string */
+	private string $event;
+	/** @var callable */
+	private $listener;
+	/**
+	 * @param class-string $event
+	 */
+	public function __construct(string $event, callable $listener) {
+		$this->event    = $event;
+		$this->listener = $listener;
+	}
+	/**
+	 * @return class-string
+	 */
+	public function getEvent(): string {
+		return $this->event;
+	}
+	public function getListener(): callable {
+		return $this->listener;
+	}
 }

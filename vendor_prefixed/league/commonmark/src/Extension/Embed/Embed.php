@@ -12,30 +12,25 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Embed;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-final class Embed extends AbstractBlock
-{
-    private string $url;
-    private ?string $embedCode;
-    public function __construct(string $url, ?string $embedCode = null)
-    {
-        parent::__construct();
-        $this->url = $url;
-        $this->embedCode = $embedCode;
-    }
-    public function getUrl(): string
-    {
-        return $this->url;
-    }
-    public function setUrl(string $url): void
-    {
-        $this->url = $url;
-    }
-    public function getEmbedCode(): ?string
-    {
-        return $this->embedCode;
-    }
-    public function setEmbedCode(?string $embedCode): void
-    {
-        $this->embedCode = $embedCode;
-    }
+final class Embed extends AbstractBlock {
+
+	private string $url;
+	private ?string $embedCode;
+	public function __construct(string $url, ?string $embedCode = null) {
+		parent::__construct();
+		$this->url       = $url;
+		$this->embedCode = $embedCode;
+	}
+	public function getUrl(): string {
+		return $this->url;
+	}
+	public function setUrl(string $url): void {
+		$this->url = $url;
+	}
+	public function getEmbedCode(): ?string {
+		return $this->embedCode;
+	}
+	public function setEmbedCode(?string $embedCode): void {
+		$this->embedCode = $embedCode;
+	}
 }

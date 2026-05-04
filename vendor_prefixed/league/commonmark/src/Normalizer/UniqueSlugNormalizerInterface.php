@@ -11,15 +11,15 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Normalizer;
 
-interface UniqueSlugNormalizerInterface extends TextNormalizerInterface
-{
-    public const DISABLED = \false;
-    public const PER_ENVIRONMENT = 'environment';
-    public const PER_DOCUMENT = 'document';
-    /**
-     * Called by the Environment whenever the configured scope changes
-     *
-     * Currently, this will only be called PER_DOCUMENT.
-     */
-    public function clearHistory(): void;
+interface UniqueSlugNormalizerInterface extends TextNormalizerInterface {
+
+	public const DISABLED        = \false;
+	public const PER_ENVIRONMENT = 'environment';
+	public const PER_DOCUMENT    = 'document';
+	/**
+	 * Called by the Environment whenever the configured scope changes
+	 *
+	 * Currently, this will only be called PER_DOCUMENT.
+	 */
+	public function clearHistory(): void;
 }

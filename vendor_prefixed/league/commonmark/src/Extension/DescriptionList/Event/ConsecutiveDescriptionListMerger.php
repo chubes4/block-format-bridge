@@ -14,22 +14,21 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\E
 use BlockFormatBridge\Vendor\League\CommonMark\Event\DocumentParsedEvent;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\Node\DescriptionList;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\NodeIterator;
-final class ConsecutiveDescriptionListMerger
-{
-    public function __invoke(DocumentParsedEvent $event): void
-    {
-        foreach ($event->getDocument()->iterator(NodeIterator::FLAG_BLOCKS_ONLY) as $node) {
-            if (!$node instanceof DescriptionList) {
-                continue;
-            }
-            if (!($prev = $node->previous()) instanceof DescriptionList) {
-                continue;
-            }
-            // There's another description list behind this one; merge the current one into that
-            foreach ($node->children() as $child) {
-                $prev->appendChild($child);
-            }
-            $node->detach();
-        }
-    }
+final class ConsecutiveDescriptionListMerger {
+
+	public function __invoke(DocumentParsedEvent $event): void {
+		foreach ( $event->getDocument()->iterator(NodeIterator::FLAG_BLOCKS_ONLY) as $node ) {
+			if ( ! $node instanceof DescriptionList ) {
+				continue;
+			}
+			if ( ! ( $prev = $node->previous() ) instanceof DescriptionList ) {
+				continue;
+			}
+			// There's another description list behind this one; merge the current one into that
+			foreach ( $node->children() as $child ) {
+				$prev->appendChild($child);
+			}
+			$node->detach();
+		}
+	}
 }

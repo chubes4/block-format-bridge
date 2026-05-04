@@ -20,44 +20,40 @@ use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationAwareInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationInterface;
-final class FootnoteRefRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface
-{
-    private ConfigurationInterface $config;
-    /**
-     * @param FootnoteRef $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
-    {
-        FootnoteRef::assertInstanceOf($node);
-        $attrs = $node->data->getData('attributes');
-        $attrs->append('class', $this->config->get('footnote/ref_class'));
-        $attrs->set('href', \mb_strtolower($node->getReference()->getDestination(), 'UTF-8'));
-        $attrs->set('role', 'doc-noteref');
-        $idPrefix = $this->config->get('footnote/ref_id_prefix');
-        return new HtmlElement('sup', ['id' => $idPrefix . \mb_strtolower($node->getReference()->getLabel(), 'UTF-8')], new HtmlElement('a', $attrs->export(), $node->getReference()->getTitle()), \true);
-    }
-    public function setConfiguration(ConfigurationInterface $configuration): void
-    {
-        $this->config = $configuration;
-    }
-    public function getXmlTagName(Node $node): string
-    {
-        return 'footnote_ref';
-    }
-    /**
-     * @param FootnoteRef $node
-     *
-     * @return array<string, scalar>
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function getXmlAttributes(Node $node): array
-    {
-        FootnoteRef::assertInstanceOf($node);
-        return ['reference' => $node->getReference()->getLabel()];
-    }
+final class FootnoteRefRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface {
+
+	private ConfigurationInterface $config;
+	/**
+	 * @param FootnoteRef $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
+		FootnoteRef::assertInstanceOf($node);
+		$attrs = $node->data->getData('attributes');
+		$attrs->append('class', $this->config->get('footnote/ref_class'));
+		$attrs->set('href', \mb_strtolower($node->getReference()->getDestination(), 'UTF-8'));
+		$attrs->set('role', 'doc-noteref');
+		$idPrefix = $this->config->get('footnote/ref_id_prefix');
+		return new HtmlElement('sup', array( 'id' => $idPrefix . \mb_strtolower($node->getReference()->getLabel(), 'UTF-8') ), new HtmlElement('a', $attrs->export(), $node->getReference()->getTitle()), \true);
+	}
+	public function setConfiguration(ConfigurationInterface $configuration): void {
+		$this->config = $configuration;
+	}
+	public function getXmlTagName(Node $node): string {
+		return 'footnote_ref';
+	}
+	/**
+	 * @param FootnoteRef $node
+	 *
+	 * @return array<string, scalar>
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function getXmlAttributes(Node $node): array {
+		FootnoteRef::assertInstanceOf($node);
+		return array( 'reference' => $node->getReference()->getLabel() );
+	}
 }

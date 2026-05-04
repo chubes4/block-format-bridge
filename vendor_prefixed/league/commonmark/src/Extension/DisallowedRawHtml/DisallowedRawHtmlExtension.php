@@ -19,16 +19,14 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Renderer\Inl
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ConfigurableExtensionInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationBuilderInterface;
 use BlockFormatBridge\Vendor\Nette\Schema\Expect;
-final class DisallowedRawHtmlExtension implements ConfigurableExtensionInterface
-{
-    private const DEFAULT_DISALLOWED_TAGS = ['title', 'textarea', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'script', 'plaintext'];
-    public function configureSchema(ConfigurationBuilderInterface $builder): void
-    {
-        $builder->addSchema('disallowed_raw_html', Expect::structure(['disallowed_tags' => Expect::listOf('string')->default(self::DEFAULT_DISALLOWED_TAGS)->mergeDefaults(\false)]));
-    }
-    public function register(EnvironmentBuilderInterface $environment): void
-    {
-        $environment->addRenderer(HtmlBlock::class, new DisallowedRawHtmlRenderer(new HtmlBlockRenderer()), 50);
-        $environment->addRenderer(HtmlInline::class, new DisallowedRawHtmlRenderer(new HtmlInlineRenderer()), 50);
-    }
+final class DisallowedRawHtmlExtension implements ConfigurableExtensionInterface {
+
+	private const DEFAULT_DISALLOWED_TAGS = array( 'title', 'textarea', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'script', 'plaintext' );
+	public function configureSchema(ConfigurationBuilderInterface $builder): void {
+		$builder->addSchema('disallowed_raw_html', Expect::structure(array( 'disallowed_tags' => Expect::listOf('string')->default(self::DEFAULT_DISALLOWED_TAGS)->mergeDefaults(\false) )));
+	}
+	public function register(EnvironmentBuilderInterface $environment): void {
+		$environment->addRenderer(HtmlBlock::class, new DisallowedRawHtmlRenderer(new HtmlBlockRenderer()), 50);
+		$environment->addRenderer(HtmlInline::class, new DisallowedRawHtmlRenderer(new HtmlInlineRenderer()), 50);
+	}
 }

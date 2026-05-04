@@ -15,23 +15,20 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\Document;
 /**
  * Event dispatched just before rendering begins
  */
-final class DocumentPreRenderEvent extends AbstractEvent
-{
-    /** @psalm-readonly */
-    private Document $document;
-    /** @psalm-readonly */
-    private string $format;
-    public function __construct(Document $document, string $format)
-    {
-        $this->document = $document;
-        $this->format = $format;
-    }
-    public function getDocument(): Document
-    {
-        return $this->document;
-    }
-    public function getFormat(): string
-    {
-        return $this->format;
-    }
+final class DocumentPreRenderEvent extends AbstractEvent {
+
+	/** @psalm-readonly */
+	private Document $document;
+	/** @psalm-readonly */
+	private string $format;
+	public function __construct(Document $document, string $format) {
+		$this->document = $document;
+		$this->format   = $format;
+	}
+	public function getDocument(): Document {
+		return $this->document;
+	}
+	public function getFormat(): string {
+		return $this->format;
+	}
 }

@@ -19,30 +19,27 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class DocumentRenderer implements NodeRendererInterface, XmlNodeRendererInterface
-{
-    /**
-     * @param Document $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): string
-    {
-        Document::assertInstanceOf($node);
-        $wholeDoc = $childRenderer->renderNodes($node->children());
-        return $wholeDoc === '' ? '' : $wholeDoc . "\n";
-    }
-    public function getXmlTagName(Node $node): string
-    {
-        return 'document';
-    }
-    /**
-     * {@inheritDoc}
-     */
-    public function getXmlAttributes(Node $node): array
-    {
-        return ['xmlns' => 'http://commonmark.org/xml/1.0'];
-    }
+final class DocumentRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
+
+	/**
+	 * @param Document $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): string {
+		Document::assertInstanceOf($node);
+		$wholeDoc = $childRenderer->renderNodes($node->children());
+		return '' === $wholeDoc ? '' : $wholeDoc . "\n";
+	}
+	public function getXmlTagName(Node $node): string {
+		return 'document';
+	}
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getXmlAttributes(Node $node): array {
+		return array( 'xmlns' => 'http://commonmark.org/xml/1.0' );
+	}
 }

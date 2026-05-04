@@ -19,17 +19,15 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\RegexHelper;
-final class HtmlInlineParser implements InlineParserInterface
-{
-    public function getMatchDefinition(): InlineParserMatch
-    {
-        return InlineParserMatch::regex(RegexHelper::PARTIAL_HTMLTAG)->caseSensitive();
-    }
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $inline = $inlineContext->getFullMatch();
-        $inlineContext->getCursor()->advanceBy($inlineContext->getFullMatchLength());
-        $inlineContext->getContainer()->appendChild(new HtmlInline($inline));
-        return \true;
-    }
+final class HtmlInlineParser implements InlineParserInterface {
+
+	public function getMatchDefinition(): InlineParserMatch {
+		return InlineParserMatch::regex(RegexHelper::PARTIAL_HTMLTAG)->caseSensitive();
+	}
+	public function parse(InlineParserContext $inlineContext): bool {
+		$inline = $inlineContext->getFullMatch();
+		$inlineContext->getCursor()->advanceBy($inlineContext->getFullMatchLength());
+		$inlineContext->getContainer()->appendChild(new HtmlInline($inline));
+		return \true;
+	}
 }

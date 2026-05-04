@@ -16,60 +16,52 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\Text;
-class Mention extends Link
-{
-    private string $name;
-    private string $prefix;
-    private string $identifier;
-    public function __construct(string $name, string $prefix, string $identifier, ?string $label = null)
-    {
-        $this->name = $name;
-        $this->prefix = $prefix;
-        $this->identifier = $identifier;
-        parent::__construct('', $label ?? \sprintf('%s%s', $prefix, $identifier));
-    }
-    public function getLabel(): ?string
-    {
-        if (($labelNode = $this->findLabelNode()) === null) {
-            return null;
-        }
-        return $labelNode->getLiteral();
-    }
-    public function getIdentifier(): string
-    {
-        return $this->identifier;
-    }
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-    public function getPrefix(): string
-    {
-        return $this->prefix;
-    }
-    public function hasUrl(): bool
-    {
-        return $this->url !== '';
-    }
-    /**
-     * @return $this
-     */
-    public function setLabel(string $label): self
-    {
-        if (($labelNode = $this->findLabelNode()) === null) {
-            $labelNode = new Text();
-            $this->prependChild($labelNode);
-        }
-        $labelNode->setLiteral($label);
-        return $this;
-    }
-    private function findLabelNode(): ?Text
-    {
-        foreach ($this->children() as $child) {
-            if ($child instanceof Text) {
-                return $child;
-            }
-        }
-        return null;
-    }
+class Mention extends Link {
+
+	private string $name;
+	private string $prefix;
+	private string $identifier;
+	public function __construct(string $name, string $prefix, string $identifier, ?string $label = null) {
+		$this->name       = $name;
+		$this->prefix     = $prefix;
+		$this->identifier = $identifier;
+		parent::__construct('', $label ?? \sprintf('%s%s', $prefix, $identifier));
+	}
+	public function getLabel(): ?string {
+		if ( ( $labelNode = $this->findLabelNode() ) === null ) {
+			return null;
+		}
+		return $labelNode->getLiteral();
+	}
+	public function getIdentifier(): string {
+		return $this->identifier;
+	}
+	public function getName(): ?string {
+		return $this->name;
+	}
+	public function getPrefix(): string {
+		return $this->prefix;
+	}
+	public function hasUrl(): bool {
+		return '' !== $this->url;
+	}
+	/**
+	 * @return $this
+	 */
+	public function setLabel(string $label): self {
+		if ( ( $labelNode = $this->findLabelNode() ) === null ) {
+			$labelNode = new Text();
+			$this->prependChild($labelNode);
+		}
+		$labelNode->setLiteral($label);
+		return $this;
+	}
+	private function findLabelNode(): ?Text {
+		foreach ( $this->children() as $child ) {
+			if ( $child instanceof Text ) {
+				return $child;
+			}
+		}
+		return null;
+	}
 }

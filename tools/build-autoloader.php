@@ -43,7 +43,7 @@ foreach ( new DirectoryIterator( $root ) as $vendor_dir ) {
 		if ( ! is_file( $composer ) ) {
 			continue;
 		}
-		$data = json_decode( (string) file_get_contents( $composer ), true );
+		$data = json_decode( (string) $wp_filesystem->get_contents( $composer ), true );
 		if ( ! is_array( $data ) || empty( $data['autoload'] ) ) {
 			continue;
 		}
@@ -144,7 +144,7 @@ if ( ! empty( $files_to_load ) ) {
 	}
 }
 
-file_put_contents( $root . '/autoload.php', $autoload );
+$wp_filesystem->put_contents( $root . '/autoload.php', $autoload );
 echo "Wrote $root/autoload.php\n";
 
 /**

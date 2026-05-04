@@ -198,12 +198,13 @@ function bfb_smoke_copy_path( string $source, string $target ): void {
 }
 
 function bfb_smoke_copy_package( string $source_root, string $target_root, string $version, bool $with_normalization = true ): void {
+	global $wp_filesystem;
 	mkdir( $target_root, 0777, true );
 	copy( $source_root . '/library.php', $target_root . '/library.php' );
 	bfb_smoke_copy_path( $source_root . '/includes', $target_root . '/includes' );
 	bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
 
-	$library_raw = file_get_contents( $target_root . '/library.php' );
+	$library_raw = $wp_filesystem->get_contents( $target_root . '/library.php' );
 	if ( ! is_string( $library_raw ) ) {
 		bfb_smoke_assert( false, 'Temp library.php should be readable.' );
 	}
@@ -213,9 +214,9 @@ function bfb_smoke_copy_package( string $source_root, string $target_root, strin
 	if ( ! $with_normalization ) {
 		$library = str_replace( "\trequire_once \$bfb_library_path . '/includes/normalization.php';\n", '', $library, $removed );
 		bfb_smoke_assert( 1 === $removed, 'Stale temp library.php should remove the bfb_normalize() include.' );
-		unlink( $target_root . '/includes/normalization.php' );
+		wp_delete_file( $target_root . '/includes/normalization.php' );
 	}
-	file_put_contents( $target_root . '/library.php', $library );
+	$wp_filesystem->put_contents( $target_root . '/library.php', $library );
 }
 
 function bfb_smoke_remove_path( string $path ): void {
@@ -224,7 +225,7 @@ function bfb_smoke_remove_path( string $path ): void {
 	}
 
 	if ( is_file( $path ) || is_link( $path ) ) {
-		unlink( $path );
+		wp_delete_file( $path );
 		return;
 	}
 
@@ -315,11 +316,11 @@ try {
 	$normalize_ref = new ReflectionFunction( 'bfb_normalize' );
 	bfb_smoke_assert(
 		$winning_path . '/includes/api.php' === $convert_ref->getFileName(),
-		'bfb_convert() should resolve from the winning copy. Expected ' . $winning_path . '/includes/api.php, got ' . ( $convert_ref->getFileName() ?: 'unknown' ) . '.'
+		'bfb_convert() should resolve from the winning copy. Expected ' . $winning_path . '/includes/api.php, got ' . ( $convert_ref->getFileName() ? $convert_ref->getFileName() : 'unknown' ) . '.'
 	);
 	bfb_smoke_assert(
 		$winning_path . '/includes/normalization.php' === $normalize_ref->getFileName(),
-		'bfb_normalize() should resolve from the winning copy. Expected ' . $winning_path . '/includes/normalization.php, got ' . ( $normalize_ref->getFileName() ?: 'unknown' ) . '. Losing copy has normalization.php=' . ( file_exists( $losing_path . '/includes/normalization.php' ) ? 'yes' : 'no' ) . '.'
+		'bfb_normalize() should resolve from the winning copy. Expected ' . $winning_path . '/includes/normalization.php, got ' . ( $normalize_ref->getFileName() ? $normalize_ref->getFileName() : 'unknown' ) . '. Losing copy has normalization.php=' . ( file_exists( $losing_path . '/includes/normalization.php' ) ? 'yes' : 'no' ) . '.'
 	);
 	bfb_smoke_assert( array( '9.9.9' ) === $bfb_loaded_versions, 'bfb_loaded should fire once for the winning version.' );
 	bfb_smoke_assert( 1 === bfb_smoke_hook_count( 'wp_insert_post_data', 'bfb_convert_on_insert' ), 'BFB insert conversion hook should register once.' );

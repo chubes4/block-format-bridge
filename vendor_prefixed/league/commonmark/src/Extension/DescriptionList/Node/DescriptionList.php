@@ -12,6 +12,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\DescriptionList\Node;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-class DescriptionList extends AbstractBlock
-{
+class DescriptionList extends AbstractBlock {
+
 }

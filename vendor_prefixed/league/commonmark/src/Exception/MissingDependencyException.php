@@ -11,6 +11,6 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Exception;
 
-class MissingDependencyException extends \RuntimeException implements CommonMarkException
-{
+class MissingDependencyException extends \RuntimeException implements CommonMarkException {
+
 }

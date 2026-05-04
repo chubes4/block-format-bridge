@@ -11,7 +11,7 @@
 declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Reference;
 
-interface ReferenceableInterface
-{
-    public function getReference(): ReferenceInterface;
+interface ReferenceableInterface {
+
+	public function getReference(): ReferenceInterface;
 }

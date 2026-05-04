@@ -20,30 +20,27 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class EmphasisRenderer implements NodeRendererInterface, XmlNodeRendererInterface
-{
-    /**
-     * @param Emphasis $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
-    {
-        Emphasis::assertInstanceOf($node);
-        $attrs = $node->data->get('attributes');
-        return new HtmlElement('em', $attrs, $childRenderer->renderNodes($node->children()));
-    }
-    public function getXmlTagName(Node $node): string
-    {
-        return 'emph';
-    }
-    /**
-     * {@inheritDoc}
-     */
-    public function getXmlAttributes(Node $node): array
-    {
-        return [];
-    }
+final class EmphasisRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
+
+	/**
+	 * @param Emphasis $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
+		Emphasis::assertInstanceOf($node);
+		$attrs = $node->data->get('attributes');
+		return new HtmlElement('em', $attrs, $childRenderer->renderNodes($node->children()));
+	}
+	public function getXmlTagName(Node $node): string {
+		return 'emph';
+	}
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getXmlAttributes(Node $node): array {
+		return array();
+	}
 }

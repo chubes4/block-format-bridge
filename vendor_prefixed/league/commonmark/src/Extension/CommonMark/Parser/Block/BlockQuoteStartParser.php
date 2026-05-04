@@ -15,19 +15,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStart;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStartParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\MarkdownParserStateInterface;
-final class BlockQuoteStartParser implements BlockStartParserInterface
-{
-    public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart
-    {
-        if ($cursor->isIndented()) {
-            return BlockStart::none();
-        }
-        if ($cursor->getNextNonSpaceCharacter() !== '>') {
-            return BlockStart::none();
-        }
-        $cursor->advanceToNextNonSpaceOrTab();
-        $cursor->advanceBy(1);
-        $cursor->advanceBySpaceOrTab();
-        return BlockStart::of(new BlockQuoteParser())->at($cursor);
-    }
+final class BlockQuoteStartParser implements BlockStartParserInterface {
+
+	public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart {
+		if ( $cursor->isIndented() ) {
+			return BlockStart::none();
+		}
+		if ( $cursor->getNextNonSpaceCharacter() !== '>' ) {
+			return BlockStart::none();
+		}
+		$cursor->advanceToNextNonSpaceOrTab();
+		$cursor->advanceBy(1);
+		$cursor->advanceBySpaceOrTab();
+		return BlockStart::of(new BlockQuoteParser())->at($cursor);
+	}
 }

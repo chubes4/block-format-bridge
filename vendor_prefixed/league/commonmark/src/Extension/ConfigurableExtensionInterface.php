@@ -12,7 +12,7 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension;
 
 use BlockFormatBridge\Vendor\League\Config\ConfigurationBuilderInterface;
-interface ConfigurableExtensionInterface extends ExtensionInterface
-{
-    public function configureSchema(ConfigurationBuilderInterface $builder): void;
+interface ConfigurableExtensionInterface extends ExtensionInterface {
+
+	public function configureSchema(ConfigurationBuilderInterface $builder): void;
 }

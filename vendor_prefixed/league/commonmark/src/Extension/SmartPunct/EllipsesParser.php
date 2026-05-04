@@ -18,16 +18,14 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\Text;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
-final class EllipsesParser implements InlineParserInterface
-{
-    public function getMatchDefinition(): InlineParserMatch
-    {
-        return InlineParserMatch::oneOf('...', '. . .');
-    }
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $inlineContext->getCursor()->advanceBy($inlineContext->getFullMatchLength());
-        $inlineContext->getContainer()->appendChild(new Text('…'));
-        return \true;
-    }
+final class EllipsesParser implements InlineParserInterface {
+
+	public function getMatchDefinition(): InlineParserMatch {
+		return InlineParserMatch::oneOf('...', '. . .');
+	}
+	public function parse(InlineParserContext $inlineContext): bool {
+		$inlineContext->getCursor()->advanceBy($inlineContext->getFullMatchLength());
+		$inlineContext->getContainer()->appendChild(new Text('…'));
+		return \true;
+	}
 }

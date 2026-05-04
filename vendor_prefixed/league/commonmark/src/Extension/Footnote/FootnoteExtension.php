@@ -32,24 +32,31 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\Footnote\Renderer\Footn
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Footnote\Renderer\FootnoteRenderer;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationBuilderInterface;
 use BlockFormatBridge\Vendor\Nette\Schema\Expect;
-final class FootnoteExtension implements ConfigurableExtensionInterface
-{
-    public function configureSchema(ConfigurationBuilderInterface $builder): void
-    {
-        $builder->addSchema('footnote', Expect::structure(['backref_class' => Expect::string('footnote-backref'), 'backref_symbol' => Expect::string('↩'), 'container_add_hr' => Expect::bool(\true), 'container_class' => Expect::string('footnotes'), 'ref_class' => Expect::string('footnote-ref'), 'ref_id_prefix' => Expect::string('fnref:'), 'footnote_class' => Expect::string('footnote'), 'footnote_id_prefix' => Expect::string('fn:')]));
-    }
-    public function register(EnvironmentBuilderInterface $environment): void
-    {
-        $environment->addBlockStartParser(new FootnoteStartParser(), 51);
-        $environment->addInlineParser(new AnonymousFootnoteRefParser(), 35);
-        $environment->addInlineParser(new FootnoteRefParser(), 51);
-        $environment->addRenderer(FootnoteContainer::class, new FootnoteContainerRenderer());
-        $environment->addRenderer(Footnote::class, new FootnoteRenderer());
-        $environment->addRenderer(FootnoteRef::class, new FootnoteRefRenderer());
-        $environment->addRenderer(FootnoteBackref::class, new FootnoteBackrefRenderer());
-        $environment->addEventListener(DocumentParsedEvent::class, [new AnonymousFootnotesListener(), 'onDocumentParsed'], 40);
-        $environment->addEventListener(DocumentParsedEvent::class, [new FixOrphanedFootnotesAndRefsListener(), 'onDocumentParsed'], 30);
-        $environment->addEventListener(DocumentParsedEvent::class, [new NumberFootnotesListener(), 'onDocumentParsed'], 20);
-        $environment->addEventListener(DocumentParsedEvent::class, [new GatherFootnotesListener(), 'onDocumentParsed'], 10);
-    }
+final class FootnoteExtension implements ConfigurableExtensionInterface {
+
+	public function configureSchema(ConfigurationBuilderInterface $builder): void {
+		$builder->addSchema('footnote', Expect::structure(array(
+			'backref_class'      => Expect::string('footnote-backref'),
+			'backref_symbol'     => Expect::string('↩'),
+			'container_add_hr'   => Expect::bool(\true),
+			'container_class'    => Expect::string('footnotes'),
+			'ref_class'          => Expect::string('footnote-ref'),
+			'ref_id_prefix'      => Expect::string('fnref:'),
+			'footnote_class'     => Expect::string('footnote'),
+			'footnote_id_prefix' => Expect::string('fn:'),
+		)));
+	}
+	public function register(EnvironmentBuilderInterface $environment): void {
+		$environment->addBlockStartParser(new FootnoteStartParser(), 51);
+		$environment->addInlineParser(new AnonymousFootnoteRefParser(), 35);
+		$environment->addInlineParser(new FootnoteRefParser(), 51);
+		$environment->addRenderer(FootnoteContainer::class, new FootnoteContainerRenderer());
+		$environment->addRenderer(Footnote::class, new FootnoteRenderer());
+		$environment->addRenderer(FootnoteRef::class, new FootnoteRefRenderer());
+		$environment->addRenderer(FootnoteBackref::class, new FootnoteBackrefRenderer());
+		$environment->addEventListener(DocumentParsedEvent::class, array( new AnonymousFootnotesListener(), 'onDocumentParsed' ), 40);
+		$environment->addEventListener(DocumentParsedEvent::class, array( new FixOrphanedFootnotesAndRefsListener(), 'onDocumentParsed' ), 30);
+		$environment->addEventListener(DocumentParsedEvent::class, array( new NumberFootnotesListener(), 'onDocumentParsed' ), 20);
+		$environment->addEventListener(DocumentParsedEvent::class, array( new GatherFootnotesListener(), 'onDocumentParsed' ), 10);
+	}
 }

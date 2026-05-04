@@ -13,36 +13,32 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Attributes\Node;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
-final class AttributesInline extends AbstractInline
-{
-    /** @var array<string, mixed> */
-    private array $attributes;
-    private bool $block;
-    /**
-     * @param array<string, mixed> $attributes
-     */
-    public function __construct(array $attributes, bool $block)
-    {
-        parent::__construct();
-        $this->attributes = $attributes;
-        $this->block = $block;
-    }
-    /**
-     * @return array<string, mixed>
-     */
-    public function getAttributes(): array
-    {
-        return $this->attributes;
-    }
-    /**
-     * @param array<string, mixed> $attributes
-     */
-    public function setAttributes(array $attributes): void
-    {
-        $this->attributes = $attributes;
-    }
-    public function isBlock(): bool
-    {
-        return $this->block;
-    }
+final class AttributesInline extends AbstractInline {
+
+	/** @var array<string, mixed> */
+	private array $attributes;
+	private bool $block;
+	/**
+	 * @param array<string, mixed> $attributes
+	 */
+	public function __construct(array $attributes, bool $block) {
+		parent::__construct();
+		$this->attributes = $attributes;
+		$this->block      = $block;
+	}
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function getAttributes(): array {
+		return $this->attributes;
+	}
+	/**
+	 * @param array<string, mixed> $attributes
+	 */
+	public function setAttributes(array $attributes): void {
+		$this->attributes = $attributes;
+	}
+	public function isBlock(): bool {
+		return $this->block;
+	}
 }

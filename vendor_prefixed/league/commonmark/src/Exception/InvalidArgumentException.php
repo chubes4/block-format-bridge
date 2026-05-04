@@ -11,6 +11,6 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Exception;
 
-class InvalidArgumentException extends \InvalidArgumentException implements CommonMarkException
-{
+class InvalidArgumentException extends \InvalidArgumentException implements CommonMarkException {
+
 }

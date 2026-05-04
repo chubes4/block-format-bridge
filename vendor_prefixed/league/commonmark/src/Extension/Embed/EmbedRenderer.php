@@ -14,18 +14,17 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Embed;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
-class EmbedRenderer implements NodeRendererInterface
-{
-    /**
-     * @param Embed $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer)
-    {
-        Embed::assertInstanceOf($node);
-        return $node->getEmbedCode() ?? '';
-    }
+class EmbedRenderer implements NodeRendererInterface {
+
+	/**
+	 * @param Embed $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer) {
+		Embed::assertInstanceOf($node);
+		return $node->getEmbedCode() ?? '';
+	}
 }

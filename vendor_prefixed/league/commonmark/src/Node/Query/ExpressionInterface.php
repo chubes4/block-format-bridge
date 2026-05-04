@@ -12,7 +12,7 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Query;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
-interface ExpressionInterface
-{
-    public function __invoke(Node $node): bool;
+interface ExpressionInterface {
+
+	public function __invoke(Node $node): bool;
 }

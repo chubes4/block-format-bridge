@@ -18,51 +18,45 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\AbstractBlockContinu
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinue;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
-final class ListItemParser extends AbstractBlockContinueParser
-{
-    /** @psalm-readonly */
-    private ListItem $block;
-    public function __construct(ListData $listData)
-    {
-        $this->block = new ListItem($listData);
-    }
-    public function getBlock(): ListItem
-    {
-        return $this->block;
-    }
-    public function isContainer(): bool
-    {
-        return \true;
-    }
-    public function canContain(AbstractBlock $childBlock): bool
-    {
-        return !$childBlock instanceof ListItem;
-    }
-    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
-    {
-        if ($cursor->isBlank()) {
-            if ($this->block->firstChild() === null) {
-                // Blank line after empty list item
-                return BlockContinue::none();
-            }
-            $cursor->advanceToNextNonSpaceOrTab();
-            return BlockContinue::at($cursor);
-        }
-        $contentIndent = $this->block->getListData()->markerOffset + $this->getBlock()->getListData()->padding;
-        if ($cursor->getIndent() >= $contentIndent) {
-            $cursor->advanceBy($contentIndent, \true);
-            return BlockContinue::at($cursor);
-        }
-        // Note: We'll hit this case for lazy continuation lines, they will get added later.
-        return BlockContinue::none();
-    }
-    public function closeBlock(): void
-    {
-        if (($lastChild = $this->block->lastChild()) instanceof AbstractBlock) {
-            $this->block->setEndLine($lastChild->getEndLine());
-        } else {
-            // Empty list item
-            $this->block->setEndLine($this->block->getStartLine());
-        }
-    }
+final class ListItemParser extends AbstractBlockContinueParser {
+
+	/** @psalm-readonly */
+	private ListItem $block;
+	public function __construct(ListData $listData) {
+		$this->block = new ListItem($listData);
+	}
+	public function getBlock(): ListItem {
+		return $this->block;
+	}
+	public function isContainer(): bool {
+		return \true;
+	}
+	public function canContain(AbstractBlock $childBlock): bool {
+		return ! $childBlock instanceof ListItem;
+	}
+	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
+		if ( $cursor->isBlank() ) {
+			if ( $this->block->firstChild() === null ) {
+				// Blank line after empty list item
+				return BlockContinue::none();
+			}
+			$cursor->advanceToNextNonSpaceOrTab();
+			return BlockContinue::at($cursor);
+		}
+		$contentIndent = $this->block->getListData()->markerOffset + $this->getBlock()->getListData()->padding;
+		if ( $cursor->getIndent() >= $contentIndent ) {
+			$cursor->advanceBy($contentIndent, \true);
+			return BlockContinue::at($cursor);
+		}
+		// Note: We'll hit this case for lazy continuation lines, they will get added later.
+		return BlockContinue::none();
+	}
+	public function closeBlock(): void {
+		if ( ( $lastChild = $this->block->lastChild() ) instanceof AbstractBlock ) {
+			$this->block->setEndLine($lastChild->getEndLine());
+		} else {
+			// Empty list item
+			$this->block->setEndLine($this->block->getStartLine());
+		}
+	}
 }

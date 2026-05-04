@@ -11,8 +11,8 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Inline;
 
-interface DelimitedInterface
-{
-    public function getOpeningDelimiter(): string;
-    public function getClosingDelimiter(): string;
+interface DelimitedInterface {
+
+	public function getOpeningDelimiter(): string;
+	public function getClosingDelimiter(): string;
 }

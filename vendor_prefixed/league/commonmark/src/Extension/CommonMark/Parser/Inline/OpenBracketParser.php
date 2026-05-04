@@ -18,19 +18,17 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\Text;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
-final class OpenBracketParser implements InlineParserInterface
-{
-    public function getMatchDefinition(): InlineParserMatch
-    {
-        return InlineParserMatch::string('[');
-    }
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $inlineContext->getCursor()->advanceBy(1);
-        $node = new Text('[', ['delim' => \true]);
-        $inlineContext->getContainer()->appendChild($node);
-        // Add entry to stack for this opener
-        $inlineContext->getDelimiterStack()->addBracket($node, $inlineContext->getCursor()->getPosition(), \false);
-        return \true;
-    }
+final class OpenBracketParser implements InlineParserInterface {
+
+	public function getMatchDefinition(): InlineParserMatch {
+		return InlineParserMatch::string('[');
+	}
+	public function parse(InlineParserContext $inlineContext): bool {
+		$inlineContext->getCursor()->advanceBy(1);
+		$node = new Text('[', array( 'delim' => \true ));
+		$inlineContext->getContainer()->appendChild($node);
+		// Add entry to stack for this opener
+		$inlineContext->getDelimiterStack()->addBracket($node, $inlineContext->getCursor()->getPosition(), \false);
+		return \true;
+	}
 }

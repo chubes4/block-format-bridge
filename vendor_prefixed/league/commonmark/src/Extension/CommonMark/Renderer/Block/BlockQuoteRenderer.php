@@ -20,39 +20,36 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class BlockQuoteRenderer implements NodeRendererInterface, XmlNodeRendererInterface
-{
-    /**
-     * @param BlockQuote $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
-    {
-        BlockQuote::assertInstanceOf($node);
-        $attrs = $node->data->get('attributes');
-        $filling = $childRenderer->renderNodes($node->children());
-        $innerSeparator = $childRenderer->getInnerSeparator();
-        if ($filling === '') {
-            return new HtmlElement('blockquote', $attrs, $innerSeparator);
-        }
-        return new HtmlElement('blockquote', $attrs, $innerSeparator . $filling . $innerSeparator);
-    }
-    public function getXmlTagName(Node $node): string
-    {
-        return 'block_quote';
-    }
-    /**
-     * @param BlockQuote $node
-     *
-     * @return array<string, scalar>
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function getXmlAttributes(Node $node): array
-    {
-        return [];
-    }
+final class BlockQuoteRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
+
+	/**
+	 * @param BlockQuote $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
+		BlockQuote::assertInstanceOf($node);
+		$attrs          = $node->data->get('attributes');
+		$filling        = $childRenderer->renderNodes($node->children());
+		$innerSeparator = $childRenderer->getInnerSeparator();
+		if ( '' === $filling ) {
+			return new HtmlElement('blockquote', $attrs, $innerSeparator);
+		}
+		return new HtmlElement('blockquote', $attrs, $innerSeparator . $filling . $innerSeparator);
+	}
+	public function getXmlTagName(Node $node): string {
+		return 'block_quote';
+	}
+	/**
+	 * @param BlockQuote $node
+	 *
+	 * @return array<string, scalar>
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function getXmlAttributes(Node $node): array {
+		return array();
+	}
 }

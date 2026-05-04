@@ -13,11 +13,10 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Highlight;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Environment\EnvironmentBuilderInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ExtensionInterface;
-class HighlightExtension implements ExtensionInterface
-{
-    public function register(EnvironmentBuilderInterface $environment): void
-    {
-        $environment->addDelimiterProcessor(new MarkDelimiterProcessor());
-        $environment->addRenderer(Mark::class, new MarkRenderer());
-    }
+class HighlightExtension implements ExtensionInterface {
+
+	public function register(EnvironmentBuilderInterface $environment): void {
+		$environment->addDelimiterProcessor(new MarkDelimiterProcessor());
+		$environment->addRenderer(Mark::class, new MarkRenderer());
+	}
 }

@@ -12,6 +12,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Block;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-class BlockQuote extends AbstractBlock
-{
+class BlockQuote extends AbstractBlock {
+
 }

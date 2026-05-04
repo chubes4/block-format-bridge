@@ -12,12 +12,12 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Data;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Exception\InvalidFrontMatterException;
-interface FrontMatterDataParserInterface
-{
-    /**
-     * @return mixed|null The parsed data (which may be null, if the input represents a null value)
-     *
-     * @throws InvalidFrontMatterException if parsing fails
-     */
-    public function parse(string $frontMatter);
+interface FrontMatterDataParserInterface {
+
+	/**
+	 * @return mixed|null The parsed data (which may be null, if the input represents a null value)
+	 *
+	 * @throws InvalidFrontMatterException if parsing fails
+	 */
+	public function parse(string $frontMatter);
 }

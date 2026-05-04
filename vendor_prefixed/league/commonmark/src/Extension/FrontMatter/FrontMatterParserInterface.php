@@ -12,7 +12,7 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Input\MarkdownInputWithFrontMatter;
-interface FrontMatterParserInterface
-{
-    public function parse(string $markdownContent): MarkdownInputWithFrontMatter;
+interface FrontMatterParserInterface {
+
+	public function parse(string $markdownContent): MarkdownInputWithFrontMatter;
 }

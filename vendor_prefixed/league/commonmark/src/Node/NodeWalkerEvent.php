@@ -14,23 +14,20 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node;
 
-final class NodeWalkerEvent
-{
-    /** @psalm-readonly */
-    private Node $node;
-    /** @psalm-readonly */
-    private bool $isEntering;
-    public function __construct(Node $node, bool $isEntering = \true)
-    {
-        $this->node = $node;
-        $this->isEntering = $isEntering;
-    }
-    public function getNode(): Node
-    {
-        return $this->node;
-    }
-    public function isEntering(): bool
-    {
-        return $this->isEntering;
-    }
+final class NodeWalkerEvent {
+
+	/** @psalm-readonly */
+	private Node $node;
+	/** @psalm-readonly */
+	private bool $isEntering;
+	public function __construct(Node $node, bool $isEntering = \true) {
+		$this->node       = $node;
+		$this->isEntering = $isEntering;
+	}
+	public function getNode(): Node {
+		return $this->node;
+	}
+	public function isEntering(): bool {
+		return $this->isEntering;
+	}
 }

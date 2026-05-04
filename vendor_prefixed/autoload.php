@@ -4,28 +4,29 @@
  * Loads php-scoper'd dependencies for block-format-bridge.
  */
 
-if ( ! defined( 'ABSPATH' ) ) { /* allow CLI use too */ }
+if ( ! defined( 'ABSPATH' ) ) {
+	/* allow CLI use too */ }
 
 $bfb_prefixed_root = __DIR__;
 
 $bfb_prefixed_psr4 = array(
-	'BlockFormatBridge\\Vendor\\League\\Config\\' => array(
+	'BlockFormatBridge\\Vendor\\League\\Config\\'         => array(
 		'league/config/src',
 	),
 	'BlockFormatBridge\\Vendor\\League\\HTMLToMarkdown\\' => array(
 		'league/html-to-markdown/src',
 	),
-	'BlockFormatBridge\\Vendor\\League\\CommonMark\\' => array(
+	'BlockFormatBridge\\Vendor\\League\\CommonMark\\'     => array(
 		'league/commonmark/src',
 	),
-	'BlockFormatBridge\\Vendor\\Nette\\' => array(
+	'BlockFormatBridge\\Vendor\\Nette\\'                  => array(
 		'nette/utils/src',
 		'nette/schema/src',
 	),
 	'BlockFormatBridge\\Vendor\\Dflydev\\DotAccessData\\' => array(
 		'dflydev/dot-access-data/src',
 	),
-	'BlockFormatBridge\\Vendor\\Psr\\EventDispatcher\\' => array(
+	'BlockFormatBridge\\Vendor\\Psr\\EventDispatcher\\'   => array(
 		'psr/event-dispatcher/src',
 	),
 	'BlockFormatBridge\\Vendor\\Symfony\\Polyfill\\Php80\\' => array(
@@ -35,13 +36,13 @@ $bfb_prefixed_psr4 = array(
 
 $bfb_prefixed_psr0 = array();
 
-spl_autoload_register( function ( $class ) use ( $bfb_prefixed_root, $bfb_prefixed_psr4, $bfb_prefixed_psr0 ) {
+spl_autoload_register( function ( $class_name ) use ( $bfb_prefixed_root, $bfb_prefixed_psr4, $bfb_prefixed_psr0 ) {
 	// PSR-4
 	foreach ( $bfb_prefixed_psr4 as $prefix => $dirs ) {
-		if ( $prefix !== '' && strpos( $class, $prefix ) !== 0 ) {
+		if ( '' !== $prefix && strpos( $class_name, $prefix ) !== 0 ) {
 			continue;
 		}
-		$relative = substr( $class, strlen( $prefix ) );
+		$relative = substr( $class_name, strlen( $prefix ) );
 		$relative = str_replace( '\\', '/', $relative ) . '.php';
 		foreach ( $dirs as $dir ) {
 			$candidate = $bfb_prefixed_root . '/' . $dir . '/' . $relative;
@@ -54,15 +55,15 @@ spl_autoload_register( function ( $class ) use ( $bfb_prefixed_root, $bfb_prefix
 
 	// PSR-0 (fallback for older packages, e.g. nette).
 	foreach ( $bfb_prefixed_psr0 as $prefix => $dirs ) {
-		if ( $prefix !== '' && strpos( $class, $prefix ) !== 0 ) {
+		if ( '' !== $prefix && strpos( $class_name, $prefix ) !== 0 ) {
 			continue;
 		}
 		// PSR-0 underscore convention applies to the class portion only.
 		$relative_namespace = '';
-		$relative_class     = $class;
-		if ( false !== ( $pos = strrpos( $class, '\\' ) ) ) {
-			$relative_namespace = substr( $class, 0, $pos );
-			$relative_class     = substr( $class, $pos + 1 );
+		$relative_class     = $class_name;
+		if ( false !== ( $pos = strrpos( $class_name, '\\' ) ) ) {
+			$relative_namespace = substr( $class_name, 0, $pos );
+			$relative_class     = substr( $class_name, $pos + 1 );
 		}
 		$relative = str_replace( '\\', '/', $relative_namespace ) . '/' . str_replace( '_', '/', $relative_class ) . '.php';
 		$relative = ltrim( $relative, '/' );

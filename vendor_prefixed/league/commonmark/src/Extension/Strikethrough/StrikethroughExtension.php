@@ -13,11 +13,10 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Strikethrough;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Environment\EnvironmentBuilderInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ExtensionInterface;
-final class StrikethroughExtension implements ExtensionInterface
-{
-    public function register(EnvironmentBuilderInterface $environment): void
-    {
-        $environment->addDelimiterProcessor(new StrikethroughDelimiterProcessor());
-        $environment->addRenderer(Strikethrough::class, new StrikethroughRenderer());
-    }
+final class StrikethroughExtension implements ExtensionInterface {
+
+	public function register(EnvironmentBuilderInterface $environment): void {
+		$environment->addDelimiterProcessor(new StrikethroughDelimiterProcessor());
+		$environment->addRenderer(Strikethrough::class, new StrikethroughRenderer());
+	}
 }

@@ -18,28 +18,26 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\StringContainerInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
-final class AttributesInlineParser implements InlineParserInterface
-{
-    public function getMatchDefinition(): InlineParserMatch
-    {
-        return InlineParserMatch::string('{');
-    }
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $cursor = $inlineContext->getCursor();
-        $char = (string) $cursor->peek(-1);
-        $attributes = AttributesHelper::parseAttributes($cursor);
-        if ($attributes === []) {
-            return \false;
-        }
-        if ($char === ' ' && ($prev = $inlineContext->getContainer()->lastChild()) instanceof StringContainerInterface) {
-            $prev->setLiteral(\rtrim($prev->getLiteral(), ' '));
-        }
-        if ($char === '') {
-            $cursor->advanceToNextNonSpaceOrNewline();
-        }
-        $node = new AttributesInline($attributes, $char === ' ' || $char === '');
-        $inlineContext->getContainer()->appendChild($node);
-        return \true;
-    }
+final class AttributesInlineParser implements InlineParserInterface {
+
+	public function getMatchDefinition(): InlineParserMatch {
+		return InlineParserMatch::string('{');
+	}
+	public function parse(InlineParserContext $inlineContext): bool {
+		$cursor     = $inlineContext->getCursor();
+		$char       = (string) $cursor->peek(-1);
+		$attributes = AttributesHelper::parseAttributes($cursor);
+		if ( $attributes === array() ) {
+			return \false;
+		}
+		if ( ' ' === $char && ( $prev = $inlineContext->getContainer()->lastChild() ) instanceof StringContainerInterface ) {
+			$prev->setLiteral(\rtrim($prev->getLiteral(), ' '));
+		}
+		if ( '' === $char ) {
+			$cursor->advanceToNextNonSpaceOrNewline();
+		}
+		$node = new AttributesInline($attributes, ' ' === $char || '' === $char);
+		$inlineContext->getContainer()->appendChild($node);
+		return \true;
+	}
 }

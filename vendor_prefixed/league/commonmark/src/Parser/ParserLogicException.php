@@ -12,6 +12,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Parser;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\CommonMarkException;
-class ParserLogicException extends \LogicException implements CommonMarkException
-{
+class ParserLogicException extends \LogicException implements CommonMarkException {
+
 }

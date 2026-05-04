@@ -18,27 +18,23 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserI
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserWithInlinesInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserEngineInterface;
-final class DescriptionTermContinueParser extends AbstractBlockContinueParser implements BlockContinueParserWithInlinesInterface
-{
-    private DescriptionTerm $block;
-    private string $term;
-    public function __construct(string $term)
-    {
-        $this->block = new DescriptionTerm();
-        $this->term = $term;
-    }
-    public function getBlock(): DescriptionTerm
-    {
-        return $this->block;
-    }
-    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
-    {
-        return BlockContinue::finished();
-    }
-    public function parseInlines(InlineParserEngineInterface $inlineParser): void
-    {
-        if ($this->term !== '') {
-            $inlineParser->parse($this->term, $this->block);
-        }
-    }
+final class DescriptionTermContinueParser extends AbstractBlockContinueParser implements BlockContinueParserWithInlinesInterface {
+
+	private DescriptionTerm $block;
+	private string $term;
+	public function __construct(string $term) {
+		$this->block = new DescriptionTerm();
+		$this->term  = $term;
+	}
+	public function getBlock(): DescriptionTerm {
+		return $this->block;
+	}
+	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
+		return BlockContinue::finished();
+	}
+	public function parseInlines(InlineParserEngineInterface $inlineParser): void {
+		if ( '' !== $this->term ) {
+			$inlineParser->parse($this->term, $this->block);
+		}
+	}
 }

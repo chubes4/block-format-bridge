@@ -17,11 +17,11 @@ use BlockFormatBridge\Vendor\League\Config\Exception\ConfigurationExceptionInter
 /**
  * Interface for a service which converts content from one format (like Markdown) to another (like HTML).
  */
-interface ConverterInterface
-{
-    /**
-     * @throws CommonMarkException
-     * @throws ConfigurationExceptionInterface
-     */
-    public function convert(string $input): RenderedContentInterface;
+interface ConverterInterface {
+
+	/**
+	 * @throws CommonMarkException
+	 * @throws ConfigurationExceptionInterface
+	 */
+	public function convert(string $input): RenderedContentInterface;
 }

@@ -11,6 +11,6 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Exception;
 
-class AlreadyInitializedException extends LogicException implements CommonMarkException
-{
+class AlreadyInitializedException extends LogicException implements CommonMarkException {
+
 }

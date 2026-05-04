@@ -10,11 +10,11 @@ namespace BlockFormatBridge\Vendor\Nette\Localization;
 /**
  * Translation provider.
  */
-interface Translator
-{
-    /**
-     * Translates the given string.
-     */
-    function translate(string|\Stringable $message, mixed ...$parameters): string|\Stringable;
+interface Translator {
+
+	/**
+	 * Translates the given string.
+	 */
+	function translate(string|\Stringable $message, mixed ...$parameters): string|\Stringable;
 }
 interface_exists(ITranslator::class);

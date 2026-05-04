@@ -15,16 +15,14 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\Document;
 /**
  * Event dispatched when the document has been fully parsed
  */
-final class DocumentParsedEvent extends AbstractEvent
-{
-    /** @psalm-readonly */
-    private Document $document;
-    public function __construct(Document $document)
-    {
-        $this->document = $document;
-    }
-    public function getDocument(): Document
-    {
-        return $this->document;
-    }
+final class DocumentParsedEvent extends AbstractEvent {
+
+	/** @psalm-readonly */
+	private Document $document;
+	public function __construct(Document $document) {
+		$this->document = $document;
+	}
+	public function getDocument(): Document {
+		return $this->document;
+	}
 }

@@ -58,9 +58,10 @@ class CoreBlockInventoryUnitTest extends WP_UnitTestCase
      */
     public function test_classification_matches_registered_transform_surface(): void
     {
+        global $wp_filesystem;
         $classification = $this->read_json(\dirname(__DIR__) . '/docs/core-block-classification.json');
-        $registry_source = \file_get_contents(\dirname(__DIR__) . '/includes/class-transform-registry.php');
-        $raw_source = \file_get_contents(\dirname(__DIR__) . '/raw-handler.php');
+		$registry_source = $wp_filesystem->get_contents( \dirname(__DIR__ ) . '/includes/class-transform-registry.php');
+		$raw_source = $wp_filesystem->get_contents( \dirname(__DIR__ ) . '/raw-handler.php');
         $this->assertIsString($registry_source);
         $this->assertIsString($raw_source);
         $raw_transform_blocks = array();
@@ -90,7 +91,8 @@ class CoreBlockInventoryUnitTest extends WP_UnitTestCase
      */
     private function read_json(string $path): array
     {
-        $raw = \file_get_contents($path);
+        global $wp_filesystem;
+		$raw = $wp_filesystem->get_contents( $path );
         $this->assertIsString($raw, 'Unable to read ' . $path);
         $data = \json_decode($raw, \true);
         $this->assertIsArray($data, 'Invalid JSON in ' . $path);

@@ -16,6 +16,6 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\I
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractStringContainer;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\RawMarkupContainerInterface;
-final class HtmlInline extends AbstractStringContainer implements RawMarkupContainerInterface
-{
+final class HtmlInline extends AbstractStringContainer implements RawMarkupContainerInterface {
+
 }

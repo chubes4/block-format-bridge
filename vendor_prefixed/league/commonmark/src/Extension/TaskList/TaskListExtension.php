@@ -13,11 +13,10 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\TaskList;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Environment\EnvironmentBuilderInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ExtensionInterface;
-final class TaskListExtension implements ExtensionInterface
-{
-    public function register(EnvironmentBuilderInterface $environment): void
-    {
-        $environment->addInlineParser(new TaskListItemMarkerParser(), 35);
-        $environment->addRenderer(TaskListItemMarker::class, new TaskListItemMarkerRenderer());
-    }
+final class TaskListExtension implements ExtensionInterface {
+
+	public function register(EnvironmentBuilderInterface $environment): void {
+		$environment->addInlineParser(new TaskListItemMarkerParser(), 35);
+		$environment->addRenderer(TaskListItemMarker::class, new TaskListItemMarkerRenderer());
+	}
 }

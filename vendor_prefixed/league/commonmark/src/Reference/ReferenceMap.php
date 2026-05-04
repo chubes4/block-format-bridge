@@ -18,54 +18,48 @@ use BlockFormatBridge\Vendor\League\CommonMark\Normalizer\TextNormalizer;
 /**
  * A collection of references, indexed by label
  */
-final class ReferenceMap implements ReferenceMapInterface
-{
-    /** @psalm-readonly */
-    private TextNormalizer $normalizer;
-    /**
-     * @var array<string, ReferenceInterface>
-     *
-     * @psalm-readonly-allow-private-mutation
-     */
-    private array $references = [];
-    public function __construct()
-    {
-        $this->normalizer = new TextNormalizer();
-    }
-    public function add(ReferenceInterface $reference): void
-    {
-        // Normalize the key
-        $key = $this->normalizer->normalize($reference->getLabel());
-        // Store the reference
-        $this->references[$key] = $reference;
-    }
-    public function contains(string $label): bool
-    {
-        if ($this->references === []) {
-            return \false;
-        }
-        $label = $this->normalizer->normalize($label);
-        return isset($this->references[$label]);
-    }
-    public function get(string $label): ?ReferenceInterface
-    {
-        if ($this->references === []) {
-            return null;
-        }
-        $label = $this->normalizer->normalize($label);
-        return $this->references[$label] ?? null;
-    }
-    /**
-     * @return \Traversable<string, ReferenceInterface>
-     */
-    public function getIterator(): \Traversable
-    {
-        foreach ($this->references as $normalizedLabel => $reference) {
-            yield $normalizedLabel => $reference;
-        }
-    }
-    public function count(): int
-    {
-        return \count($this->references);
-    }
+final class ReferenceMap implements ReferenceMapInterface {
+
+	/** @psalm-readonly */
+	private TextNormalizer $normalizer;
+	/**
+	 * @var array<string, ReferenceInterface>
+	 *
+	 * @psalm-readonly-allow-private-mutation
+	 */
+	private array $references = array();
+	public function __construct() {
+		$this->normalizer = new TextNormalizer();
+	}
+	public function add(ReferenceInterface $reference): void {
+		// Normalize the key
+		$key = $this->normalizer->normalize($reference->getLabel());
+		// Store the reference
+		$this->references[ $key ] = $reference;
+	}
+	public function contains(string $label): bool {
+		if ( $this->references === array() ) {
+			return \false;
+		}
+		$label = $this->normalizer->normalize($label);
+		return isset($this->references[ $label ]);
+	}
+	public function get(string $label): ?ReferenceInterface {
+		if ( $this->references === array() ) {
+			return null;
+		}
+		$label = $this->normalizer->normalize($label);
+		return $this->references[ $label ] ?? null;
+	}
+	/**
+	 * @return \Traversable<string, ReferenceInterface>
+	 */
+	public function getIterator(): \Traversable {
+		foreach ( $this->references as $normalizedLabel => $reference ) {
+			yield $normalizedLabel => $reference;
+		}
+	}
+	public function count(): int {
+		return \count($this->references);
+	}
 }

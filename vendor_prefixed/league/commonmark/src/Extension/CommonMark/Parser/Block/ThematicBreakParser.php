@@ -16,21 +16,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\AbstractBlockContinu
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinue;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
-final class ThematicBreakParser extends AbstractBlockContinueParser
-{
-    /** @psalm-readonly */
-    private ThematicBreak $block;
-    public function __construct()
-    {
-        $this->block = new ThematicBreak();
-    }
-    public function getBlock(): ThematicBreak
-    {
-        return $this->block;
-    }
-    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
-    {
-        // a horizontal rule can never container > 1 line, so fail to match
-        return BlockContinue::none();
-    }
+final class ThematicBreakParser extends AbstractBlockContinueParser {
+
+	/** @psalm-readonly */
+	private ThematicBreak $block;
+	public function __construct() {
+		$this->block = new ThematicBreak();
+	}
+	public function getBlock(): ThematicBreak {
+		return $this->block;
+	}
+	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
+		// a horizontal rule can never container > 1 line, so fail to match
+		return BlockContinue::none();
+	}
 }

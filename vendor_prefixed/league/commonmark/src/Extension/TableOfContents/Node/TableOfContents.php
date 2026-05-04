@@ -12,6 +12,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\TableOfContents\Node;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Block\ListBlock;
-final class TableOfContents extends ListBlock
-{
+final class TableOfContents extends ListBlock {
+
 }

@@ -12,6 +12,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\TableOfContents\Node;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
-final class TableOfContentsPlaceholder extends AbstractBlock
-{
+final class TableOfContentsPlaceholder extends AbstractBlock {
+
 }

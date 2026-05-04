@@ -15,6 +15,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Inline;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
-abstract class AbstractInline extends Node
-{
+abstract class AbstractInline extends Node {
+
 }

@@ -15,26 +15,24 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Inline\
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Inline\InlineParserMatch;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\InlineParserContext;
-final class EmailAutolinkParser implements InlineParserInterface
-{
-    private const REGEX = '[A-Za-z0-9.\-_+]+@[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.]+';
-    public function getMatchDefinition(): InlineParserMatch
-    {
-        return InlineParserMatch::regex(self::REGEX);
-    }
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $email = $inlineContext->getFullMatch();
-        // The last character cannot be - or _
-        if (\in_array(\substr($email, -1), ['-', '_'], \true)) {
-            return \false;
-        }
-        // Does the URL end with punctuation that should be stripped?
-        if (\substr($email, -1) === '.') {
-            $email = \substr($email, 0, -1);
-        }
-        $inlineContext->getCursor()->advanceBy(\strlen($email));
-        $inlineContext->getContainer()->appendChild(new Link('mailto:' . $email, $email));
-        return \true;
-    }
+final class EmailAutolinkParser implements InlineParserInterface {
+
+	private const REGEX = '[A-Za-z0-9.\-_+]+@[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.]+';
+	public function getMatchDefinition(): InlineParserMatch {
+		return InlineParserMatch::regex(self::REGEX);
+	}
+	public function parse(InlineParserContext $inlineContext): bool {
+		$email = $inlineContext->getFullMatch();
+		// The last character cannot be - or _
+		if ( \in_array(\substr($email, -1), array( '-', '_' ), \true) ) {
+			return \false;
+		}
+		// Does the URL end with punctuation that should be stripped?
+		if ( \substr($email, -1) === '.' ) {
+			$email = \substr($email, 0, -1);
+		}
+		$inlineContext->getCursor()->advanceBy(\strlen($email));
+		$inlineContext->getContainer()->appendChild(new Link('mailto:' . $email, $email));
+		return \true;
+	}
 }

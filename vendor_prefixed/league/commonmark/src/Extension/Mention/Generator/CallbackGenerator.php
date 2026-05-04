@@ -14,33 +14,31 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention\Generator
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\LogicException;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\Mention\Mention;
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Inline\AbstractInline;
-final class CallbackGenerator implements MentionGeneratorInterface
-{
-    /**
-     * A callback function which sets the URL on the passed mention and returns the mention, return a new AbstractInline based object or null if the mention is not a match
-     *
-     * @var callable(Mention): ?AbstractInline
-     */
-    private $callback;
-    public function __construct(callable $callback)
-    {
-        $this->callback = $callback;
-    }
-    /**
-     * @throws LogicException
-     */
-    public function generateMention(Mention $mention): ?AbstractInline
-    {
-        $result = \call_user_func($this->callback, $mention);
-        if ($result === null) {
-            return null;
-        }
-        if ($result instanceof AbstractInline && !$result instanceof Mention) {
-            return $result;
-        }
-        if ($result instanceof Mention && $result->hasUrl()) {
-            return $mention;
-        }
-        throw new LogicException('CallbackGenerator callable must set the URL on the passed mention and return the mention, return a new AbstractInline based object or null if the mention is not a match');
-    }
+final class CallbackGenerator implements MentionGeneratorInterface {
+
+	/**
+	 * A callback function which sets the URL on the passed mention and returns the mention, return a new AbstractInline based object or null if the mention is not a match
+	 *
+	 * @var callable(Mention): ?AbstractInline
+	 */
+	private $callback;
+	public function __construct(callable $callback) {
+		$this->callback = $callback;
+	}
+	/**
+	 * @throws LogicException
+	 */
+	public function generateMention(Mention $mention): ?AbstractInline {
+		$result = \call_user_func($this->callback, $mention);
+		if ( null === $result ) {
+			return null;
+		}
+		if ( $result instanceof AbstractInline && ! $result instanceof Mention ) {
+			return $result;
+		}
+		if ( $result instanceof Mention && $result->hasUrl() ) {
+			return $mention;
+		}
+		throw new LogicException('CallbackGenerator callable must set the URL on the passed mention and return the mention, return a new AbstractInline based object or null if the mention is not a match');
+	}
 }

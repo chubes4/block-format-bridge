@@ -11,10 +11,10 @@
 declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter;
 
-interface FrontMatterProviderInterface
-{
-    /**
-     * @return mixed|null
-     */
-    public function getFrontMatter();
+interface FrontMatterProviderInterface {
+
+	/**
+	 * @return mixed|null
+	 */
+	public function getFrontMatter();
 }

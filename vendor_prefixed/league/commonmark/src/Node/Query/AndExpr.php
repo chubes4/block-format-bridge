@@ -15,34 +15,31 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 /**
  * @internal
  */
-final class AndExpr implements ExpressionInterface
-{
-    /**
-     * @var callable[]
-     * @psalm-var list<callable(Node): bool>
-     */
-    private array $conditions;
-    /**
-     * @psalm-param callable(Node): bool $expressions
-     */
-    public function __construct(callable ...$expressions)
-    {
-        $this->conditions = \array_values($expressions);
-    }
-    /**
-     * @param callable(Node): bool $expression
-     */
-    public function add(callable $expression): void
-    {
-        $this->conditions[] = $expression;
-    }
-    public function __invoke(Node $node): bool
-    {
-        foreach ($this->conditions as $condition) {
-            if (!$condition($node)) {
-                return \false;
-            }
-        }
-        return \true;
-    }
+final class AndExpr implements ExpressionInterface {
+
+	/**
+	 * @var callable[]
+	 * @psalm-var list<callable(Node): bool>
+	 */
+	private array $conditions;
+	/**
+	 * @psalm-param callable(Node): bool $expressions
+	 */
+	public function __construct(callable ...$expressions) {
+		$this->conditions = \array_values($expressions);
+	}
+	/**
+	 * @param callable(Node): bool $expression
+	 */
+	public function add(callable $expression): void {
+		$this->conditions[] = $expression;
+	}
+	public function __invoke(Node $node): bool {
+		foreach ( $this->conditions as $condition ) {
+			if ( ! $condition($node) ) {
+				return \false;
+			}
+		}
+		return \true;
+	}
 }

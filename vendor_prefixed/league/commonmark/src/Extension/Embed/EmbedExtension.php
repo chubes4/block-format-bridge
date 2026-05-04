@@ -16,20 +16,22 @@ use BlockFormatBridge\Vendor\League\CommonMark\Event\DocumentParsedEvent;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\ConfigurableExtensionInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationBuilderInterface;
 use BlockFormatBridge\Vendor\Nette\Schema\Expect;
-final class EmbedExtension implements ConfigurableExtensionInterface
-{
-    public function configureSchema(ConfigurationBuilderInterface $builder): void
-    {
-        $builder->addSchema('embed', Expect::structure(['adapter' => Expect::type(EmbedAdapterInterface::class), 'allowed_domains' => Expect::arrayOf('string')->default([]), 'fallback' => Expect::anyOf('link', 'remove')->default('link')]));
-    }
-    public function register(EnvironmentBuilderInterface $environment): void
-    {
-        $adapter = $environment->getConfiguration()->get('embed.adapter');
-        \assert($adapter instanceof EmbedAdapterInterface);
-        $allowedDomains = $environment->getConfiguration()->get('embed.allowed_domains');
-        if ($allowedDomains !== []) {
-            $adapter = new DomainFilteringAdapter($adapter, $allowedDomains);
-        }
-        $environment->addBlockStartParser(new EmbedStartParser(), 300)->addEventListener(DocumentParsedEvent::class, new EmbedProcessor($adapter, $environment->getConfiguration()->get('embed.fallback')), 1010)->addRenderer(Embed::class, new EmbedRenderer());
-    }
+final class EmbedExtension implements ConfigurableExtensionInterface {
+
+	public function configureSchema(ConfigurationBuilderInterface $builder): void {
+		$builder->addSchema('embed', Expect::structure(array(
+			'adapter'         => Expect::type(EmbedAdapterInterface::class),
+			'allowed_domains' => Expect::arrayOf('string')->default(array()),
+			'fallback'        => Expect::anyOf('link', 'remove')->default('link'),
+		)));
+	}
+	public function register(EnvironmentBuilderInterface $environment): void {
+		$adapter = $environment->getConfiguration()->get('embed.adapter');
+		\assert($adapter instanceof EmbedAdapterInterface);
+		$allowedDomains = $environment->getConfiguration()->get('embed.allowed_domains');
+		if ( $allowedDomains !== array() ) {
+			$adapter = new DomainFilteringAdapter($adapter, $allowedDomains);
+		}
+		$environment->addBlockStartParser(new EmbedStartParser(), 300)->addEventListener(DocumentParsedEvent::class, new EmbedProcessor($adapter, $environment->getConfiguration()->get('embed.fallback')), 1010)->addRenderer(Embed::class, new EmbedRenderer());
+	}
 }

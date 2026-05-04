@@ -17,9 +17,9 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Reference;
 /**
  * Link reference
  */
-interface ReferenceInterface
-{
-    public function getLabel(): string;
-    public function getDestination(): string;
-    public function getTitle(): string;
+interface ReferenceInterface {
+
+	public function getLabel(): string;
+	public function getDestination(): string;
+	public function getTitle(): string;
 }

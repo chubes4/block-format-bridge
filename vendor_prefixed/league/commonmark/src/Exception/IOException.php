@@ -11,6 +11,6 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Exception;
 
-class IOException extends \RuntimeException implements CommonMarkException
-{
+class IOException extends \RuntimeException implements CommonMarkException {
+
 }

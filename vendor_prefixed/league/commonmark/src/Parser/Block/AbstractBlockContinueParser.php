@@ -17,24 +17,19 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\AbstractBlock;
  *
  * Slightly more convenient to extend from vs. implementing the interface
  */
-abstract class AbstractBlockContinueParser implements BlockContinueParserInterface
-{
-    public function isContainer(): bool
-    {
-        return \false;
-    }
-    public function canHaveLazyContinuationLines(): bool
-    {
-        return \false;
-    }
-    public function canContain(AbstractBlock $childBlock): bool
-    {
-        return \false;
-    }
-    public function addLine(string $line): void
-    {
-    }
-    public function closeBlock(): void
-    {
-    }
+abstract class AbstractBlockContinueParser implements BlockContinueParserInterface {
+
+	public function isContainer(): bool {
+		return \false;
+	}
+	public function canHaveLazyContinuationLines(): bool {
+		return \false;
+	}
+	public function canContain(AbstractBlock $childBlock): bool {
+		return \false;
+	}
+	public function addLine(string $line): void {
+	}
+	public function closeBlock(): void {
+	}
 }

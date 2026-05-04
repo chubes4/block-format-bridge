@@ -333,7 +333,8 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	 * The bundled artifact should include h2bc's file-link transform.
 	 */
 	public function test_bundled_h2bc_artifact_includes_file_transform(): void {
-		$registry_source = file_get_contents( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/includes/class-transform-registry.php' );
+		global $wp_filesystem;
+		$registry_source = $wp_filesystem->get_contents( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/includes/class-transform-registry.php' );
 
 		$this->assertIsString( $registry_source );
 		$this->assertStringContainsString( "'blockName' => 'core/file'", $registry_source );

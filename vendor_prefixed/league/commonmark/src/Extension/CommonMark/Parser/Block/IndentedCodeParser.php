@@ -17,46 +17,41 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinue;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockContinueParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\ArrayCollection;
-final class IndentedCodeParser extends AbstractBlockContinueParser
-{
-    /** @psalm-readonly */
-    private IndentedCode $block;
-    /** @var ArrayCollection<string> */
-    private ArrayCollection $strings;
-    public function __construct()
-    {
-        $this->block = new IndentedCode();
-        $this->strings = new ArrayCollection();
-    }
-    public function getBlock(): IndentedCode
-    {
-        return $this->block;
-    }
-    public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue
-    {
-        if ($cursor->isIndented()) {
-            $cursor->advanceBy(Cursor::INDENT_LEVEL, \true);
-            return BlockContinue::at($cursor);
-        }
-        if ($cursor->isBlank()) {
-            $cursor->advanceToNextNonSpaceOrTab();
-            return BlockContinue::at($cursor);
-        }
-        return BlockContinue::none();
-    }
-    public function addLine(string $line): void
-    {
-        $this->strings[] = $line;
-    }
-    public function closeBlock(): void
-    {
-        $lines = $this->strings->toArray();
-        // Note that indented code block cannot be empty, so $lines will always have at least one non-empty element
-        while (\preg_match('/^[ \t]*$/', \end($lines))) {
-            // @phpstan-ignore-line
-            \array_pop($lines);
-        }
-        $this->block->setLiteral(\implode("\n", $lines) . "\n");
-        $this->block->setEndLine($this->block->getStartLine() + \count($lines) - 1);
-    }
+final class IndentedCodeParser extends AbstractBlockContinueParser {
+
+	/** @psalm-readonly */
+	private IndentedCode $block;
+	/** @var ArrayCollection<string> */
+	private ArrayCollection $strings;
+	public function __construct() {
+		$this->block   = new IndentedCode();
+		$this->strings = new ArrayCollection();
+	}
+	public function getBlock(): IndentedCode {
+		return $this->block;
+	}
+	public function tryContinue(Cursor $cursor, BlockContinueParserInterface $activeBlockParser): ?BlockContinue {
+		if ( $cursor->isIndented() ) {
+			$cursor->advanceBy(Cursor::INDENT_LEVEL, \true);
+			return BlockContinue::at($cursor);
+		}
+		if ( $cursor->isBlank() ) {
+			$cursor->advanceToNextNonSpaceOrTab();
+			return BlockContinue::at($cursor);
+		}
+		return BlockContinue::none();
+	}
+	public function addLine(string $line): void {
+		$this->strings[] = $line;
+	}
+	public function closeBlock(): void {
+		$lines = $this->strings->toArray();
+		// Note that indented code block cannot be empty, so $lines will always have at least one non-empty element
+		while ( \preg_match('/^[ \t]*$/', \end($lines)) ) {
+			// @phpstan-ignore-line
+			\array_pop($lines);
+		}
+		$this->block->setLiteral(\implode("\n", $lines) . "\n");
+		$this->block->setEndLine($this->block->getStartLine() + \count($lines) - 1);
+	}
 }

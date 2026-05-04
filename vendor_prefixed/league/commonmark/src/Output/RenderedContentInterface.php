@@ -12,14 +12,14 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Output;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Node\Block\Document;
-interface RenderedContentInterface extends \Stringable
-{
-    /**
-     * @psalm-mutation-free
-     */
-    public function getDocument(): Document;
-    /**
-     * @psalm-mutation-free
-     */
-    public function getContent(): string;
+interface RenderedContentInterface extends \Stringable {
+
+	/**
+	 * @psalm-mutation-free
+	 */
+	public function getDocument(): Document;
+	/**
+	 * @psalm-mutation-free
+	 */
+	public function getContent(): string;
 }

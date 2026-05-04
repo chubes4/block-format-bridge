@@ -11,7 +11,7 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Environment;
 
-interface EnvironmentAwareInterface
-{
-    public function setEnvironment(EnvironmentInterface $environment): void;
+interface EnvironmentAwareInterface {
+
+	public function setEnvironment(EnvironmentInterface $environment): void;
 }

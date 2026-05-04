@@ -22,36 +22,32 @@ use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlFilter;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationAwareInterface;
 use BlockFormatBridge\Vendor\League\Config\ConfigurationInterface;
-final class HtmlInlineRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface
-{
-    /** @psalm-readonly-allow-private-mutation */
-    private ConfigurationInterface $config;
-    /**
-     * @param HtmlInline $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): string
-    {
-        HtmlInline::assertInstanceOf($node);
-        $htmlInput = $this->config->get('html_input');
-        return HtmlFilter::filter($node->getLiteral(), $htmlInput);
-    }
-    public function setConfiguration(ConfigurationInterface $configuration): void
-    {
-        $this->config = $configuration;
-    }
-    public function getXmlTagName(Node $node): string
-    {
-        return 'html_inline';
-    }
-    /**
-     * {@inheritDoc}
-     */
-    public function getXmlAttributes(Node $node): array
-    {
-        return [];
-    }
+final class HtmlInlineRenderer implements NodeRendererInterface, XmlNodeRendererInterface, ConfigurationAwareInterface {
+
+	/** @psalm-readonly-allow-private-mutation */
+	private ConfigurationInterface $config;
+	/**
+	 * @param HtmlInline $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): string {
+		HtmlInline::assertInstanceOf($node);
+		$htmlInput = $this->config->get('html_input');
+		return HtmlFilter::filter($node->getLiteral(), $htmlInput);
+	}
+	public function setConfiguration(ConfigurationInterface $configuration): void {
+		$this->config = $configuration;
+	}
+	public function getXmlTagName(Node $node): string {
+		return 'html_inline';
+	}
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getXmlAttributes(Node $node): array {
+		return array();
+	}
 }

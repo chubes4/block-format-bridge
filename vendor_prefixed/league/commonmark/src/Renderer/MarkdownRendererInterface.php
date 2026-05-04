@@ -18,10 +18,10 @@ use BlockFormatBridge\Vendor\League\CommonMark\Output\RenderedContentInterface;
  *
  * @deprecated since 2.3; use {@link DocumentRendererInterface} instead
  */
-interface MarkdownRendererInterface
-{
-    /**
-     * Render the given Document node (and all of its children)
-     */
-    public function renderDocument(Document $document): RenderedContentInterface;
+interface MarkdownRendererInterface {
+
+	/**
+	 * Render the given Document node (and all of its children)
+	 */
+	public function renderDocument(Document $document): RenderedContentInterface;
 }

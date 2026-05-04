@@ -14,24 +14,23 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\Node\Block;
 
-class ListData
-{
-    public ?int $start = null;
-    public int $padding = 0;
-    /**
-     * @psalm-var ListBlock::TYPE_*
-     * @phpstan-var ListBlock::TYPE_*
-     */
-    public string $type;
-    /**
-     * @psalm-var ListBlock::DELIM_*|null
-     * @phpstan-var ListBlock::DELIM_*|null
-     */
-    public ?string $delimiter = null;
-    public ?string $bulletChar = null;
-    public int $markerOffset;
-    public function equals(ListData $data): bool
-    {
-        return $this->type === $data->type && $this->delimiter === $data->delimiter && $this->bulletChar === $data->bulletChar;
-    }
+class ListData {
+
+	public ?int $start  = null;
+	public int $padding = 0;
+	/**
+	 * @psalm-var ListBlock::TYPE_*
+	 * @phpstan-var ListBlock::TYPE_*
+	 */
+	public string $type;
+	/**
+	 * @psalm-var ListBlock::DELIM_*|null
+	 * @phpstan-var ListBlock::DELIM_*|null
+	 */
+	public ?string $delimiter  = null;
+	public ?string $bulletChar = null;
+	public int $markerOffset;
+	public function equals(ListData $data): bool {
+		return $this->type === $data->type && $this->delimiter === $data->delimiter && $this->bulletChar === $data->bulletChar;
+	}
 }

@@ -14,10 +14,9 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Inline;
 
-final class Text extends AbstractStringContainer
-{
-    public function append(string $literal): void
-    {
-        $this->literal .= $literal;
-    }
+final class Text extends AbstractStringContainer {
+
+	public function append(string $literal): void {
+		$this->literal .= $literal;
+	}
 }

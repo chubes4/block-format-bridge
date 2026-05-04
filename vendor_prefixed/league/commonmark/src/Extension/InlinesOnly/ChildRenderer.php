@@ -18,14 +18,13 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 /**
  * Simply renders child elements as-is, adding newlines as needed.
  */
-final class ChildRenderer implements NodeRendererInterface
-{
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): string
-    {
-        $out = $childRenderer->renderNodes($node->children());
-        if (!$node instanceof Document) {
-            $out .= $childRenderer->getBlockSeparator();
-        }
-        return $out;
-    }
+final class ChildRenderer implements NodeRendererInterface {
+
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): string {
+		$out = $childRenderer->renderNodes($node->children());
+		if ( ! $node instanceof Document ) {
+			$out .= $childRenderer->getBlockSeparator();
+		}
+		return $out;
+	}
 }

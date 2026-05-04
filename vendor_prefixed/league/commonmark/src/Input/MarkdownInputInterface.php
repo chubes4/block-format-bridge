@@ -11,12 +11,12 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Input;
 
-interface MarkdownInputInterface
-{
-    public function getContent(): string;
-    /**
-     * @return iterable<int, string>
-     */
-    public function getLines(): iterable;
-    public function getLineCount(): int;
+interface MarkdownInputInterface {
+
+	public function getContent(): string;
+	/**
+	 * @return iterable<int, string>
+	 */
+	public function getLines(): iterable;
+	public function getLineCount(): int;
 }

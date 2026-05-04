@@ -19,22 +19,20 @@ use BlockFormatBridge\Vendor\League\CommonMark\Extension\CommonMark\CommonMarkCo
 /**
  * Converts CommonMark-compatible Markdown to HTML.
  */
-final class CommonMarkConverter extends MarkdownConverter
-{
-    /**
-     * Create a new Markdown converter pre-configured for CommonMark
-     *
-     * @param array<string, mixed> $config
-     */
-    public function __construct(array $config = [])
-    {
-        $environment = new Environment($config);
-        $environment->addExtension(new CommonMarkCoreExtension());
-        parent::__construct($environment);
-    }
-    public function getEnvironment(): Environment
-    {
-        \assert($this->environment instanceof Environment);
-        return $this->environment;
-    }
+final class CommonMarkConverter extends MarkdownConverter {
+
+	/**
+	 * Create a new Markdown converter pre-configured for CommonMark
+	 *
+	 * @param array<string, mixed> $config
+	 */
+	public function __construct(array $config = array()) {
+		$environment = new Environment($config);
+		$environment->addExtension(new CommonMarkCoreExtension());
+		parent::__construct($environment);
+	}
+	public function getEnvironment(): Environment {
+		\assert($this->environment instanceof Environment);
+		return $this->environment;
+	}
 }

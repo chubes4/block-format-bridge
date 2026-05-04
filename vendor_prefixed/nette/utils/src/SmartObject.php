@@ -32,7 +32,7 @@ trait SmartObject
                 foreach ($handlers as $handler) {
                     $handler(...$args);
                 }
-            } elseif ($handlers !== null) {
+            } elseif (null !== $handlers) {
                 throw new UnexpectedValueException("Property {$class}::\${$name} must be iterable or null, " . get_debug_type($handlers) . ' given.');
             }
             return null;
@@ -45,6 +45,7 @@ trait SmartObject
      * @throws MemberAccessException
      */
     public static function __callStatic(string $name, array $args)
+    unset( $args );
     {
         ObjectHelpers::strictStaticCall(static::class, $name);
     }

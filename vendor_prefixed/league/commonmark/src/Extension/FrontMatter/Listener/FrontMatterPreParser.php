@@ -13,18 +13,16 @@ namespace BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\Liste
 
 use BlockFormatBridge\Vendor\League\CommonMark\Event\DocumentPreParsedEvent;
 use BlockFormatBridge\Vendor\League\CommonMark\Extension\FrontMatter\FrontMatterParserInterface;
-final class FrontMatterPreParser
-{
-    private FrontMatterParserInterface $parser;
-    public function __construct(FrontMatterParserInterface $parser)
-    {
-        $this->parser = $parser;
-    }
-    public function __invoke(DocumentPreParsedEvent $event): void
-    {
-        $content = $event->getMarkdown()->getContent();
-        $parsed = $this->parser->parse($content);
-        $event->getDocument()->data->set('front_matter', $parsed->getFrontMatter());
-        $event->replaceMarkdown($parsed);
-    }
+final class FrontMatterPreParser {
+
+	private FrontMatterParserInterface $parser;
+	public function __construct(FrontMatterParserInterface $parser) {
+		$this->parser = $parser;
+	}
+	public function __invoke(DocumentPreParsedEvent $event): void {
+		$content = $event->getMarkdown()->getContent();
+		$parsed  = $this->parser->parse($content);
+		$event->getDocument()->data->set('front_matter', $parsed->getFrontMatter());
+		$event->replaceMarkdown($parsed);
+	}
 }

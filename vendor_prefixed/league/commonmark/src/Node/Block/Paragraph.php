@@ -14,8 +14,8 @@ declare (strict_types=1);
  */
 namespace BlockFormatBridge\Vendor\League\CommonMark\Node\Block;
 
-class Paragraph extends AbstractBlock
-{
-    /** @internal */
-    public bool $onlyContainsLinkReferenceDefinitions = \false;
+class Paragraph extends AbstractBlock {
+
+	/** @internal */
+	public bool $onlyContainsLinkReferenceDefinitions = \false;
 }

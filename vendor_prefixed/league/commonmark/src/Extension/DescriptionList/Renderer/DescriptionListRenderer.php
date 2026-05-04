@@ -16,19 +16,18 @@ use BlockFormatBridge\Vendor\League\CommonMark\Node\Node;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
-final class DescriptionListRenderer implements NodeRendererInterface
-{
-    /**
-     * @param DescriptionList $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): HtmlElement
-    {
-        DescriptionList::assertInstanceOf($node);
-        $separator = $childRenderer->getBlockSeparator();
-        return new HtmlElement('dl', [], $separator . $childRenderer->renderNodes($node->children()) . $separator);
-    }
+final class DescriptionListRenderer implements NodeRendererInterface {
+
+	/**
+	 * @param DescriptionList $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): HtmlElement {
+		DescriptionList::assertInstanceOf($node);
+		$separator = $childRenderer->getBlockSeparator();
+		return new HtmlElement('dl', array(), $separator . $childRenderer->renderNodes($node->children()) . $separator);
+	}
 }

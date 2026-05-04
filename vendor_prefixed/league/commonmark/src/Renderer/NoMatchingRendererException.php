@@ -12,6 +12,6 @@ declare (strict_types=1);
 namespace BlockFormatBridge\Vendor\League\CommonMark\Renderer;
 
 use BlockFormatBridge\Vendor\League\CommonMark\Exception\LogicException;
-class NoMatchingRendererException extends LogicException
-{
+class NoMatchingRendererException extends LogicException {
+
 }

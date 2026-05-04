@@ -16,15 +16,15 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\MarkdownParserStateInterfa
 /**
  * Interface for a block parser which identifies block starts.
  */
-interface BlockStartParserInterface
-{
-    /**
-     * Check whether we should handle the block at the current position
-     *
-     * @param Cursor                       $cursor      A cloned copy of the cursor at the current parsing location
-     * @param MarkdownParserStateInterface $parserState Additional information about the state of the Markdown parser
-     *
-     * @return BlockStart|null The BlockStart that has been identified, or null if the block doesn't match here
-     */
-    public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart;
+interface BlockStartParserInterface {
+
+	/**
+	 * Check whether we should handle the block at the current position
+	 *
+	 * @param Cursor                       $cursor      A cloned copy of the cursor at the current parsing location
+	 * @param MarkdownParserStateInterface $parserState Additional information about the state of the Markdown parser
+	 *
+	 * @return BlockStart|null The BlockStart that has been identified, or null if the block doesn't match here
+	 */
+	public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart;
 }

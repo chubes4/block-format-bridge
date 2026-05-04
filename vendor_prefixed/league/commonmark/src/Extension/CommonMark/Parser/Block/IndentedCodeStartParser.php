@@ -16,20 +16,19 @@ use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStart;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Block\BlockStartParserInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\Cursor;
 use BlockFormatBridge\Vendor\League\CommonMark\Parser\MarkdownParserStateInterface;
-final class IndentedCodeStartParser implements BlockStartParserInterface
-{
-    public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart
-    {
-        if (!$cursor->isIndented()) {
-            return BlockStart::none();
-        }
-        if ($parserState->getActiveBlockParser()->getBlock() instanceof Paragraph) {
-            return BlockStart::none();
-        }
-        if ($cursor->isBlank()) {
-            return BlockStart::none();
-        }
-        $cursor->advanceBy(Cursor::INDENT_LEVEL, \true);
-        return BlockStart::of(new IndentedCodeParser())->at($cursor);
-    }
+final class IndentedCodeStartParser implements BlockStartParserInterface {
+
+	public function tryStart(Cursor $cursor, MarkdownParserStateInterface $parserState): ?BlockStart {
+		if ( ! $cursor->isIndented() ) {
+			return BlockStart::none();
+		}
+		if ( $parserState->getActiveBlockParser()->getBlock() instanceof Paragraph ) {
+			return BlockStart::none();
+		}
+		if ( $cursor->isBlank() ) {
+			return BlockStart::none();
+		}
+		$cursor->advanceBy(Cursor::INDENT_LEVEL, \true);
+		return BlockStart::of(new IndentedCodeParser())->at($cursor);
+	}
 }

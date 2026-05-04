@@ -16,29 +16,26 @@ use BlockFormatBridge\Vendor\League\CommonMark\Renderer\ChildNodeRendererInterfa
 use BlockFormatBridge\Vendor\League\CommonMark\Renderer\NodeRendererInterface;
 use BlockFormatBridge\Vendor\League\CommonMark\Util\HtmlElement;
 use BlockFormatBridge\Vendor\League\CommonMark\Xml\XmlNodeRendererInterface;
-final class StrikethroughRenderer implements NodeRendererInterface, XmlNodeRendererInterface
-{
-    /**
-     * @param Strikethrough $node
-     *
-     * {@inheritDoc}
-     *
-     * @psalm-suppress MoreSpecificImplementedParamType
-     */
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable
-    {
-        Strikethrough::assertInstanceOf($node);
-        return new HtmlElement('del', $node->data->get('attributes'), $childRenderer->renderNodes($node->children()));
-    }
-    public function getXmlTagName(Node $node): string
-    {
-        return 'strikethrough';
-    }
-    /**
-     * {@inheritDoc}
-     */
-    public function getXmlAttributes(Node $node): array
-    {
-        return [];
-    }
+final class StrikethroughRenderer implements NodeRendererInterface, XmlNodeRendererInterface {
+
+	/**
+	 * @param Strikethrough $node
+	 *
+	 * {@inheritDoc}
+	 *
+	 * @psalm-suppress MoreSpecificImplementedParamType
+	 */
+	public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable {
+		Strikethrough::assertInstanceOf($node);
+		return new HtmlElement('del', $node->data->get('attributes'), $childRenderer->renderNodes($node->children()));
+	}
+	public function getXmlTagName(Node $node): string {
+		return 'strikethrough';
+	}
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getXmlAttributes(Node $node): array {
+		return array();
+	}
 }
