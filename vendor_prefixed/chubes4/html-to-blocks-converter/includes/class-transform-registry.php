@@ -931,7 +931,61 @@ class HTML_To_Blocks_Transform_Registry
         if ($element->has_attribute('class')) {
             $attributes['className'] = $element->get_attribute('class');
         }
+        $layout = self::extract_buttons_layout_attributes($element);
+        if (!empty($layout)) {
+            $attributes['layout'] = $layout;
+        }
         return self::create_buttons_block_from_anchors(self::get_direct_anchor_children_from_html($element->get_inner_html()), $attributes);
+    }
+    /**
+     * Extracts core/buttons layout attributes from a source container.
+     *
+     * Maps inline horizontal alignment to Gutenberg-compatible flex layout
+     * attributes so the buttons block round-trips through Gutenberg with the
+     * source horizontal alignment intact. core/buttons defaults to a flex
+     * layout, so the layout type is fixed to flex whenever any horizontal
+     * alignment intent is detected.
+     *
+     * @param HTML_To_Blocks_HTML_Element $element Container element.
+     * @return array Layout attribute map (possibly empty).
+     */
+    private static function extract_buttons_layout_attributes($element): array
+    {
+        $style = $element->has_attribute('style') ? $element->get_attribute('style') : '';
+        $classes = $element->has_attribute('class') ? $element->get_attribute('class') : '';
+        $justify = '';
+        if ('' !== $style) {
+            $justify = \strtolower(\trim(self::extract_css_property($style, 'justify-content')));
+        }
+        // Map common CSS justify-content values to Gutenberg's supported values.
+        $mapped_justify = '';
+        switch ($justify) {
+            case 'center':
+                $mapped_justify = 'center';
+                break;
+            case 'flex-start':
+            case 'start':
+            case 'left':
+                $mapped_justify = 'left';
+                break;
+            case 'flex-end':
+            case 'end':
+            case 'right':
+                $mapped_justify = 'right';
+                break;
+            case 'space-between':
+                $mapped_justify = 'space-between';
+                break;
+        }
+        if ('' === $mapped_justify && '' !== $classes) {
+            if (\preg_match('/(?:^|\s)is-content-justification-(left|right|center|space-between)(?:\s|$)/i', $classes, $matches)) {
+                $mapped_justify = \strtolower($matches[1]);
+            }
+        }
+        if ('' === $mapped_justify) {
+            return array();
+        }
+        return array('type' => 'flex', 'justifyContent' => $mapped_justify);
     }
     /**
      * Creates a buttons wrapper with button children from anchors.
