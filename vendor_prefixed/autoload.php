@@ -9,14 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) { /* allow CLI use too */ }
 $bfb_prefixed_root = __DIR__;
 
 $bfb_prefixed_psr4 = array(
-	'BlockFormatBridge\\Vendor\\League\\Config\\' => array(
-		'league/config/src',
-	),
-	'BlockFormatBridge\\Vendor\\League\\HTMLToMarkdown\\' => array(
-		'league/html-to-markdown/src',
-	),
-	'BlockFormatBridge\\Vendor\\League\\CommonMark\\' => array(
-		'league/commonmark/src',
+	'BlockFormatBridge\\Vendor\\Psr\\EventDispatcher\\' => array(
+		'psr/event-dispatcher/src',
 	),
 	'BlockFormatBridge\\Vendor\\Nette\\' => array(
 		'nette/utils/src',
@@ -25,8 +19,14 @@ $bfb_prefixed_psr4 = array(
 	'BlockFormatBridge\\Vendor\\Dflydev\\DotAccessData\\' => array(
 		'dflydev/dot-access-data/src',
 	),
-	'BlockFormatBridge\\Vendor\\Psr\\EventDispatcher\\' => array(
-		'psr/event-dispatcher/src',
+	'BlockFormatBridge\\Vendor\\League\\CommonMark\\' => array(
+		'league/commonmark/src',
+	),
+	'BlockFormatBridge\\Vendor\\League\\Config\\' => array(
+		'league/config/src',
+	),
+	'BlockFormatBridge\\Vendor\\League\\HTMLToMarkdown\\' => array(
+		'league/html-to-markdown/src',
 	),
 	'BlockFormatBridge\\Vendor\\Symfony\\Polyfill\\Php80\\' => array(
 		'symfony/polyfill-php80/',
@@ -78,5 +78,5 @@ spl_autoload_register( function ( $class ) use ( $bfb_prefixed_root, $bfb_prefix
 
 // Eagerly loaded files (composer 'files' autoload entries).
 require_once $bfb_prefixed_root . '/chubes4/html-to-blocks-converter/library.php';
-require_once $bfb_prefixed_root . '/symfony/polyfill-php80/bootstrap.php';
 require_once $bfb_prefixed_root . '/symfony/deprecation-contracts/function.php';
+require_once $bfb_prefixed_root . '/symfony/polyfill-php80/bootstrap.php';
