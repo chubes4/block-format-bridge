@@ -220,6 +220,35 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Resolved asset metadata should flow through BFB into h2bc media transforms.
+	 */
+	public function test_asset_metadata_context_enriches_h2bc_image_blocks(): void {
+		$serialized = bfb_convert(
+			'<img src="assets/hero.jpg" alt="Source alt" width="1200" height="800">',
+			'html',
+			'blocks',
+			array(
+				'context' => array(
+					'asset_metadata' => array(
+						'assets/hero.jpg' => array(
+							'id'  => 42,
+							'url' => 'https://example.test/wp-content/uploads/hero.jpg',
+						),
+					),
+				),
+			)
+		);
+
+		$blocks = parse_blocks( $serialized );
+		$image  = $this->first_block_named( $blocks, 'core/image' );
+
+		$this->assertNotNull( $image );
+		$this->assertSame( 42, $image['attrs']['id'] ?? null );
+		$this->assertStringContainsString( 'alt="Source alt"', $image['innerHTML'] ?? '' );
+		$this->assertStringContainsString( 'src="https://example.test/wp-content/uploads/hero.jpg"', $image['innerHTML'] ?? '' );
+	}
+
+	/**
 	 * BFB should expose h2bc's expanded layout transforms through bfb_convert().
 	 */
 	public function test_html_to_blocks_covers_expanded_layout_transforms(): void {
@@ -998,6 +1027,30 @@ MARKDOWN;
 		}
 
 		return $names;
+	}
+
+	/**
+	 * Find the first block with the requested name in a parsed block tree.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param string                          $name Block name.
+	 * @return array<string, mixed>|null Matching block, or null.
+	 */
+	private function first_block_named( array $blocks, string $name ): ?array {
+		foreach ( $blocks as $block ) {
+			if ( $name === ( $block['blockName'] ?? null ) ) {
+				return $block;
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$inner = $this->first_block_named( $block['innerBlocks'], $name );
+				if ( null !== $inner ) {
+					return $inner;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
