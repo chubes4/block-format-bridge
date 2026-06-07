@@ -726,12 +726,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/chubes4/html-to-blocks-converter.git",
-                "reference": "5afe78315a77ccae5ddef74e5967e476aa7a615d"
+                "reference": "c4f9418c8fbf5d13ebf619f654a7209ea05f7989"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/5afe78315a77ccae5ddef74e5967e476aa7a615d",
-                "reference": "5afe78315a77ccae5ddef74e5967e476aa7a615d",
+                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/c4f9418c8fbf5d13ebf619f654a7209ea05f7989",
+                "reference": "c4f9418c8fbf5d13ebf619f654a7209ea05f7989",
                 "shasum": ""
             },
             "require": {
@@ -759,7 +759,7 @@
                 "source": "https://github.com/chubes4/html-to-blocks-converter/tree/main",
                 "issues": "https://github.com/chubes4/html-to-blocks-converter/issues"
             },
-            "time": "2026-06-07T18:18:54+00:00"
+            "time": "2026-06-07T19:43:57+00:00"
         },
         {
             "name": "fidry/console",
