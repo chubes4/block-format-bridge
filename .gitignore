@@ -2,10 +2,10 @@
 vendor/
 node_modules/
 
-# vendor_prefixed/ is intentionally NOT excluded: it's the php-scoper'd
-# distribution artifact that ships to Composer consumers so they get the
-# isolated dependency tree the architecture promises. Regenerated from
-# `composer install && composer build`.
+# vendor_prefixed/ is a generated distribution artifact. Release/plugin builds
+# may include it, but source consumers should resolve dependencies through
+# Composer instead of committed dependency snapshots.
+vendor_prefixed/
 
 # Build artifacts
 build/
