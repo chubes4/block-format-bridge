@@ -4,25 +4,26 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "343928b2f3a9da77df759b7787d44dfb",
+    "content-hash": "5e80def02c25e3d6bc32f7207b51fd81",
     "packages": [
         {
             "name": "chubes4/html-to-blocks-converter",
-            "version": "dev-fix-static-form-surrogate-parity",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chubes4/html-to-blocks-converter",
-                "reference": "78289412228f3d71cc44136dfdd50ea0aad0b82f"
+                "reference": "7336776a65393a1e6856de1c4dd87c0637d17ac2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/78289412228f3d71cc44136dfdd50ea0aad0b82f",
-                "reference": "78289412228f3d71cc44136dfdd50ea0aad0b82f",
+                "url": "https://api.github.com/repos/chubes4/html-to-blocks-converter/zipball/7336776a65393a1e6856de1c4dd87c0637d17ac2",
+                "reference": "7336776a65393a1e6856de1c4dd87c0637d17ac2",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.4"
             },
+            "default-branch": true,
             "type": "wordpress-plugin",
             "autoload": {
                 "files": [
@@ -40,7 +41,7 @@
             ],
             "description": "Convert raw HTML into Gutenberg block arrays using WordPress' HTML API.",
             "homepage": "https://github.com/chubes4/html-to-blocks-converter",
-            "time": "2026-06-07T21:24:15+00:00"
+            "time": "2026-06-07T22:31:38+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
