@@ -19,8 +19,8 @@
         ]
     },
     "require": {
-        "chubes4/html-to-blocks-converter": "dev-main",
         "php": "^8.1",
+        "chubes4/html-to-blocks-converter": "dev-main",
         "league/commonmark": "^2.5",
         "league/html-to-markdown": "^5.1"
     },
