@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $bfb_library_path    = __DIR__;
-$bfb_library_version = '0.8.1';
+$bfb_library_version = '0.8.2';
 
 // Load built/php-scoper dependencies when present. Composer consumers usually
 // load dependencies through the root autoloader before this file runs, while
