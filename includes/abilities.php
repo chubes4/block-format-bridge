@@ -24,6 +24,13 @@ if ( ! function_exists( 'bfb_register_ability_category' ) ) {
 			return;
 		}
 
+		// Core's wp_abilities_api_categories_init action can fire more than once
+		// per request on multisite. Guard against re-registering an already
+		// registered category, which trips a _doing_it_wrong notice.
+		if ( function_exists( 'wp_has_ability_category' ) && wp_has_ability_category( BFB_ABILITY_CATEGORY ) ) {
+			return;
+		}
+
 		wp_register_ability_category(
 			BFB_ABILITY_CATEGORY,
 			array(
