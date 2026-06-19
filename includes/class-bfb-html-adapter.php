@@ -2,10 +2,8 @@
 /**
  * HTML format adapter.
  *
- * `to_blocks()` delegates to `html_to_blocks_raw_handler()` from
- * `chubes4/html-to-blocks-converter`, which BFB bundles as a Composer
- * dependency. Built distributions call the vendor-prefixed function;
- * dev-mode/plugin installs can still call the unprefixed global.
+ * `to_blocks()` delegates to the canonical blocks-engine PHP transformer while
+ * preserving BFB's public filter surface.
  *
  * `from_blocks()` renders blocks through `do_blocks()` so dynamic
  * blocks resolve to their server-side HTML output.
@@ -21,6 +19,22 @@ if ( ! defined( 'ABSPATH' ) ) {
  * HTML ↔ Blocks adapter.
  */
 class BFB_HTML_Adapter implements BFB_Format_Adapter {
+
+	/**
+	 * Canonical format bridge.
+	 *
+	 * @var \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge
+	 */
+	private $bridge;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge|null $bridge Canonical bridge.
+	 */
+	public function __construct( $bridge = null ) {
+		$this->bridge = $bridge ?: ( function_exists( 'bfb_format_bridge' ) ? bfb_format_bridge() : null );
+	}
 
 	/**
 	 * @inheritDoc
@@ -65,23 +79,27 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return bfb_filter_html_to_blocks_result( $pre_result, $content, $options, $args );
 		}
 
-		if ( function_exists( 'html_to_blocks_raw_handler' ) ) {
-			$blocks = html_to_blocks_raw_handler( $args );
-			return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
+		if ( $this->bridge ) {
+			try {
+				$blocks = $this->bridge->toBlocks( $content, 'html', $args );
+				return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
+			} catch ( Throwable $e ) {
+				do_action(
+					'bfb_diagnostic',
+					'blocks_engine_html_conversion_failed',
+					'blocks-engine PHP transformer failed HTML conversion.',
+					array(
+						'adapter' => 'html',
+						'error'   => $e->getMessage(),
+					)
+				);
+			}
 		}
 
-		if ( function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ) ) {
-			$blocks = \BlockFormatBridge\Vendor\html_to_blocks_raw_handler( $args );
-			return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
-		}
-
-		// Should only happen in a broken build: BFB requires
-		// chubes4/html-to-blocks-converter and built distributions ship
-		// the prefixed function above.
 		do_action(
 			'bfb_diagnostic',
-			'html_to_blocks_unavailable',
-			'html-to-blocks-converter is unavailable; falling back to a freeform block.',
+			'blocks_engine_html_transformer_unavailable',
+			'blocks-engine PHP transformer is unavailable; falling back to a freeform block.',
 			array( 'adapter' => 'html' )
 		);
 		return array(
@@ -103,16 +121,31 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 	 * through their inner HTML untouched.
 	 */
 	public function from_blocks( array $blocks, array $options = array() ): string {
-		unset( $options );
-
 		if ( empty( $blocks ) ) {
 			return '';
+		}
+
+		if ( $this->bridge ) {
+			try {
+				return $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'html', $options );
+			} catch ( Throwable $e ) {
+				do_action(
+					'bfb_diagnostic',
+					'blocks_engine_html_render_failed',
+					'blocks-engine PHP transformer failed HTML rendering.',
+					array(
+						'adapter' => 'html',
+						'error'   => $e->getMessage(),
+					)
+				);
+			}
 		}
 
 		$html = '';
 		foreach ( $blocks as $block ) {
 			$html .= render_block( $block );
 		}
+
 		return $html;
 	}
 }

@@ -3,9 +3,8 @@
  * Markdown format adapter.
  *
  * Write side (`to_blocks()`):
- *   Runs CommonMark + GFM via league/commonmark to convert the markdown
- *   source to HTML, then routes the HTML through the registered HTML
- *   adapter to land in block form.
+ *   Delegates markdown conversion to the canonical blocks-engine PHP
+ *   transformer after applying BFB's public markdown input filter.
  *
  * Read side (`from_blocks()`):
  *   Renders blocks → HTML via `do_blocks()`, then converts HTML → markdown
@@ -25,6 +24,22 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Markdown ↔ Blocks adapter.
  */
 class BFB_Markdown_Adapter implements BFB_Format_Adapter {
+
+	/**
+	 * Canonical format bridge.
+	 *
+	 * @var \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge
+	 */
+	private $bridge;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge|null $bridge Canonical bridge.
+	 */
+	public function __construct( $bridge = null ) {
+		$this->bridge = $bridge ?: ( function_exists( 'bfb_format_bridge' ) ? bfb_format_bridge() : null );
+	}
 
 	/**
 	 * @inheritDoc
@@ -54,17 +69,29 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		 */
 		$content = (string) apply_filters( 'bfb_markdown_input', $content );
 
+		if ( $this->bridge ) {
+			try {
+				return $this->bridge->toBlocks( $content, 'markdown', $options );
+			} catch ( Throwable $e ) {
+				do_action(
+					'bfb_diagnostic',
+					'blocks_engine_markdown_conversion_failed',
+					'blocks-engine PHP transformer failed markdown conversion.',
+					array(
+						'adapter' => 'markdown',
+						'error'   => $e->getMessage(),
+					)
+				);
+			}
+		}
+
 		$html = $this->markdown_to_html( $content );
 		if ( '' === $html ) {
 			return array();
 		}
 
 		$html_adapter = BFB_Adapter_Registry::get( 'html' );
-		if ( ! $html_adapter ) {
-			return array();
-		}
-
-		return $html_adapter->to_blocks( $html, $options );
+		return $html_adapter ? $html_adapter->to_blocks( $html, $options ) : array();
 	}
 
 	/**
@@ -83,10 +110,30 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 	 * @return string Markdown representation. Empty string on failure.
 	 */
 	public function from_blocks( array $blocks, array $options = array() ): string {
-		unset( $options );
-
 		if ( empty( $blocks ) ) {
 			return '';
+		}
+
+		if ( $this->bridge ) {
+			try {
+				$markdown = $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'markdown', $options );
+				$html     = '';
+				foreach ( $blocks as $block ) {
+					$html .= render_block( $block );
+				}
+
+				return (string) apply_filters( 'bfb_markdown_output', $markdown, $html, $blocks );
+			} catch ( Throwable $e ) {
+				do_action(
+					'bfb_diagnostic',
+					'blocks_engine_markdown_render_failed',
+					'blocks-engine PHP transformer failed markdown rendering.',
+					array(
+						'adapter' => 'markdown',
+						'error'   => $e->getMessage(),
+					)
+				);
+			}
 		}
 
 		// Render dynamic blocks through their server-side callbacks, then

@@ -19,6 +19,7 @@
         ]
     },
     "require": {
+        "automattic/blocks-engine-php-transformer": "dev-draft/php-transformer-monorepo",
         "php": "^8.1",
         "chubes4/html-to-blocks-converter": "dev-main",
         "league/commonmark": "^2.5",
@@ -30,6 +31,13 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "repositories": [
+        {
+            "type": "path",
+            "url": "../blocks-engine@draft-php-transformer-monorepo/php-transformer",
+            "options": {
+                "symlink": true
+            }
+        },
         {
             "type": "composer",
             "url": "https://wp-packages.org"

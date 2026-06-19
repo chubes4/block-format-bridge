@@ -121,6 +121,29 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 	}
 }
 
+if ( ! function_exists( 'bfb_format_bridge' ) ) {
+	/**
+	 * Return the canonical blocks-engine format bridge used by BFB wrappers.
+	 *
+	 * @return \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge|null
+	 */
+	function bfb_format_bridge() {
+		static $bridge = null;
+
+		if ( null !== $bridge ) {
+			return $bridge;
+		}
+
+		$class = '\\Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge';
+		if ( ! class_exists( $class ) ) {
+			return null;
+		}
+
+		$bridge = new $class();
+		return $bridge;
+	}
+}
+
 if ( ! function_exists( 'bfb_convert_fragment' ) ) {
 	/**
 	 * Convert a standalone source fragment to editor-valid block markup.
