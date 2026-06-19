@@ -236,6 +236,123 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Public BFB entry points should reach the canonical FormatBridge wrapper adapters.
+	 */
+	public function test_public_api_delegates_to_canonical_format_bridge_wrappers(): void {
+		$bridge = new class() {
+			/**
+			 * @var array<int, array<string, mixed>>
+			 */
+			public $calls = array();
+
+			public function toBlocks( string $content, string $from, array $options = array() ): array {
+				$this->calls[] = array(
+					'method'  => 'toBlocks',
+					'content' => $content,
+					'from'    => $from,
+					'options' => $options,
+				);
+
+				if ( 'markdown' === $from ) {
+					return parse_blocks( '<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Bridge Markdown</h1><!-- /wp:heading -->' );
+				}
+
+				return parse_blocks( '<!-- wp:paragraph --><p>Bridge HTML</p><!-- /wp:paragraph -->' );
+			}
+
+			public function convert( string $content, string $from, string $to, array $options = array() ): string {
+				$this->calls[] = array(
+					'method'  => 'convert',
+					'content' => $content,
+					'from'    => $from,
+					'to'      => $to,
+					'options' => $options,
+				);
+
+				return 'markdown' === $to ? 'Bridge Markdown' : '<p>Bridge HTML</p>';
+			}
+		};
+
+		$adapter_filter = static function ( $adapter, string $slug ) use ( $bridge ) {
+			if ( 'html' === $slug ) {
+				return new BFB_HTML_Adapter( $bridge );
+			}
+
+			if ( 'markdown' === $slug ) {
+				return new BFB_Markdown_Adapter( $bridge );
+			}
+
+			return $adapter;
+		};
+
+		add_filter( 'bfb_register_format_adapter', $adapter_filter, 10, 2 );
+		try {
+			$html_blocks = bfb_to_blocks( '<p>Wrapper HTML</p>', 'html', array( 'mode' => 'array' ) );
+			$this->assertSame( 'core/paragraph', $html_blocks[0]['blockName'] ?? null );
+
+			$html_serialized = bfb_convert( '<p>Wrapper HTML</p>', 'html', 'blocks', array( 'mode' => 'serialized' ) );
+			$this->assertStringContainsString( '<!-- wp:paragraph -->', $html_serialized );
+
+			$html = bfb_convert( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->', 'blocks', 'html', array( 'mode' => 'render-html' ) );
+			$this->assertSame( '<p>Bridge HTML</p>', $html );
+
+			$markdown_serialized = bfb_convert( '# Wrapper Markdown', 'markdown', 'blocks', array( 'mode' => 'markdown-in' ) );
+			$this->assertStringContainsString( '<!-- wp:heading {"level":1} -->', $markdown_serialized );
+
+			$markdown = bfb_convert( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->', 'blocks', 'markdown', array( 'mode' => 'markdown-out' ) );
+			$this->assertSame( 'Bridge Markdown', $markdown );
+		} finally {
+			remove_filter( 'bfb_register_format_adapter', $adapter_filter, 10 );
+		}
+
+		$this->assertContains(
+			array(
+				'method'  => 'toBlocks',
+				'content' => '<p>Wrapper HTML</p>',
+				'from'    => 'html',
+				'options' => array(
+					'mode' => 'array',
+					'HTML' => '<p>Wrapper HTML</p>',
+				),
+			),
+			$bridge->calls,
+			'bfb_to_blocks() should delegate HTML input to FormatBridge::toBlocks().'
+		);
+		$this->assertContains(
+			array(
+				'method'  => 'toBlocks',
+				'content' => '# Wrapper Markdown',
+				'from'    => 'markdown',
+				'options' => array( 'mode' => 'markdown-in' ),
+			),
+			$bridge->calls,
+			'bfb_convert() should delegate markdown input to FormatBridge::toBlocks().'
+		);
+		$this->assertContains(
+			array(
+				'method'  => 'convert',
+				'content' => '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->',
+				'from'    => 'blocks',
+				'to'      => 'html',
+				'options' => array( 'mode' => 'render-html' ),
+			),
+			$bridge->calls,
+			'bfb_convert() should delegate blocks-to-html output to FormatBridge::convert().'
+		);
+		$this->assertContains(
+			array(
+				'method'  => 'convert',
+				'content' => '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->',
+				'from'    => 'blocks',
+				'to'      => 'markdown',
+				'options' => array( 'mode' => 'markdown-out' ),
+			),
+			$bridge->calls,
+			'bfb_convert() should delegate blocks-to-markdown output to FormatBridge::convert().'
+		);
+	}
+
+	/**
 	 * Resolved asset metadata should flow through BFB into h2bc media transforms.
 	 */
 	public function test_asset_metadata_context_enriches_h2bc_image_blocks(): void {
