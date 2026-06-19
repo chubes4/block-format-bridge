@@ -19,7 +19,7 @@
         ]
     },
     "require": {
-        "automattic/blocks-engine-php-transformer": "dev-draft/php-transformer-monorepo",
+        "automattic/blocks-engine-php-transformer": "dev-trunk",
         "php": "^8.1",
         "chubes4/html-to-blocks-converter": "dev-main",
         "league/commonmark": "^2.5",
@@ -33,7 +33,7 @@
     "repositories": [
         {
             "type": "path",
-            "url": "../blocks-engine@draft-php-transformer-monorepo/php-transformer",
+            "url": "../blocks-engine/php-transformer",
             "options": {
                 "symlink": true
             }

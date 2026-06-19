@@ -147,20 +147,21 @@ Use `dev-main` only when intentionally tracking unreleased development commits.
 ### Blocks-engine transformer dependency status
 
 This migration delegates BFB's wrapper adapters to the canonical `automattic/blocks-engine-php-transformer` package.
-That package is not yet available as a stable Composer release or as a root-discoverable VCS package from the
-`Automattic/blocks-engine` repository. Until the upstream package is tagged/published, this branch intentionally keeps a
-local Composer path repository for a sibling checkout of the transformer package:
+That package is merged to Blocks Engine trunk but is not yet available as a stable Composer release. Until the upstream
+package is tagged, this branch intentionally keeps a local Composer path repository for a sibling trunk checkout of the
+transformer package:
 
 ```json
 {
     "type": "path",
-    "url": "../blocks-engine@draft-php-transformer-monorepo/php-transformer"
+    "url": "../blocks-engine/php-transformer"
 }
 ```
 
-The committed `composer.lock` pins the exact transformer commit used by this migration, but fresh `composer update`
-runs require that sibling worktree while the package remains unreleased. Before a release-ready BFB tag, replace the path
-repository with a stable upstream package constraint, or keep the path repository only for branch-local review builds.
+The branch-local constraint is `dev-trunk`, and the committed `composer.lock` records the Composer path package
+reference used by this migration. Fresh `composer update` runs require that sibling checkout while the package remains
+unreleased. Before a release-ready BFB tag, replace the path repository with a stable upstream package constraint, or keep
+the path repository only for branch-local review builds.
 
 Composer autoloads `library.php`, which registers the full bridge service: adapters, `bfb_convert()`,
 `bfb_normalize()`, `bfb_render_post()`, insert-time conversion, and REST `?content_format=`.
