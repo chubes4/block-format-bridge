@@ -2,12 +2,11 @@
 
 Issue: https://github.com/chubes4/block-format-bridge/issues/75
 
-This document defines the stack workflow for deterministic block-theme conversion across
-[`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter) (h2bc), Block Format Bridge
-(BFB), and higher-level compiler consumers such as Studio, Data Machine, or site-generation agents.
+This document defines the stack workflow for deterministic block-theme conversion across Blocks Engine PHP transformer,
+Block Format Bridge (BFB), and higher-level compiler consumers such as Studio, Data Machine, or site-generation agents.
 
 Use current WordPress language for this work: Site Editor, block themes, templates, template parts, Styles, and
-`theme.json`. BFB is a conversion substrate; it is not a site compiler.
+`theme.json`. BFB is a compatibility/API surface; it is not a site compiler.
 
 ## What "Every Block" Means
 
@@ -17,7 +16,7 @@ Complete coverage starts with inventory and classification:
 
 1. Generate the core block inventory from WordPress/Gutenberg `block.json` metadata.
 2. Classify each block by the layer that can safely decide it.
-3. Implement h2bc raw transforms only for blocks whose intent is present in source markup.
+3. Implement Blocks Engine raw transforms only for blocks whose intent is present in source markup.
 4. Expose the active support matrix through BFB capability surfaces.
 5. Let compiler consumers own the blocks that require site, template, query, entity, or design-system intent.
 
@@ -29,14 +28,14 @@ This keeps "complete coverage" honest. A block can be covered by being classifie
 WordPress / Gutenberg block.json metadata
         |
         v
-h2bc core-block inventory + classification
+Blocks Engine core-block inventory + classification
         |
         +--> safe raw HTML transforms
         +--> explicit-marker transforms
         +--> compiler-only classifications
         |
         v
-BFB conversion substrate
+BFB compatibility/API surface
         |
         +--> PHP APIs: bfb_convert(), bfb_to_blocks(), bfb_normalize()
         +--> Abilities API: machine-readable capability + conversion operations
@@ -52,11 +51,11 @@ Compiler consumers
         +--> Styles and theme.json
 ```
 
-## h2bc Responsibilities
+## Blocks Engine Transformer Responsibilities
 
-h2bc owns deterministic raw HTML to core block-array transforms.
+Blocks Engine PHP transformer owns deterministic raw HTML to core block-array transforms.
 
-h2bc should:
+Blocks Engine PHP transformer should:
 
 - Generate a core-block inventory and classification map from WordPress/Gutenberg `block.json` metadata.
 - Keep the generated coverage documentation in sync with that map.
@@ -65,7 +64,7 @@ h2bc should:
   documents the public marker vocabulary.
 - Fall back safely when markup is ambiguous.
 
-h2bc should not:
+Blocks Engine PHP transformer should not:
 
 - Create or update WordPress entities such as `wp_navigation` posts.
 - Infer template hierarchy from arbitrary wrappers such as `<header>` or `<footer>`.
@@ -80,7 +79,7 @@ Tracking:
 
 ## BFB Responsibilities
 
-BFB owns the public conversion substrate and consumer-facing ergonomics.
+BFB owns the public compatibility/API surface and consumer-facing ergonomics.
 
 BFB should expose conversion and capability operations through an ability-first machine surface. The WordPress Abilities
 API is the primitive for agent and automation consumers. WP-CLI and REST should be wrappers around the same conversion
@@ -92,12 +91,12 @@ BFB should:
 - Expose `bfb_convert()`, `bfb_to_blocks()`, and `bfb_normalize()` for PHP callers.
 - Expose ability operations for machine callers, including conversion and capability reporting.
 - Keep WP-CLI ergonomics thin and script-friendly for humans and shell-based tools.
-- Report what the active substrate supports so compiler consumers can plan fallbacks.
-- Consume h2bc's public capability API when available instead of reflecting over h2bc internals.
+- Report what the active transformer supports so compiler consumers can plan fallbacks.
+- Consume Blocks Engine transformer capabilities instead of duplicating transform internals.
 
 BFB should not:
 
-- Duplicate h2bc raw transforms.
+- Duplicate Blocks Engine raw transforms.
 - Infer site structure or design intent.
 - Depend on Studio, Data Machine, or any specific compiler consumer.
 - Treat CLI or REST output as a richer contract than the underlying ability/API operation.
@@ -120,7 +119,7 @@ Compiler consumers should:
 - Generate or update Styles and `theme.json` from site-wide design-system choices.
 - Ask BFB for capabilities before delegating static fragments to conversion.
 
-Compiler consumers should not expect BFB or h2bc to recover missing intent from arbitrary HTML. If the source does not
+Compiler consumers should not expect BFB or Blocks Engine to recover missing intent from arbitrary HTML. If the source does not
 name the WordPress concept, the compiler must decide it before conversion or accept a safe static fallback.
 
 ## Why Compiler-Only Blocks Stay Above BFB
@@ -140,9 +139,9 @@ conversion.
 
 ## Workflow
 
-1. h2bc generates and publishes the core-block inventory and classification map.
-2. h2bc implements deterministic transforms and explicit-marker transforms for safe classes.
-3. BFB refreshes its bundled h2bc dependency and exposes the resulting support through capabilities.
+1. Blocks Engine PHP transformer publishes the core-block inventory and classification map.
+2. Blocks Engine PHP transformer implements deterministic transforms and explicit-marker transforms for safe classes.
+3. BFB exposes the resulting support through compatibility capabilities.
 4. Compiler consumers request the BFB capability report through the Abilities API.
 5. Compiler consumers split work into deterministic fragments and site-intent decisions.
 6. Deterministic fragments go through BFB conversion.

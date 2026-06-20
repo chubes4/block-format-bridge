@@ -115,7 +115,7 @@ Rules:
   values are treated as explicit template-part slugs.
 - Missing or malformed marker values should fall back to the normal HTML conversion path rather than guessing.
 
-The marker contract belongs in BFB because BFB is the public conversion substrate. Runtime HTML-element transforms are
+The marker contract belongs in BFB because BFB is the public compatibility/API surface. Runtime HTML-element transforms are
 supplied by Blocks Engine through the public `bfb_convert( $html, 'html', 'blocks' )` path.
 
 ## Install
@@ -319,9 +319,9 @@ Resolve a registered adapter directly. Prefer `bfb_to_blocks()` when callers nee
 
 ### Block Theme Compiler Consumers
 
-Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion substrate, not the layer that infers
+Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion API surface, not the layer that infers
 block-theme or Site Editor intent. The compiler-facing helper and CLI shape are documented in
-[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The stack workflow across h2bc, BFB, and
+[`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The stack workflow across Blocks Engine, BFB, and
 compiler consumers is documented in [`docs/block-theme-conversion-workflow.md`](docs/block-theme-conversion-workflow.md).
 The public mechanical conversion scope matrix is documented in
 [`docs/mechanical-block-theme-conversion.md`](docs/mechanical-block-theme-conversion.md).

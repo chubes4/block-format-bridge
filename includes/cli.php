@@ -20,7 +20,7 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 	class BFB_CLI_Command {
 
 		/**
-		 * Report active conversion substrate capabilities.
+		 * Report active transformer capabilities.
 		 *
 		 * ## OPTIONS
 		 *
