@@ -5,8 +5,8 @@
  * `to_blocks()` delegates to the canonical blocks-engine PHP transformer while
  * preserving BFB's public filter surface.
  *
- * `from_blocks()` renders blocks through `do_blocks()` so dynamic
- * blocks resolve to their server-side HTML output.
+ * `from_blocks()` delegates block rendering to the canonical bridge so dynamic
+ * block behavior stays owned by the transformer package.
  *
  * @package BlockFormatBridge
  */
@@ -59,11 +59,11 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		$args = array_merge( $options, array( 'HTML' => $content ) );
 
 		/**
-		 * Filters the argument array passed to html-to-blocks-converter.
+		 * Filters the argument array passed to the HTML transformer.
 		 *
 		 * BFB reserves the `HTML` key for source content. Per-call conversion
 		 * options, such as `context` and `mode`, are forwarded alongside it for
-		 * h2bc to consume when supported.
+		 * the transformer to consume when supported.
 		 *
 		 * @since 0.5.0
 		 *
@@ -79,73 +79,66 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return bfb_filter_html_to_blocks_result( $pre_result, $content, $options, $args );
 		}
 
-		if ( $this->bridge ) {
-			try {
-				$blocks = $this->bridge->toBlocks( $content, 'html', $args );
-				return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
-			} catch ( Throwable $e ) {
-				do_action(
-					'bfb_diagnostic',
-					'blocks_engine_html_conversion_failed',
-					'blocks-engine PHP transformer failed HTML conversion.',
-					array(
-						'adapter' => 'html',
-						'error'   => $e->getMessage(),
-					)
-				);
-			}
+		if ( ! $this->bridge ) {
+			do_action(
+				'bfb_diagnostic',
+				'blocks_engine_html_transformer_unavailable',
+				'blocks-engine PHP transformer is unavailable for HTML conversion.',
+				array( 'adapter' => 'html' )
+			);
+			return array();
 		}
 
-		do_action(
-			'bfb_diagnostic',
-			'blocks_engine_html_transformer_unavailable',
-			'blocks-engine PHP transformer is unavailable; falling back to a freeform block.',
-			array( 'adapter' => 'html' )
-		);
-		return array(
-			array(
-				'blockName'    => 'core/freeform',
-				'attrs'        => array(),
-				'innerBlocks'  => array(),
-				'innerHTML'    => $content,
-				'innerContent' => array( $content ),
-			),
-		);
+		try {
+			$blocks = $this->bridge->toBlocks( $content, 'html', $args );
+			return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
+		} catch ( Throwable $e ) {
+			do_action(
+				'bfb_diagnostic',
+				'blocks_engine_html_conversion_failed',
+				'blocks-engine PHP transformer failed HTML conversion.',
+				array(
+					'adapter' => 'html',
+					'error'   => $e->getMessage(),
+				)
+			);
+			return array();
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 *
-	 * Renders each block through `render_block()` so dynamic blocks
-	 * resolve to their server-side HTML output. Static blocks pass
-	 * through their inner HTML untouched.
+	 * Delegates block rendering to the canonical bridge.
 	 */
 	public function from_blocks( array $blocks, array $options = array() ): string {
 		if ( empty( $blocks ) ) {
 			return '';
 		}
 
-		if ( $this->bridge ) {
-			try {
-				return $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'html', $options );
-			} catch ( Throwable $e ) {
-				do_action(
-					'bfb_diagnostic',
-					'blocks_engine_html_render_failed',
-					'blocks-engine PHP transformer failed HTML rendering.',
-					array(
-						'adapter' => 'html',
-						'error'   => $e->getMessage(),
-					)
-				);
-			}
+		if ( ! $this->bridge ) {
+			do_action(
+				'bfb_diagnostic',
+				'blocks_engine_html_transformer_unavailable',
+				'blocks-engine PHP transformer is unavailable for HTML rendering.',
+				array( 'adapter' => 'html' )
+			);
+			return '';
 		}
 
-		$html = '';
-		foreach ( $blocks as $block ) {
-			$html .= render_block( $block );
+		try {
+			return $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'html', $options );
+		} catch ( Throwable $e ) {
+			do_action(
+				'bfb_diagnostic',
+				'blocks_engine_html_render_failed',
+				'blocks-engine PHP transformer failed HTML rendering.',
+				array(
+					'adapter' => 'html',
+					'error'   => $e->getMessage(),
+				)
+			);
+			return '';
 		}
-
-		return $html;
 	}
 }

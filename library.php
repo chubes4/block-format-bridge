@@ -35,11 +35,9 @@ if ( ! class_exists( 'BFB_Versions', false ) ) {
 }
 
 $bfb_initializer = static function () use ( $bfb_library_path, $bfb_library_version ): void {
-	// BFB bundles html-to-blocks-converter as a package. Its library
-	// registers with its own version registry when Composer autoload runs;
-	// initialize that registry now so BFB's HTML adapter can call the
-	// raw-handler during this same request even when the standalone h2bc
-	// plugin is inactive.
+	// Older package builds bundled html-to-blocks-converter directly. Keep this
+	// initializer harmless for existing artifacts while current builds route
+	// through blocks-engine's FormatBridge.
 	if ( class_exists( '\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions' ) ) {
 		\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions::initialize_latest_version();
 	} elseif ( class_exists( 'HTML_To_Blocks_Versions' ) ) {

@@ -11,7 +11,7 @@
 class BFBConversionUnitTest extends WP_UnitTestCase {
 
 	/**
-	 * HTML input should route through html-to-blocks-converter for core block transforms.
+	 * HTML input should route through the canonical transformer for core block transforms.
 	 */
 	public function test_html_to_blocks_covers_core_transforms(): void {
 		foreach ( range( 1, 6 ) as $level ) {
@@ -59,12 +59,13 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * HTML input should delegate to BFB's bundled, vendor-prefixed h2bc copy.
+	 * HTML input should delegate to the bundled transformer for representative fixtures.
 	 */
-	public function test_html_to_blocks_delegates_to_bundled_h2bc_for_representative_fixtures(): void {
+	public function test_html_to_blocks_delegates_to_bundled_transformer_for_representative_fixtures(): void {
 		$this->assertTrue(
-			function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ),
-			'BFB package mode should expose the vendor-prefixed h2bc raw handler.'
+			class_exists( '\BlockFormatBridge\Vendor\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' )
+				|| class_exists( '\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' ),
+			'BFB should expose the canonical FormatBridge in package or dev mode.'
 		);
 
 		$fixtures = array(
@@ -121,7 +122,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Conversion options should flow from the public API into adapters and h2bc args.
+	 * Conversion options should flow from the public API into adapters and transformer args.
 	 */
 	public function test_conversion_options_flow_to_adapters_and_h2bc_args(): void {
 		$html = '<h2>Options Heading</h2><p>Options paragraph.</p>';
@@ -142,7 +143,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 			remove_filter( 'bfb_html_to_blocks_args', $default_listener, 10 );
 		}
 
-		$this->assertIsArray( $default_args, 'Default conversion should still expose h2bc raw-handler arguments.' );
+		$this->assertIsArray( $default_args, 'Default conversion should still expose transformer arguments.' );
 		$this->assertArrayNotHasKey( 'context', $default_args, 'Default conversion should not inject conversion context.' );
 
 		$seen_args = null;
@@ -174,15 +175,15 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		}
 
 		$this->assertNotSame( '', $with_options, '4-argument conversion should produce serialized blocks.' );
-		$this->assertIsArray( $seen_args, 'HTML adapter should expose h2bc raw-handler arguments.' );
-		$this->assertSame( 'fidelity', $seen_args['args']['mode'] ?? null, 'Mode option should be forwarded to h2bc args.' );
+		$this->assertIsArray( $seen_args, 'HTML adapter should expose transformer arguments.' );
+		$this->assertSame( 'fidelity', $seen_args['args']['mode'] ?? null, 'Mode option should be forwarded to transformer args.' );
 		$this->assertSame(
 			array(
 				'source' => 'static-site-importer',
 				'mode'   => 'import',
 			),
 			$seen_args['args']['context'] ?? null,
-			'Generic conversion context should be forwarded to h2bc args.'
+			'Generic conversion context should be forwarded to transformer args.'
 		);
 		$this->assertSame( $html, $seen_args['args']['HTML'] ?? null, 'BFB should preserve the reserved HTML raw-handler arg.' );
 		$this->assertSame(
@@ -353,7 +354,18 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Resolved asset metadata should flow through BFB into h2bc media transforms.
+	 * Compatibility wrappers should not own local converter fallback methods.
+	 */
+	public function test_adapters_leave_converter_fallbacks_to_format_bridge(): void {
+		$markdown_methods = get_class_methods( BFB_Markdown_Adapter::class );
+
+		$this->assertNotContains( 'markdown_to_html', $markdown_methods );
+		$this->assertNotContains( 'html_to_markdown', $markdown_methods );
+		$this->assertNotContains( 'register_table_converter', $markdown_methods );
+	}
+
+	/**
+	 * Resolved asset metadata should flow through BFB into transformer media transforms.
 	 */
 	public function test_asset_metadata_context_enriches_h2bc_image_blocks(): void {
 		$serialized = bfb_convert(
@@ -492,15 +504,11 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The bundled artifact should include h2bc's file-link transform.
+	 * The bundled artifact should include the canonical transformer, not h2bc.
 	 */
-	public function test_bundled_h2bc_artifact_includes_file_transform(): void {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Test fixture reads the bundled artifact from disk.
-		$registry_source = file_get_contents( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/includes/class-transform-registry.php' );
-
-		$this->assertIsString( $registry_source );
-		$this->assertStringContainsString( "'blockName' => 'core/file'", $registry_source );
-		$this->assertStringContainsString( 'is_file_link', $registry_source );
+	public function test_bundled_artifact_includes_transformer_not_h2bc(): void {
+		$this->assertFileExists( BFB_PATH . 'vendor_prefixed/automattic/blocks-engine-php-transformer/src/FormatBridge/FormatBridge.php' );
+		$this->assertFileDoesNotExist( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/library.php' );
 	}
 
 	/**

@@ -2,10 +2,8 @@
 /**
  * php-scoper configuration for block-format-bridge.
  *
- * Vendor-prefixes league/commonmark and its full transitive dependency
- * graph into the BlockFormatBridge\Vendor namespace so multiple
- * plugins can ship their own copy of CommonMark on the same WordPress
- * install without namespace collisions.
+ * Vendor-prefixes the blocks-engine PHP transformer and its transitive
+ * conversion dependencies into the BlockFormatBridge\Vendor namespace.
  *
  * @package BlockFormatBridge
  */
@@ -33,47 +31,20 @@ return [
 		'has_action',
 		'has_filter',
 	],
-	'patchers' => [
-		static function ( string $file_path, string $prefix, string $contents ): string {
-			if ( ! str_contains( $file_path, 'html-to-blocks-converter' ) ) {
-				return $contents;
-			}
-
-			foreach ( array( 'add_action', 'add_filter', 'do_action', 'has_action', 'has_filter' ) as $function_name ) {
-				$contents = str_replace(
-					" && !\\function_exists('{$prefix}\\{$function_name}')",
-					'',
-					$contents
-				);
-			}
-
-			$contents = str_replace(
-				"'html_to_blocks_raw_handler'",
-				"'{$prefix}\\html_to_blocks_raw_handler'",
-				$contents
-			);
-
-			return $contents;
-		},
-	],
 	// Disable php-scoper's default class_alias emission so the build does
-	// NOT write `\class_alias('BlockFormatBridge\Vendor\HTML_To_Blocks_*',
-	// 'HTML_To_Blocks_*', false)` shims back to the bare global names.
+	// NOT write `\class_alias('BlockFormatBridge\Vendor\Automattic\\...',
+	// 'Automattic\\...', false)` shims back to the bare global names.
 	//
 	// Bundling via vendor_prefixed/ is meant to insulate BFB's bundled
-	// copies of html-to-blocks-converter, league/commonmark, etc. from
+	// copies of blocks-engine, league/commonmark, etc. from
 	// every other plugin on the site. The default global aliases re-couple
 	// the bundled copies to the global symbol surface — when two BFB
 	// consumers (e.g. Intelligence + MDI) ship their own vendor_prefixed/,
-	// both try to register the same `class_alias HTML_To_Blocks_*` lines
+	// both try to register the same transformer `class_alias` lines
 	// and the second-loaded copy fatals with "Cannot declare class".
 	//
-	// BFB itself never references the bare global names; library.php and
-	// includes/class-bfb-html-adapter.php both call the scoped FQNs
-	// (`\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions`,
-	// `\BlockFormatBridge\Vendor\html_to_blocks_raw_handler`) and only
-	// fall through to the bare names when the standalone h2bc plugin is
-	// the source of truth (i.e. BFB has no vendor_prefixed/ build).
+	// BFB itself resolves transformer classes through bfb_transformer_class(),
+	// preferring the unscoped class in dev and the scoped class in package mode.
 	//
 	// We only flip `expose-global-classes` — leaving `expose-global-functions`
 	// and `expose-global-constants` at their `true` defaults so scoper still
@@ -93,8 +64,8 @@ return [
 			->name( [ '*.php', 'composer.json', 'LICENSE*' ] )
 			->in(
 				[
-					// chubes4/html-to-blocks-converter (HTML → Blocks).
-					'vendor/chubes4/html-to-blocks-converter',
+					// automattic/blocks-engine-php-transformer owns format conversion.
+					'vendor/automattic/blocks-engine-php-transformer',
 					// league/commonmark + transitive deps (Markdown → HTML).
 					'vendor/league/commonmark',
 					'vendor/league/config',

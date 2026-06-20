@@ -20,10 +20,7 @@
     },
     "require": {
         "automattic/blocks-engine-php-transformer": "dev-trunk",
-        "php": "^8.1",
-        "chubes4/html-to-blocks-converter": "dev-main",
-        "league/commonmark": "^2.5",
-        "league/html-to-markdown": "^5.1"
+        "php": "^8.1"
     },
     "require-dev": {
         "humbug/php-scoper": "^0.18.19"
@@ -41,11 +38,6 @@
         {
             "type": "composer",
             "url": "https://wp-packages.org"
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/chubes4/html-to-blocks-converter",
-            "no-api": true
         }
     ],
     "config": {
