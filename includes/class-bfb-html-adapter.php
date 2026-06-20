@@ -33,7 +33,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 	 * @param \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge|null $bridge Canonical bridge.
 	 */
 	public function __construct( $bridge = null ) {
-		$this->bridge = $bridge ?: ( function_exists( 'bfb_format_bridge' ) ? bfb_format_bridge() : null );
+		$this->bridge = $bridge ? $bridge : ( function_exists( 'bfb_format_bridge' ) ? bfb_format_bridge() : null );
 	}
 
 	/**

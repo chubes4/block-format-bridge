@@ -54,7 +54,7 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 				WP_CLI::error( 'Unsupported --format value. Use "summary" or "json".' );
 			}
 
-			$bridge = isset( $report['bridge'] ) && is_array( $report['bridge'] ) ? $report['bridge'] : array();
+			$bridge      = isset( $report['bridge'] ) && is_array( $report['bridge'] ) ? $report['bridge'] : array();
 			$transformer = isset( $report['transformer'] ) && is_array( $report['transformer'] ) ? $report['transformer'] : array();
 			WP_CLI::line( sprintf( 'BFB: %s', isset( $bridge['version'] ) ? (string) $bridge['version'] : 'unknown' ) );
 			WP_CLI::line( sprintf( 'Formats: %s', implode( ', ', array_keys( (array) $report['formats'] ) ) ) );

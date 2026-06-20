@@ -13,14 +13,40 @@
     "scripts": {
         "build": "./build.sh",
         "lint": "php -l block-format-bridge.php && php -l library.php && find includes tests tools -name '*.php' -print0 | xargs -0 -n1 php -l",
-        "smokes": "php tests/smoke-content-normalization.php && php tests/smoke-transformer-capability-discovery-standalone.php && php tests/smoke-transformer-capability-discovery-class.php"
+        "smokes": "php tests/smoke-content-normalization.php && php tests/smoke-transformer-capability-discovery-standalone.php && php tests/smoke-transformer-capability-discovery-class.php && php tests/smoke-transformer-composer-install.php"
     },
     "autoload": {
         "files": [
             "library.php"
         ]
     },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "automattic/blocks-engine-php-transformer",
+                "version": "dev-trunk",
+                "type": "library",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/Automattic/blocks-engine.git",
+                    "reference": "trunk"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "Automattic\\BlocksEngine\\PhpTransformer\\": "php-transformer/src/"
+                    }
+                },
+                "require": {
+                    "league/commonmark": "^2.5",
+                    "league/html-to-markdown": "^5.1",
+                    "php": ">=8.1"
+                }
+            }
+        }
+    ],
     "require": {
+        "automattic/blocks-engine-php-transformer": "dev-trunk",
         "php": "^8.1"
     },
     "config": {
