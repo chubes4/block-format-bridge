@@ -2,17 +2,17 @@
 
 Issue: https://github.com/chubes4/block-format-bridge/issues/29
 
-This note defines the Block Format Bridge surface a future static HTML/CSS to block-theme compiler should consume. It is intentionally limited to BFB's boundary: format conversion through the block pivot. Block-theme structure, Site Editor behavior, template intent, theme.json generation, and per-block transform behavior belong above BFB or inside html-to-blocks-converter.
+This note defines the Block Format Bridge surface a future static HTML/CSS to block-theme compiler should consume. It is intentionally limited to BFB's boundary: compatibility APIs and format conversion through the block pivot. Block-theme structure, Site Editor behavior, template intent, theme.json generation, and per-block transform behavior belong above BFB or inside Blocks Engine PHP transformer.
 
 ## Boundary
 
-BFB is the substrate between content formats and WordPress block data:
+BFB is the compatibility/API surface between content formats and WordPress block data:
 
 ```
 HTML / Markdown / future formats
         |
         v
-  BFB format adapter
+  BFB compatibility adapter
         |
         v
  WordPress block arrays
@@ -32,7 +32,7 @@ BFB's public marker vocabulary is intentionally narrow and explicit:
 - `data-bfb-template-part="area-or-slug"` declares a template part reference.
 
 These markers exist for compiler output, not heuristic discovery. A compiler may emit them after it has already decided
-that a fragment should become a pattern reference or template part. BFB/h2bc must not infer the same primitives from
+that a fragment should become a pattern reference or template part. BFB and the active transformer must not infer the same primitives from
 ordinary wrappers such as `<header>`, `<footer>`, `<section class="hero">`, or a repeated layout shape.
 
 The deterministic targets are:
@@ -43,10 +43,10 @@ The deterministic targets are:
 `data-wp-*` aliases are out of scope unless WordPress itself defines them as source-HTML markers. BFB-owned attributes
 avoid implying a WordPress core contract that does not exist.
 
-Implementation note: the marker contract is documented here because BFB owns the public conversion substrate. The actual
-HTML-element transforms currently live in html-to-blocks-converter, the library BFB delegates to for HTML → Blocks. That
-is a shared extension contract: h2bc may recognize these explicitly documented BFB markers, while BFB verifies marker
-behavior through `bfb_convert( $html, 'html', 'blocks' )` instead of adding a parallel pre-parser around h2bc.
+Implementation note: the marker contract is documented here because BFB owns the public compatibility/API surface. The
+actual HTML-element transforms live in Blocks Engine PHP transformer. That is a shared extension contract: the active
+transformer may recognize these explicitly documented BFB markers, while BFB verifies marker behavior through
+`bfb_convert( $html, 'html', 'blocks' )` instead of adding a parallel pre-parser.
 
 ## Answers
 
@@ -130,16 +130,16 @@ This avoids double conversion without changing `bfb_convert()` from a string-ret
 
 ### 4. Metadata preservation contract
 
-BFB should document the metadata contract, but the transform details stay in html-to-blocks-converter.
+BFB should document the metadata contract, but the transform details stay in Blocks Engine PHP transformer.
 
 For HTML to Blocks, BFB's stable contract should be:
 
 - BFB returns WordPress block arrays compatible with `serialize_blocks()` and `parse_blocks()`.
-- Source `class` attributes that html-to-blocks-converter maps into block attributes remain in `attrs` and are serialized by WordPress core.
-- Source `style` attributes that html-to-blocks-converter maps into block attributes remain in `attrs` and are serialized by WordPress core.
-- Source anchors / IDs that html-to-blocks-converter maps into block attributes remain in `attrs` and are serialized by WordPress core.
+- Source `class` attributes that the active transformer maps into block attributes remain in `attrs` and are serialized by WordPress core.
+- Source `style` attributes that the active transformer maps into block attributes remain in `attrs` and are serialized by WordPress core.
+- Source anchors / IDs that the active transformer maps into block attributes remain in `attrs` and are serialized by WordPress core.
 - BFB does not promise semantic inference beyond the attributes emitted by the active adapter.
-- Per-block mapping rules and fidelity fixes belong in html-to-blocks-converter tests and releases.
+- Per-block mapping rules and fidelity fixes belong in Blocks Engine PHP transformer tests and releases.
 
 That gives compiler consumers a stable integration target without moving transform ownership into BFB.
 

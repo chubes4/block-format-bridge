@@ -10,7 +10,7 @@
  *   bfb_analyze_blocks( $blocks )           — block quality report
  *   bfb_conversion_report( $content, $from ) — conversion quality report
  *   bfb_convert_fragment( $html, $options )  — scoped fragment conversion
- *   bfb_capabilities()                      — conversion substrate report
+ *   bfb_capabilities()                      — active transformer report
  *   bfb_get_adapter( $slug )                — registry lookup
  *
  * `bfb_convert()` routes through the block pivot via the adapter registry.
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'bfb_capabilities' ) ) {
 	/**
-	 * Return a machine-readable report of the active conversion substrate.
+	 * Return a machine-readable report of the active transformer.
 	 *
 	 * @return array<string, mixed>
 	 */
@@ -373,9 +373,9 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 
 if ( ! function_exists( 'bfb_filter_html_to_blocks_result' ) ) {
 	/**
-	 * Filter block arrays returned by the HTML conversion substrate.
+	 * Filter block arrays returned by the HTML conversion backend.
 	 *
-	 * This hook lets generic conversion substrate integrations expose a final
+	 * This hook lets generic conversion backend integrations expose a final
 	 * block array without coupling BFB to any filesystem or importer behavior.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks  Converted block list.
@@ -386,7 +386,7 @@ if ( ! function_exists( 'bfb_filter_html_to_blocks_result' ) ) {
 	 */
 	function bfb_filter_html_to_blocks_result( array $blocks, string $content, array $options, array $args ): array {
 		/**
-		 * Filters block arrays returned by the HTML conversion substrate.
+		 * Filters block arrays returned by the HTML conversion backend.
 		 *
 		 * @since 0.5.0
 		 *
@@ -763,7 +763,7 @@ if ( ! function_exists( 'bfb_build_conversion_diagnostics' ) ) {
 					'text_retention_ratio' => $text_retention_ratio,
 				),
 			);
-			$guidance      = 'Potential warning-only content loss. Capture this report for the conversion substrate and retry with simpler source structure if needed; do not work around it by manually authoring wp:html blocks.';
+			$guidance      = 'Potential warning-only content loss. Capture this report for the active transformer and retry with simpler source structure if needed; do not work around it by manually authoring wp:html blocks.';
 		}
 
 		return array(
@@ -776,7 +776,7 @@ if ( ! function_exists( 'bfb_build_conversion_diagnostics' ) ) {
 
 if ( ! function_exists( 'bfb_normalize_conversion_metadata' ) ) {
 	/**
-	 * Normalize conversion metadata emitted by conversion substrates.
+	 * Normalize conversion metadata emitted by conversion backends.
 	 *
 	 * BFB stores only structured, filesystem-agnostic data. Downstream consumers
 	 * decide whether and where to write assets, then replace any placeholders.

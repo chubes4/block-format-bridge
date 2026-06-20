@@ -56,7 +56,7 @@ if ( ! function_exists( 'bfb_register_abilities' ) ) {
 			'block-format-bridge/get-capabilities',
 			array(
 				'label'               => __( 'Get Block Format Bridge Capabilities', 'block-format-bridge' ),
-				'description'         => __( 'Return the active content-format conversion substrate capabilities.', 'block-format-bridge' ),
+				'description'         => __( 'Return the active content-format transformer capabilities.', 'block-format-bridge' ),
 				'category'            => BFB_ABILITY_CATEGORY,
 				'input_schema'        => array(
 					'type'       => 'object',
@@ -139,7 +139,7 @@ if ( ! function_exists( 'bfb_register_abilities' ) ) {
 
 if ( ! function_exists( 'bfb_ability_permission_callback' ) ) {
 	/**
-	 * Permission callback for read-only conversion substrate abilities.
+	 * Permission callback for read-only conversion backend abilities.
 	 *
 	 * @return bool
 	 */
