@@ -24,9 +24,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Register the `content_format` REST query argument and the
  * `rest_prepare_*` filters that honour it.
  *
- * Runs at priority 20 to mirror html-to-blocks-converter's pattern of
- * waiting until after every other plugin has registered its CPTs at
- * the default `init` priority.
+	 * Runs at priority 20 so other plugins can register CPTs at the default
+	 * `init` priority first.
  */
 function bfb_register_rest_filters() {
 	$default_types = array_keys( get_post_types( array( 'show_in_rest' => true ) ) );

@@ -60,7 +60,7 @@ composer install
 composer build
 `
 
-`composer build` runs php-scoper so bundled dependencies are namespaced under BFB and do not collide with other plugins.
+`composer build` verifies the thin wrapper build has no bundled transformer artifact.
 
 == Frequently Asked Questions ==
 
@@ -72,13 +72,13 @@ No. This `readme.txt` prepares the repository for a future WordPress.org plugin-
 
 No. GitHub VCS installation is the current Composer path. wp-packages.org mirrors plugins from WordPress.org under `wp-plugin/<slug>`, so BFB will only appear there after a WordPress.org plugin-directory listing exists.
 
-= Does the plugin require the standalone html-to-blocks-converter plugin? =
+= Does the plugin require Blocks Engine PHP Transformer? =
 
-No. BFB bundles `chubes4/html-to-blocks-converter` as a scoped Composer dependency. The standalone html-to-blocks-converter plugin is not required for BFB's HTML to blocks conversion path.
+Yes. BFB is a thin compatibility wrapper and discovers the active Blocks Engine PHP Transformer helper/classes at runtime.
 
-= Why does the plugin include a vendor_prefixed directory? =
+= Why does the plugin not include a vendor_prefixed directory? =
 
-BFB bundles and namespaces its conversion dependencies so Composer consumers and standalone plugin installs can coexist with other plugins that use the same libraries. Bundled libraries are loaded locally and do not make network requests.
+BFB does not bundle transformer dependencies. Conversion behavior belongs to the canonical Blocks Engine PHP Transformer runtime.
 
 = Does BFB infer full block-theme or Site Editor structure from arbitrary HTML? =
 

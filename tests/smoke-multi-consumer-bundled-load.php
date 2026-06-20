@@ -205,7 +205,9 @@ function bfb_smoke_copy_package( string $source_root, string $target_root, strin
 	mkdir( $target_root, 0777, true );
 	copy( $source_root . '/library.php', $target_root . '/library.php' );
 	bfb_smoke_copy_path( $source_root . '/includes', $target_root . '/includes' );
-	bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
+	if ( is_dir( $source_root . '/vendor_prefixed' ) ) {
+		bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
+	}
 
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Static smoke patches a temporary local copy.
 	$library_raw = file_get_contents( $target_root . '/library.php' );
@@ -331,32 +333,22 @@ try {
 	bfb_smoke_assert( 1 === bfb_smoke_hook_count( 'wp_insert_post_data', 'bfb_convert_on_insert' ), 'BFB insert conversion hook should register once.' );
 
 	$scoped_classes = array(
-		'HTML_To_Blocks_Versions',
-		'HTML_To_Blocks_HTML_Element',
-		'HTML_To_Blocks_Block_Factory',
-		'HTML_To_Blocks_Attribute_Parser',
-		'HTML_To_Blocks_Transform_Registry',
+		'Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge',
+		'Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\HtmlAdapter',
+		'Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\MarkdownAdapter',
+		'Automattic\\BlocksEngine\\PhpTransformer\\HtmlToBlocks\\HtmlTransformer',
 	);
 
 	foreach ( $scoped_classes as $class_name ) {
 		bfb_smoke_assert(
 			class_exists( 'BlockFormatBridge\\Vendor\\' . $class_name, false ),
-			"Scoped h2bc {$class_name} should exist after bundled boot."
+			"Scoped transformer {$class_name} should exist after bundled boot."
 		);
 		bfb_smoke_assert(
 			! class_exists( $class_name, false ),
-			"Global h2bc {$class_name} should not exist after bundled boot."
+			"Global transformer {$class_name} should not exist after bundled boot."
 		);
 	}
-
-	bfb_smoke_assert(
-		function_exists( 'BlockFormatBridge\\Vendor\\html_to_blocks_raw_handler' ),
-		'Scoped h2bc raw handler should exist after bundled boot.'
-	);
-	bfb_smoke_assert(
-		! function_exists( 'html_to_blocks_raw_handler' ),
-		'Global h2bc raw handler should not exist after bundled boot.'
-	);
 } finally {
 	bfb_smoke_remove_path( $temp_root );
 }

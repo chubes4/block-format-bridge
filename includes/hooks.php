@@ -8,10 +8,8 @@
  *     wp_insert_post_data.
  *   - `bfb_default_format` filter declares which format a CPT writes
  *     in by default. Defaults to 'html'.
- *   - Runs at priority 5 — BEFORE html-to-blocks-converter (which
- *     fires at priority 10) — so non-HTML formats are normalised to
- *     block markup first, then html-to-blocks-converter sees nothing
- *     to do (its `<!-- wp:` short-circuit triggers).
+	 *   - Runs at priority 5 so non-HTML formats are normalised to block markup
+	 *     before later content filters inspect the post body.
  *
  * @package BlockFormatBridge
  */
@@ -64,8 +62,7 @@ function bfb_resolve_format_for_insert( array $data, array $postarr ): string {
  *
  * Skips when:
  *   - post_content is empty
- *   - the resolved format is 'html' (existing html-to-blocks-converter
- *     handles HTML→blocks at priority 10)
+	 *   - the resolved format is 'html' (HTML remains no-op at insert time)
  *   - post_content is already block markup (`<!-- wp:`)
  *   - no adapter is registered for the resolved format
  *   - a `bfb_skip_insert_conversion` filter callback returns true
@@ -83,8 +80,7 @@ function bfb_convert_on_insert( array $data, array $postarr ): array {
 
 	$format = bfb_resolve_format_for_insert( $data, $postarr );
 	if ( 'html' === $format ) {
-		// HTML is the no-op format; let html-to-blocks-converter handle it
-		// at its own priority.
+		// HTML is the no-op insert format; callers can convert explicitly when needed.
 		return $data;
 	}
 
