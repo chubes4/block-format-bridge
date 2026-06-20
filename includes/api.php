@@ -61,12 +61,12 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 		$transformer = bfb_transformer_capabilities();
 
 		return array(
-			'bridge'         => array(
+			'bridge'      => array(
 				'version' => defined( 'BFB_VERSION' ) ? BFB_VERSION : null,
 				'path'    => defined( 'BFB_PATH' ) ? BFB_PATH : null,
 			),
-			'formats'        => $formats,
-			'conversions'    => array(
+			'formats'     => $formats,
+			'conversions' => array(
 				'html_to_blocks'            => array(
 					'available' => (bool) $transformer['available'],
 					'provider'  => 'blocks-engine-php-transformer',
@@ -76,8 +76,8 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 					'provider'  => 'block-format-bridge',
 				),
 			),
-			'transformer'    => $transformer,
-			'hooks'          => array(
+			'transformer' => $transformer,
+			'hooks'       => array(
 				'filters' => array(
 					'bfb_register_format_adapter',
 					'bfb_default_format',
@@ -100,7 +100,7 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 					'bfb_html_to_markdown_converter',
 				),
 			),
-			'abilities'      => array(
+			'abilities'   => array(
 				'block-format-bridge/get-capabilities',
 				'block-format-bridge/convert',
 				'block-format-bridge/convert-fragment',
@@ -114,13 +114,13 @@ if ( ! function_exists( 'bfb_transformer_class' ) ) {
 	/**
 	 * Resolve an active blocks-engine transformer class.
 	 *
-	 * @param string $class Fully-qualified unscoped class name.
+	 * @param string $class_name Fully-qualified unscoped class name.
 	 * @return string|null Resolved class name.
 	 */
-	function bfb_transformer_class( string $class ): ?string {
-		$class = ltrim( $class, '\\' );
-		if ( class_exists( $class ) ) {
-			return '\\' . $class;
+	function bfb_transformer_class( string $class_name ): ?string {
+		$class_name = ltrim( $class_name, '\\' );
+		if ( class_exists( $class_name ) ) {
+			return '\\' . $class_name;
 		}
 
 		return null;
@@ -137,7 +137,7 @@ if ( ! function_exists( 'bfb_transformer_capabilities' ) ) {
 		$bridge  = bfb_format_bridge();
 		$formats = array();
 
-		if ( $bridge && method_exists( $bridge, 'supportedFormats' ) ) {
+		if ( $bridge ) {
 			try {
 				$formats = $bridge->supportedFormats();
 			} catch ( Throwable $e ) {
@@ -149,7 +149,7 @@ if ( ! function_exists( 'bfb_transformer_capabilities' ) ) {
 			array_filter(
 				array_map(
 					static function ( $format ): string {
-						return is_scalar( $format ) ? (string) $format : '';
+						return (string) $format;
 					},
 					$formats
 				),
@@ -186,12 +186,11 @@ if ( ! function_exists( 'bfb_format_bridge' ) ) {
 			return $bridge;
 		}
 
-		$class = bfb_transformer_class( '\\Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge' );
-		if ( null === $class ) {
+		if ( null === bfb_transformer_class( '\\Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge' ) ) {
 			return null;
 		}
 
-		$bridge = new $class();
+		$bridge = new \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge();
 		return $bridge;
 	}
 }
@@ -208,19 +207,16 @@ if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 	 */
 	function bfb_transformer_convert_result( string $content, string $from, string $to, array $options = array() ): ?array {
 		if ( function_exists( 'blocks_engine_php_transformer_convert_format' ) ) {
-			$result = blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
-			return is_array( $result ) ? $result : null;
+			return blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
 		}
 
 		$bridge = bfb_format_bridge();
-		if ( ! $bridge || ! method_exists( $bridge, 'convertResult' ) ) {
+		if ( ! $bridge ) {
 			return null;
 		}
 
 		$result = $bridge->convertResult( $content, $from, $to, $options );
-		$report = is_object( $result ) && method_exists( $result, 'toArray' ) ? $result->toArray() : null;
-
-		return is_array( $report ) ? $report : null;
+		return $result->toArray();
 	}
 }
 
@@ -521,9 +517,11 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 				return null;
 			}
 
-			$blocks                      = isset( $report['blocks'] ) && is_array( $report['blocks'] ) ? $report['blocks'] : array();
-			$report['blocks']            = bfb_filter_html_to_blocks_result( $blocks, $content, $options, $args );
-			$report['serialized_blocks'] = serialize_blocks( $report['blocks'] );
+			$blocks           = isset( $report['blocks'] ) && is_array( $report['blocks'] ) ? $report['blocks'] : array();
+			$filtered_blocks  = bfb_filter_html_to_blocks_result( $blocks, $content, $options, $args );
+			$report['blocks'] = $filtered_blocks;
+			/** @var array<int|string, array{blockName: string|null, attrs: array, innerBlocks: array<array>, innerHTML: string, innerContent: array}> $filtered_blocks */
+			$report['serialized_blocks'] = serialize_blocks( $filtered_blocks );
 
 			return $report;
 		}

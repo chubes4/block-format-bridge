@@ -63,4 +63,9 @@ if ( version_compare( PHP_VERSION, $bfb_min_php, '<' ) ) {
 	return;
 }
 
+$bfb_autoload = BFB_PLUGIN_PATH . 'vendor/autoload.php';
+if ( is_readable( $bfb_autoload ) ) {
+	require_once $bfb_autoload;
+}
+
 require_once BFB_PLUGIN_PATH . 'library.php';
