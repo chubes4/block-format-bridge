@@ -3,10 +3,9 @@
 A WordPress plugin **and Composer package** for content format conversion and declared-format normalization across HTML,
 Blocks, and Markdown.
 
-The bridge owns no parsing logic of its own. It composes existing libraries — [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter),
-WordPress core's `serialize_blocks()` / `parse_blocks()` / `render_block()`, [`league/commonmark`](https://github.com/thephpleague/commonmark),
-and [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown) — behind one contract. New formats
-become available by registering a new adapter; the bridge core never grows.
+The bridge owns no parsing logic of its own. It is a compatibility wrapper around the active Blocks Engine PHP
+Transformer plugin/classes plus WordPress core's block helpers. New formats become available by registering a new adapter;
+the bridge core never grows.
 
 > **Status:** `bfb_convert()`, `bfb_normalize()`, insert-time conversion, and REST `?content_format=` are covered by the
 > smoke/Playground test suite.
@@ -21,12 +20,11 @@ BFB exposes two related but separate public surfaces:
 
 | Conversion direction | Underlying tool                        |
 |----------------------|----------------------------------------|
-| HTML → Blocks        | `chubes4/html-to-blocks-converter`     |
-| Blocks → HTML        | `parse_blocks()` + `render_block()` (WordPress core) |
-| Markdown → HTML      | `league/commonmark` (vendor-prefixed)  |
-| Markdown → Blocks    | composition: Markdown → HTML → Blocks  |
-| Blocks → Markdown    | `parse_blocks()` + `render_block()` + `league/html-to-markdown` (vendor-prefixed) |
-| HTML → Markdown      | composition: HTML → Blocks → Markdown  |
+| HTML → Blocks        | Blocks Engine PHP Transformer          |
+| Blocks → HTML        | Blocks Engine PHP Transformer / WordPress core rendering |
+| Markdown → Blocks    | Blocks Engine PHP Transformer          |
+| Blocks → Markdown    | Blocks Engine PHP Transformer          |
+| HTML → Markdown      | Blocks Engine PHP Transformer          |
 
 ## Architecture
 
@@ -45,10 +43,8 @@ BFB is a declared-format conversion API. Callers pass the source format explicit
 
 BFB includes two adapters:
 
-- **`BFB_HTML_Adapter`** — `to_blocks()` delegates to `html_to_blocks_raw_handler()` from `html-to-blocks-converter`;
-  `from_blocks()` returns rendered HTML via `render_block()` (so dynamic blocks resolve to their server-side output).
-- **`BFB_Markdown_Adapter`** — `to_blocks()` runs CommonMark + GFM and routes the resulting HTML through the HTML
-  adapter. `from_blocks()` renders blocks via `render_block()` and pipes the HTML through league/html-to-markdown.
+- **`BFB_HTML_Adapter`** — delegates HTML ↔ blocks through the active Blocks Engine PHP Transformer result surface.
+- **`BFB_Markdown_Adapter`** — delegates markdown ↔ blocks through the active Blocks Engine PHP Transformer result surface.
 
 Markdown input is treated as a content body only. BFB does not parse YAML frontmatter, TOML frontmatter, or any other
 document metadata envelope; callers that import files are responsible for stripping and interpreting frontmatter before
@@ -69,35 +65,34 @@ Declared-format normalization validates the declared format directly:
 - `html` rejects serialized block comments and Markdown markers that indicate mixed input.
 - Unsupported formats return `WP_Error`; registered custom formats currently pass through unchanged.
 
-### BFB and h2bc responsibility split
+### BFB and Blocks Engine Responsibility Split
 
 BFB owns format routing and orchestration. It decides which adapter handles a source format, normalises non-block
 formats through the block-array pivot, and exposes one public API for callers that do not want to know which lower-level
 library performs a specific conversion. It does **not** own per-block raw transforms.
 
-HTML → core block transforms belong to [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
-(h2bc). BFB inherits h2bc support through `BFB_HTML_Adapter::to_blocks()`, so new h2bc transforms become available to
-BFB after the bundled dependency is updated and rebuilt.
+HTML, markdown, and block transform behavior belongs to the Blocks Engine PHP Transformer. BFB keeps the historical
+`bfb_*` APIs and delegates conversion through `blocks_engine_php_transformer_convert_format()` when the plugin helper is
+available, falling back to the active `Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge` class.
 
 The explicit API path is:
 
 ```php
 bfb_convert( $html, 'html', 'blocks' )
     -> BFB_HTML_Adapter::to_blocks()
-    -> html_to_blocks_raw_handler();
+    -> blocks_engine_php_transformer_convert_format();
 ```
 
 The insert/update hook path is split by source format:
 
 - **BFB priority 5:** `wp_insert_post_data` handles non-HTML source formats, such as Markdown, before WordPress stores
   the post. The adapter path normalises those formats to block markup.
-- **h2bc priority 10:** `wp_insert_post_data` handles HTML source content and converts it to core block markup.
 
-Both paths are server-side and deterministic. There is no AI conversion pass in BFB or h2bc.
+The path is server-side and deterministic. There is no AI conversion pass in BFB or the transformer.
 
 Block-theme structure and Site Editor behavior are higher-level concerns. Raw HTML can describe markup, but it often
 cannot encode intent such as template areas, patterns, block locking, global style relationships, or theme-specific
-structure. When that intent is required, use a compiler or generation layer above BFB/h2bc, then pass the resulting block
+structure. When that intent is required, use a compiler or generation layer above BFB, then pass the resulting block
 markup through the normal storage/rendering path.
 
 ### Explicit Site Editor primitive markers
@@ -112,7 +107,7 @@ Only BFB-owned attributes are part of this contract:
 
 Rules:
 
-- BFB and h2bc must never infer patterns or template parts from layout, tag names, classes, or visual similarity.
+- BFB and the transformer must never infer patterns or template parts from layout, tag names, classes, or visual similarity.
 - `data-wp-*` aliases are intentionally not accepted. WordPress does not currently define those source-HTML markers, and
   BFB should not mint WordPress-looking attributes for its own API.
 - Pattern markers require a fully-qualified `namespace/slug` value.
@@ -120,10 +115,8 @@ Rules:
   values are treated as explicit template-part slugs.
 - Missing or malformed marker values should fall back to the normal HTML conversion path rather than guessing.
 
-The marker contract belongs in BFB because BFB is the public conversion substrate. The runtime HTML-element transforms
-are currently supplied by h2bc through BFB's bundled dependency, and BFB verifies those markers through the public
-`bfb_convert( $html, 'html', 'blocks' )` path. h2bc should treat these attributes as an explicit shared extension
-contract with BFB, not as a license to infer Site Editor primitives from unmarked HTML.
+The marker contract belongs in BFB because BFB is the public conversion substrate. Runtime HTML-element transforms are
+supplied by Blocks Engine through the public `bfb_convert( $html, 'html', 'blocks' )` path.
 
 ## Install
 
@@ -144,31 +137,15 @@ composer require chubes4/block-format-bridge:^0.5
 
 Use `dev-main` only when intentionally tracking unreleased development commits.
 
-### Blocks-engine transformer dependency status
+### Blocks Engine Transformer Status
 
-This migration delegates BFB's wrapper adapters to the canonical `automattic/blocks-engine-php-transformer` package.
-That package is merged to Blocks Engine trunk but is not yet available as a stable Composer release. Until the upstream
-package is tagged, this branch intentionally keeps a local Composer path repository for a sibling trunk checkout of the
-transformer package:
-
-```json
-{
-    "type": "path",
-    "url": "../blocks-engine/php-transformer"
-}
-```
-
-The branch-local constraint is `dev-trunk`, and the committed `composer.lock` records the Composer path package
-reference used by this migration. Fresh `composer update` runs require that sibling checkout while the package remains
-unreleased. Before a release-ready BFB tag, replace the path repository with a stable upstream package constraint, or keep
-the path repository only for branch-local review builds.
+BFB does not depend on a Packagist package or bundle transformer code. Install and activate the canonical Blocks Engine
+PHP Transformer plugin/classes in the host runtime. BFB discovers the active helper/class at runtime.
 
 Composer autoloads `library.php`, which registers the full bridge service: adapters, `bfb_convert()`,
 `bfb_normalize()`, `bfb_render_post()`, insert-time conversion, and REST `?content_format=`.
 
-HTML → Blocks support is bundled via [`chubes4/html-to-blocks-converter`](https://github.com/chubes4/html-to-blocks-converter)
-as a Composer package. You do **not** need the standalone html-to-blocks-converter plugin active for BFB to convert
-HTML/Markdown into block markup.
+HTML and Markdown conversion require the Blocks Engine PHP Transformer runtime to be available.
 
 ### Publishing status
 
@@ -193,7 +170,7 @@ composer require wp-plugin/block-format-bridge
 git clone https://github.com/chubes4/block-format-bridge.git
 cd block-format-bridge
 composer install
-composer build  # runs php-scoper to vendor-prefix h2bc + markdown dependencies
+composer build  # verifies the thin wrapper build has no bundled transformer artifact
 ```
 
 ## Usage
@@ -223,7 +200,7 @@ $md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
 // Markdown → HTML (composes via blocks)
 $html = bfb_convert( '# X', 'markdown', 'html' );
 
-// HTML → blocks with importer-neutral per-call context forwarded to h2bc args.
+// HTML → blocks with importer-neutral per-call context forwarded to transformer args.
 $blocks = bfb_convert(
     '<h1>Hello</h1><p>World</p>',
     'html',
@@ -238,8 +215,8 @@ $blocks = bfb_convert(
 ```
 
 The optional fourth argument is a generic per-call options array. For HTML → Blocks, BFB forwards those options alongside
-the reserved `HTML` argument passed to `html_to_blocks_raw_handler()`, so downstream tools can pass structured `context`
-without BFB gaining importer-specific API.
+the reserved `HTML` argument passed to the active transformer, so downstream tools can pass structured `context` without
+BFB gaining importer-specific API.
 
 ### `bfb_to_blocks( $content, $from ): array`
 

@@ -55,10 +55,10 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 			}
 
 			$bridge = isset( $report['bridge'] ) && is_array( $report['bridge'] ) ? $report['bridge'] : array();
-			$h2bc   = isset( $report['h2bc'] ) && is_array( $report['h2bc'] ) ? $report['h2bc'] : array();
+			$transformer = isset( $report['transformer'] ) && is_array( $report['transformer'] ) ? $report['transformer'] : array();
 			WP_CLI::line( sprintf( 'BFB: %s', isset( $bridge['version'] ) ? (string) $bridge['version'] : 'unknown' ) );
 			WP_CLI::line( sprintf( 'Formats: %s', implode( ', ', array_keys( (array) $report['formats'] ) ) ) );
-			WP_CLI::line( sprintf( 'HTML -> blocks: %s', ! empty( $h2bc['available'] ) ? 'available' : 'unavailable' ) );
+			WP_CLI::line( sprintf( 'HTML -> blocks: %s', ! empty( $transformer['available'] ) ? 'available' : 'unavailable' ) );
 		}
 
 		/**
@@ -190,7 +190,7 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 			WP_CLI::line( sprintf( 'Blocks: %d', (int) $report['total_blocks'] ) );
 			WP_CLI::line( sprintf( 'Status: %s', isset( $report['status'] ) ? (string) $report['status'] : 'unknown' ) );
 			WP_CLI::line( sprintf( 'core/html blocks: %d', (int) $report['core_html_blocks'] ) );
-			WP_CLI::line( sprintf( 'h2bc fallback events: %d', (int) $report['fallback_event_count'] ) );
+			WP_CLI::line( sprintf( 'transformer fallback events: %d', (int) $report['fallback_event_count'] ) );
 			WP_CLI::line( sprintf( 'text retention: %.2f', isset( $report['text_retention_ratio'] ) ? (float) $report['text_retention_ratio'] : 1.0 ) );
 
 			if ( ! empty( $report['diagnostics'] ) && is_array( $report['diagnostics'] ) ) {

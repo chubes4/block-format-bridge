@@ -59,13 +59,13 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * HTML input should delegate to the bundled transformer for representative fixtures.
+	 * HTML input should delegate to the active transformer for representative fixtures.
 	 */
-	public function test_html_to_blocks_delegates_to_bundled_transformer_for_representative_fixtures(): void {
+	public function test_html_to_blocks_delegates_to_active_transformer_for_representative_fixtures(): void {
 		$this->assertTrue(
-			class_exists( '\BlockFormatBridge\Vendor\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' )
+			function_exists( 'blocks_engine_php_transformer_convert_format' )
 				|| class_exists( '\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' ),
-			'BFB should expose the canonical FormatBridge in package or dev mode.'
+			'BFB should use the active Blocks Engine transformer helper or class.'
 		);
 
 		$fixtures = array(
@@ -124,7 +124,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	/**
 	 * Conversion options should flow from the public API into adapters and transformer args.
 	 */
-	public function test_conversion_options_flow_to_adapters_and_h2bc_args(): void {
+	public function test_conversion_options_flow_to_adapters_and_transformer_args(): void {
 		$html = '<h2>Options Heading</h2><p>Options paragraph.</p>';
 
 		$default = bfb_convert( $html, 'html', 'blocks' );
@@ -367,7 +367,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	/**
 	 * Resolved asset metadata should flow through BFB into transformer media transforms.
 	 */
-	public function test_asset_metadata_context_enriches_h2bc_image_blocks(): void {
+	public function test_asset_metadata_context_enriches_transformer_image_blocks(): void {
 		$serialized = bfb_convert(
 			'<img src="assets/hero.jpg" alt="Source alt" width="1200" height="800">',
 			'html',
@@ -394,7 +394,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * BFB should expose h2bc's expanded layout transforms through bfb_convert().
+	 * BFB should expose the transformer expanded layout transforms through bfb_convert().
 	 */
 	public function test_html_to_blocks_covers_expanded_layout_transforms(): void {
 		$fixtures = array(
@@ -413,7 +413,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * BFB should expose h2bc's expanded action and text transforms through bfb_convert().
+	 * BFB should expose the transformer expanded action and text transforms through bfb_convert().
 	 */
 	public function test_html_to_blocks_covers_expanded_action_text_transforms(): void {
 		$fixtures = array(
@@ -432,7 +432,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * BFB should expose h2bc's expanded media and embed transforms through bfb_convert().
+	 * BFB should expose the transformer expanded media and embed transforms through bfb_convert().
 	 */
 	public function test_html_to_blocks_covers_expanded_media_embed_transforms(): void {
 		$fixtures = array(
@@ -476,38 +476,24 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Unsupported embeds should stay observable and preserve their HTML fallback.
+	 * Unsupported embeds should stay observable in conversion reports.
 	 */
-	public function test_html_to_blocks_emits_unsupported_fallback_hook(): void {
+	public function test_html_to_blocks_reports_unsupported_fallback(): void {
 		$this->ensure_block_registered( 'core/html' );
 
-		$fallbacks = array();
-		$listener  = static function ( string $html, array $context, array $block ) use ( &$fallbacks ): void {
-			$fallbacks[] = array(
-				'html'    => $html,
-				'context' => $context,
-				'block'   => $block,
-			);
-		};
-
-		add_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10, 3 );
-		try {
-			$blocks = $this->blocks_from( '<iframe src="https://example.com/widget"></iframe>', 'html' );
-		} finally {
-			remove_action( 'html_to_blocks_unsupported_html_fallback', $listener, 10 );
-		}
+		$report = bfb_conversion_report( '<iframe src="https://example.com/widget"></iframe>', 'html' );
+		$blocks = parse_blocks( $report['serialized_blocks'] );
 
 		$this->assertSame( 'core/html', $blocks[0]['blockName'] ?? null );
-		$this->assertNotEmpty( $fallbacks, 'Unsupported fallback hook should fire.' );
-		$this->assertSame( 'core/html', $fallbacks[0]['block']['blockName'] ?? null );
-		$this->assertStringContainsString( 'https://example.com/widget', $fallbacks[0]['html'] ?? '' );
+		$this->assertSame( 1, $report['fallback_event_count'] );
+		$this->assertStringContainsString( 'https://example.com/widget', $report['fallback_events'][0]['attributes']['src'] ?? '' );
 	}
 
 	/**
-	 * The bundled artifact should include the canonical transformer, not h2bc.
+	 * BFB should not bundle the canonical transformer.
 	 */
-	public function test_bundled_artifact_includes_transformer_not_h2bc(): void {
-		$this->assertFileExists( BFB_PATH . 'vendor_prefixed/automattic/blocks-engine-php-transformer/src/FormatBridge/FormatBridge.php' );
+	public function test_thin_wrapper_does_not_bundle_transformer(): void {
+		$this->assertFileDoesNotExist( BFB_PATH . 'vendor_prefixed/automattic/blocks-engine-php-transformer/src/FormatBridge/FormatBridge.php' );
 		$this->assertFileDoesNotExist( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/library.php' );
 	}
 
@@ -737,9 +723,9 @@ MARKDOWN;
 	}
 
 	/**
-	 * Conversion reports should include h2bc fallback reasons captured during conversion.
+	 * Conversion reports should include transformer fallback reasons captured during conversion.
 	 */
-	public function test_conversion_report_captures_h2bc_fallback_events(): void {
+	public function test_conversion_report_captures_transformer_fallback_events(): void {
 		$report = bfb_conversion_report( '<iframe src="https://example.com/widget"></iframe>', 'html' );
 
 		$this->assertSame( 'html', $report['from'] );
@@ -789,7 +775,7 @@ MARKDOWN;
 
 			$this->assertSame( 'success_with_fallbacks', $report['status'], "{$label} should be classified as a fallback." );
 			$this->assertSame( 'unsupported_html_fallback', $diagnostic['code'] ?? null, "{$label} should expose a fallback diagnostic code." );
-			$this->assertSame( 'no_transform', $diagnostic['reason_code'] ?? null, "{$label} should expose the h2bc reason code." );
+			$this->assertSame( 'no_transform', $diagnostic['reason_code'] ?? null, "{$label} should expose the transformer reason code." );
 			$this->assertSame( $case['source_tag'], $diagnostic['source_tag'] ?? null, "{$label} should expose the source tag." );
 			$this->assertSame( $case['attribute'][1], $diagnostic['attributes'][ $case['attribute'][0] ] ?? null, "{$label} should expose useful source attributes." );
 			$this->assertContains( $case['class'], $diagnostic['classes'] ?? array(), "{$label} should expose source classes." );
@@ -807,8 +793,8 @@ MARKDOWN;
 		$pre_result = static function ( $pre_result, string $content ): array {
 			unset( $pre_result );
 
-			do_action(
-				'html_to_blocks_materialization_request',
+				do_action(
+					'bfb_materialization_request',
 				array(
 					'id'             => 'svg-icon-check',
 					'kind'           => 'asset',

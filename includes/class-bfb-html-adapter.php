@@ -23,7 +23,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 	/**
 	 * Canonical format bridge.
 	 *
-	 * @var \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge
+	 * @var \Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge|null
 	 */
 	private $bridge;
 
@@ -79,7 +79,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return bfb_filter_html_to_blocks_result( $pre_result, $content, $options, $args );
 		}
 
-		if ( ! $this->bridge ) {
+		if ( ! function_exists( 'bfb_transformer_convert_result' ) && ! $this->bridge ) {
 			do_action(
 				'bfb_diagnostic',
 				'blocks_engine_html_transformer_unavailable',
@@ -90,7 +90,11 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		}
 
 		try {
-			$blocks = $this->bridge->toBlocks( $content, 'html', $args );
+			$result = function_exists( 'bfb_transformer_convert_result' ) ? bfb_transformer_convert_result( $content, 'html', 'blocks', $args ) : null;
+			$blocks = is_array( $result ) && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ? $result['blocks'] : null;
+			if ( null === $blocks && $this->bridge ) {
+				$blocks = $this->bridge->toBlocks( $content, 'html', $args );
+			}
 			return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
 		} catch ( Throwable $e ) {
 			do_action(
@@ -116,7 +120,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return '';
 		}
 
-		if ( ! $this->bridge ) {
+		if ( ! function_exists( 'bfb_transformer_convert_result' ) && ! $this->bridge ) {
 			do_action(
 				'bfb_diagnostic',
 				'blocks_engine_html_transformer_unavailable',
@@ -127,6 +131,17 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		}
 
 		try {
+			if ( function_exists( 'bfb_transformer_convert_result' ) ) {
+				$result = bfb_transformer_convert_result( serialize_blocks( $blocks ), 'blocks', 'html', $options );
+				if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
+					return $result['documents'][0]['content'];
+				}
+			}
+
+			if ( ! $this->bridge ) {
+				return '';
+			}
+
 			return $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'html', $options );
 		} catch ( Throwable $e ) {
 			do_action(

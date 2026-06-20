@@ -58,17 +58,7 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 			);
 		}
 
-		$h2bc = bfb_h2bc_capabilities();
-
-		$block_coverage = isset( $h2bc['inventory']['block_coverage'] ) && is_array( $h2bc['inventory']['block_coverage'] )
-			? $h2bc['inventory']['block_coverage']
-			: array(
-				'source'             => (string) ( $h2bc['inventory']['source'] ?? 'h2bc_capability_api_missing' ),
-				'requires'           => (string) ( $h2bc['inventory']['requires'] ?? 'https://github.com/chubes4/html-to-blocks-converter/issues/418' ),
-				'supported_blocks'   => array(),
-				'unsupported_blocks' => array(),
-				'classifications'    => array(),
-			);
+		$transformer = bfb_transformer_capabilities();
 
 		return array(
 			'bridge'         => array(
@@ -78,16 +68,15 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 			'formats'        => $formats,
 			'conversions'    => array(
 				'html_to_blocks'            => array(
-					'available' => (bool) $h2bc['available'],
-					'provider'  => 'html-to-blocks-converter',
+					'available' => (bool) $transformer['available'],
+					'provider'  => 'blocks-engine-php-transformer',
 				),
 				'source_fragment_to_blocks' => array(
-					'available' => (bool) $h2bc['available'],
+					'available' => (bool) $transformer['available'],
 					'provider'  => 'block-format-bridge',
 				),
 			),
-			'h2bc'           => $h2bc,
-			'block_coverage' => $block_coverage,
+			'transformer'    => $transformer,
 			'hooks'          => array(
 				'filters' => array(
 					'bfb_register_format_adapter',
@@ -123,7 +112,7 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 
 if ( ! function_exists( 'bfb_transformer_class' ) ) {
 	/**
-	 * Resolve a blocks-engine transformer class in dev or scoped package mode.
+	 * Resolve an active blocks-engine transformer class.
 	 *
 	 * @param string $class Fully-qualified unscoped class name.
 	 * @return string|null Resolved class name.
@@ -134,12 +123,53 @@ if ( ! function_exists( 'bfb_transformer_class' ) ) {
 			return '\\' . $class;
 		}
 
-		$scoped = 'BlockFormatBridge\\Vendor\\' . $class;
-		if ( class_exists( $scoped ) ) {
-			return '\\' . $scoped;
+		return null;
+	}
+}
+
+if ( ! function_exists( 'bfb_transformer_capabilities' ) ) {
+	/**
+	 * Return availability metadata for the active Blocks Engine PHP transformer.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function bfb_transformer_capabilities(): array {
+		$bridge  = bfb_format_bridge();
+		$formats = array();
+
+		if ( $bridge && method_exists( $bridge, 'supportedFormats' ) ) {
+			try {
+				$formats = $bridge->supportedFormats();
+			} catch ( Throwable $e ) {
+				$formats = array();
+			}
 		}
 
-		return null;
+		$formats = array_values(
+			array_filter(
+				array_map(
+					static function ( $format ): string {
+						return is_scalar( $format ) ? (string) $format : '';
+					},
+					$formats
+				),
+				static function ( string $format ): bool {
+					return '' !== $format;
+				}
+			)
+		);
+
+		$has_function = function_exists( 'blocks_engine_php_transformer_convert_format' );
+
+		return array(
+			'available'      => $has_function || null !== $bridge,
+			'version'        => function_exists( 'blocks_engine_php_transformer_version' ) ? blocks_engine_php_transformer_version() : ( defined( 'BLOCKS_ENGINE_PHP_TRANSFORMER_VERSION' ) ? BLOCKS_ENGINE_PHP_TRANSFORMER_VERSION : null ),
+			'path'           => function_exists( 'blocks_engine_php_transformer_path' ) ? blocks_engine_php_transformer_path() : ( defined( 'BLOCKS_ENGINE_PHP_TRANSFORMER_DIR' ) ? BLOCKS_ENGINE_PHP_TRANSFORMER_DIR : null ),
+			'integration'    => $has_function ? 'function' : ( null !== $bridge ? 'class' : null ),
+			'convert_format' => $has_function ? 'blocks_engine_php_transformer_convert_format' : null,
+			'bridge_class'   => bfb_transformer_class( '\\Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge' ),
+			'formats'        => $formats,
+		);
 	}
 }
 
@@ -163,6 +193,34 @@ if ( ! function_exists( 'bfb_format_bridge' ) ) {
 
 		$bridge = new $class();
 		return $bridge;
+	}
+}
+
+if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
+	/**
+	 * Convert through the active Blocks Engine transformer result surface.
+	 *
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param string               $to      Target format slug.
+	 * @param array<string, mixed> $options Per-call conversion options.
+	 * @return array<string, mixed>|null Canonical result array, or null when unavailable.
+	 */
+	function bfb_transformer_convert_result( string $content, string $from, string $to, array $options = array() ): ?array {
+		if ( function_exists( 'blocks_engine_php_transformer_convert_format' ) ) {
+			$result = blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
+			return is_array( $result ) ? $result : null;
+		}
+
+		$bridge = bfb_format_bridge();
+		if ( ! $bridge || ! method_exists( $bridge, 'convertResult' ) ) {
+			return null;
+		}
+
+		$result = $bridge->convertResult( $content, $from, $to, $options );
+		$report = is_object( $result ) && method_exists( $result, 'toArray' ) ? $result->toArray() : null;
+
+		return is_array( $report ) ? $report : null;
 	}
 }
 
@@ -228,179 +286,6 @@ if ( ! function_exists( 'bfb_convert_fragment' ) ) {
 	}
 }
 
-if ( ! function_exists( 'bfb_h2bc_capabilities' ) ) {
-	/**
-	 * Return availability metadata for the bundled or standalone h2bc substrate.
-	 *
-	 * @return array<string, mixed>
-	 */
-	function bfb_h2bc_capabilities(): array {
-		$handler = null;
-		if ( function_exists( 'html_to_blocks_raw_handler' ) ) {
-			$handler = 'html_to_blocks_raw_handler';
-		} elseif ( function_exists( '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler' ) ) {
-			$handler = '\BlockFormatBridge\Vendor\html_to_blocks_raw_handler';
-		}
-
-		$path = null;
-		if ( defined( 'HTML_TO_BLOCKS_CONVERTER_PATH' ) ) {
-			$path = HTML_TO_BLOCKS_CONVERTER_PATH;
-		} elseif ( $handler ) {
-			$reflection = new ReflectionFunction( $handler );
-			$file       = $reflection->getFileName();
-			$path       = is_string( $file ) ? dirname( $file ) . '/' : null;
-		}
-
-		$version = null;
-		if ( $path ) {
-			$library = trailingslashit( $path ) . 'library.php';
-			if ( is_readable( $library ) ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local package metadata read.
-				$source = file_get_contents( $library );
-				if ( is_string( $source ) && preg_match( "/html_to_blocks_library_version\s*=\s*'([^']+)'/", $source, $match ) ) {
-					$version = $match[1];
-				}
-			}
-		}
-
-		$capability_function = bfb_h2bc_capability_function();
-		$inventory           = array(
-			'source'   => null !== $capability_function ? 'h2bc_capabilities' : 'h2bc_capability_api_missing',
-			'requires' => null !== $capability_function ? null : 'https://github.com/chubes4/html-to-blocks-converter/issues/418',
-		);
-
-		if ( null !== $capability_function ) {
-			$capability_report = $capability_function();
-			if ( is_array( $capability_report ) ) {
-				$inventory = bfb_normalize_h2bc_inventory( $capability_report );
-				if ( isset( $inventory['version'] ) && is_string( $inventory['version'] ) && '' !== $inventory['version'] ) {
-					$version = $inventory['version'];
-				}
-			}
-		}
-
-		return array(
-			'available'      => null !== $handler,
-			'version'        => $version,
-			'path'           => $path,
-			'raw_handler'    => $handler,
-			'capability_api' => $capability_function,
-			'inventory'      => $inventory,
-		);
-	}
-}
-
-if ( ! function_exists( 'bfb_h2bc_capability_function' ) ) {
-	/**
-	 * Resolve h2bc's public capability function when the active substrate exposes one.
-	 *
-	 * @return callable-string|null Callable function name, or null when h2bc lacks the API.
-	 */
-	function bfb_h2bc_capability_function(): ?string {
-		$candidates = array(
-			'html_to_blocks_capabilities',
-			'\BlockFormatBridge\Vendor\html_to_blocks_capabilities',
-		);
-		$defined    = get_defined_functions();
-		$functions  = array_map( 'strtolower', $defined['user'] );
-
-		foreach ( $candidates as $candidate ) {
-			if ( in_array( strtolower( ltrim( $candidate, '\\' ) ), $functions, true ) ) {
-				/** @var callable-string $candidate */
-				return $candidate;
-			}
-		}
-
-		return null;
-	}
-}
-
-if ( ! function_exists( 'bfb_normalize_h2bc_inventory' ) ) {
-	/**
-	 * Normalize h2bc-owned capability data into BFB's public capability shape.
-	 *
-	 * @param array<string, mixed> $report h2bc capability report.
-	 * @return array<string, mixed>
-	 */
-	function bfb_normalize_h2bc_inventory( array $report ): array {
-		$block_coverage = isset( $report['block_coverage'] ) && is_array( $report['block_coverage'] ) ? $report['block_coverage'] : array();
-		$transforms     = isset( $report['transforms'] ) && is_array( $report['transforms'] ) ? $report['transforms'] : array();
-
-		$supported_blocks   = bfb_h2bc_report_list( $report, $block_coverage, 'supported_blocks' );
-		$unsupported_blocks = bfb_h2bc_report_list( $report, $block_coverage, 'unsupported_blocks' );
-		$classifications    = bfb_h2bc_report_array( $report, $block_coverage, 'classifications' );
-		$families           = bfb_h2bc_report_list( $report, $transforms, 'families' );
-
-		return array(
-			'source'             => 'h2bc_capabilities',
-			'version'            => isset( $report['version'] ) && is_scalar( $report['version'] ) ? (string) $report['version'] : null,
-			'handler'            => isset( $report['handler'] ) && is_scalar( $report['handler'] ) ? (string) $report['handler'] : null,
-			'transform_families' => $families,
-			'block_coverage'     => array(
-				'source'             => 'h2bc_capabilities',
-				'supported_blocks'   => $supported_blocks,
-				'unsupported_blocks' => $unsupported_blocks,
-				'classifications'    => $classifications,
-			),
-			'raw'                => $report,
-		);
-	}
-}
-
-if ( ! function_exists( 'bfb_h2bc_report_list' ) ) {
-	/**
-	 * Return a normalized scalar list from possible report locations.
-	 *
-	 * @param array<string, mixed> $primary   Primary report data.
-	 * @param array<string, mixed> $secondary Secondary report data.
-	 * @param string               $key       Field key.
-	 * @return array<int, string>
-	 */
-	function bfb_h2bc_report_list( array $primary, array $secondary, string $key ): array {
-		$values = array();
-		if ( isset( $primary[ $key ] ) && is_array( $primary[ $key ] ) ) {
-			$values = $primary[ $key ];
-		} elseif ( isset( $secondary[ $key ] ) && is_array( $secondary[ $key ] ) ) {
-			$values = $secondary[ $key ];
-		}
-
-		return array_values(
-			array_filter(
-				array_map(
-					static function ( $value ): string {
-						return is_scalar( $value ) ? (string) $value : '';
-					},
-					$values
-				),
-				static function ( string $value ): bool {
-					return '' !== $value;
-				}
-			)
-		);
-	}
-}
-
-if ( ! function_exists( 'bfb_h2bc_report_array' ) ) {
-	/**
-	 * Return an array field from possible report locations.
-	 *
-	 * @param array<string, mixed> $primary   Primary report data.
-	 * @param array<string, mixed> $secondary Secondary report data.
-	 * @param string               $key       Field key.
-	 * @return array<string, mixed>
-	 */
-	function bfb_h2bc_report_array( array $primary, array $secondary, string $key ): array {
-		if ( isset( $primary[ $key ] ) && is_array( $primary[ $key ] ) ) {
-			return $primary[ $key ];
-		}
-
-		if ( isset( $secondary[ $key ] ) && is_array( $secondary[ $key ] ) ) {
-			return $secondary[ $key ];
-		}
-
-		return array();
-	}
-}
 
 if ( ! function_exists( 'bfb_get_adapter' ) ) {
 	/**
@@ -606,8 +491,7 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 	 * @return array<string, mixed>|null Transformer result array, or null when unavailable.
 	 */
 	function bfb_transformer_result_report( string $content, string $from, array $options = array() ): ?array {
-		$html_transformer_class = 'html' === $from ? bfb_transformer_class( '\Automattic\BlocksEngine\PhpTransformer\HtmlToBlocks\HtmlTransformer' ) : null;
-		if ( null !== $html_transformer_class ) {
+		if ( 'html' === $from ) {
 			$args         = array_merge( $options, array( 'HTML' => $content ) );
 			$args         = (array) apply_filters( 'bfb_html_to_blocks_args', $args, $content, $options );
 			$args['HTML'] = $content;
@@ -618,21 +502,21 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 			}
 
 			try {
-				$result = ( new $html_transformer_class() )->transform( $content, $args );
+				$report = bfb_transformer_convert_result( $content, $from, 'blocks', $args );
 			} catch ( Throwable $e ) {
 				do_action(
 					'bfb_diagnostic',
-					'blocks_engine_html_report_failed',
-					'blocks-engine PHP transformer failed HTML report generation.',
+					'blocks_engine_format_bridge_report_failed',
+					'blocks-engine PHP transformer failed report generation.',
 					array(
-						'adapter' => 'html',
-						'error'   => $e->getMessage(),
+						'from'  => $from,
+						'to'    => 'blocks',
+						'error' => $e->getMessage(),
 					)
 				);
 				return null;
 			}
 
-			$report = is_object( $result ) && method_exists( $result, 'toArray' ) ? $result->toArray() : array();
 			if ( ! is_array( $report ) ) {
 				return null;
 			}
@@ -644,13 +528,8 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 			return $report;
 		}
 
-		$bridge = bfb_format_bridge();
-		if ( ! $bridge || ! method_exists( $bridge, 'convertResult' ) ) {
-			return null;
-		}
-
 		try {
-			$result = $bridge->convertResult( $content, $from, 'blocks', $options );
+			$report = bfb_transformer_convert_result( $content, $from, 'blocks', $options );
 		} catch ( Throwable $e ) {
 			do_action(
 				'bfb_diagnostic',
@@ -665,7 +544,6 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 			return null;
 		}
 
-		$report = is_object( $result ) && method_exists( $result, 'toArray' ) ? $result->toArray() : array();
 		return is_array( $report ) ? $report : null;
 	}
 }
@@ -736,9 +614,6 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 		$conversion_metadata      = array();
 		$materialization_requests = array();
 		$transformer_report       = bfb_transformer_result_report( $content, $from, $options );
-		$fallback_listener        = static function ( string $html, array $context, array $block ) use ( &$fallback_events ): void {
-			$fallback_events[] = bfb_normalize_html_fallback_diagnostic( $html, $context, $block );
-		};
 		$metadata_listener        = static function ( array $metadata ) use ( &$conversion_metadata, &$materialization_requests ): void {
 			$normalized = bfb_normalize_conversion_metadata( $metadata );
 			if ( array() === $normalized ) {
@@ -760,9 +635,6 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 			$materialization_requests[] = $normalized;
 		};
 
-		add_action( 'html_to_blocks_unsupported_html_fallback', $fallback_listener, 10, 3 );
-		add_action( 'html_to_blocks_conversion_metadata', $metadata_listener, 10, 1 );
-		add_action( 'html_to_blocks_materialization_request', $request_listener, 10, 1 );
 		add_action( 'bfb_conversion_metadata', $metadata_listener, 10, 1 );
 		add_action( 'bfb_materialization_request', $request_listener, 10, 1 );
 		if ( $transformer_report ) {
@@ -771,9 +643,6 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 			try {
 				$blocks = bfb_to_blocks( $content, $from, $options );
 			} finally {
-				remove_action( 'html_to_blocks_unsupported_html_fallback', $fallback_listener, 10 );
-				remove_action( 'html_to_blocks_conversion_metadata', $metadata_listener, 10 );
-				remove_action( 'html_to_blocks_materialization_request', $request_listener, 10 );
 				remove_action( 'bfb_conversion_metadata', $metadata_listener, 10 );
 				remove_action( 'bfb_materialization_request', $request_listener, 10 );
 			}
@@ -781,9 +650,6 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 
 		if ( $transformer_report ) {
 			$fallback_events = bfb_transformer_fallback_events( $transformer_report );
-			remove_action( 'html_to_blocks_unsupported_html_fallback', $fallback_listener, 10 );
-			remove_action( 'html_to_blocks_conversion_metadata', $metadata_listener, 10 );
-			remove_action( 'html_to_blocks_materialization_request', $request_listener, 10 );
 			remove_action( 'bfb_conversion_metadata', $metadata_listener, 10 );
 			remove_action( 'bfb_materialization_request', $request_listener, 10 );
 		}

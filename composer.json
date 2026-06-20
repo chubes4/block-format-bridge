@@ -11,7 +11,9 @@
         }
     ],
     "scripts": {
-        "build": "./build.sh"
+        "build": "./build.sh",
+        "lint": "php -l block-format-bridge.php && php -l library.php && find includes tests tools -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "smokes": "php tests/smoke-content-normalization.php && php tests/smoke-transformer-capability-discovery-standalone.php && php tests/smoke-transformer-capability-discovery-class.php"
     },
     "autoload": {
         "files": [
@@ -19,27 +21,8 @@
         ]
     },
     "require": {
-        "automattic/blocks-engine-php-transformer": "dev-trunk",
         "php": "^8.1"
     },
-    "require-dev": {
-        "humbug/php-scoper": "^0.18.19"
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../blocks-engine/php-transformer",
-            "options": {
-                "symlink": true
-            }
-        },
-        {
-            "type": "composer",
-            "url": "https://wp-packages.org"
-        }
-    ],
     "config": {
         "allow-plugins": {
             "composer/installers": true

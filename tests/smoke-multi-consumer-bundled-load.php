@@ -205,7 +205,9 @@ function bfb_smoke_copy_package( string $source_root, string $target_root, strin
 	mkdir( $target_root, 0777, true );
 	copy( $source_root . '/library.php', $target_root . '/library.php' );
 	bfb_smoke_copy_path( $source_root . '/includes', $target_root . '/includes' );
-	bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
+	if ( is_dir( $source_root . '/vendor_prefixed' ) ) {
+		bfb_smoke_copy_path( $source_root . '/vendor_prefixed', $target_root . '/vendor_prefixed' );
+	}
 
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Static smoke patches a temporary local copy.
 	$library_raw = file_get_contents( $target_root . '/library.php' );

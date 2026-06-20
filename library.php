@@ -20,30 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 $bfb_library_path    = __DIR__;
 $bfb_library_version = '0.8.2';
 
-// Load built/php-scoper dependencies when present. Composer consumers usually
-// load dependencies through the root autoloader before this file runs, while
-// standalone release builds can still ship a scoped vendor_prefixed/ artifact.
-if ( file_exists( $bfb_library_path . '/vendor_prefixed/autoload.php' ) ) {
-	require_once $bfb_library_path . '/vendor_prefixed/autoload.php';
-}
-if ( file_exists( $bfb_library_path . '/vendor/autoload.php' ) ) {
-	require_once $bfb_library_path . '/vendor/autoload.php';
-}
-
 if ( ! class_exists( 'BFB_Versions', false ) ) {
 	require_once $bfb_library_path . '/includes/class-bfb-versions.php';
 }
 
 $bfb_initializer = static function () use ( $bfb_library_path, $bfb_library_version ): void {
-	// Older package builds bundled html-to-blocks-converter directly. Keep this
-	// initializer harmless for existing artifacts while current builds route
-	// through blocks-engine's FormatBridge.
-	if ( class_exists( '\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions' ) ) {
-		\BlockFormatBridge\Vendor\HTML_To_Blocks_Versions::initialize_latest_version();
-	} elseif ( class_exists( 'HTML_To_Blocks_Versions' ) ) {
-		HTML_To_Blocks_Versions::initialize_latest_version();
-	}
-
 	if ( ! defined( 'BFB_VERSION' ) ) {
 		define( 'BFB_VERSION', $bfb_library_version );
 	}
