@@ -25,7 +25,8 @@ $bfb_library_version = '0.8.2';
 // standalone release builds can still ship a scoped vendor_prefixed/ artifact.
 if ( file_exists( $bfb_library_path . '/vendor_prefixed/autoload.php' ) ) {
 	require_once $bfb_library_path . '/vendor_prefixed/autoload.php';
-} elseif ( file_exists( $bfb_library_path . '/vendor/autoload.php' ) ) {
+}
+if ( file_exists( $bfb_library_path . '/vendor/autoload.php' ) ) {
 	require_once $bfb_library_path . '/vendor/autoload.php';
 }
 
