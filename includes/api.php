@@ -206,6 +206,8 @@ if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 	 * @return array<string, mixed>|null Canonical result array, or null when unavailable.
 	 */
 	function bfb_transformer_convert_result( string $content, string $from, string $to, array $options = array() ): ?array {
+		$options = bfb_transformer_options( $options );
+
 		$bridge = bfb_format_bridge();
 		if ( $bridge ) {
 			$result = $bridge->convertResult( $content, $from, $to, $options );
@@ -217,6 +219,25 @@ if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 		}
 
 		return blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
+	}
+}
+
+if ( ! function_exists( 'bfb_transformer_options' ) ) {
+	/**
+	 * Map BFB's public options into the canonical FormatBridge option contract.
+	 *
+	 * BFB historically accepted arbitrary `mode` labels from callers. Blocks
+	 * Engine reserves `mode` for normalization and only accepts strict/lenient.
+	 *
+	 * @param array<string, mixed> $options Public BFB conversion options.
+	 * @return array<string, mixed> Canonical transformer options.
+	 */
+	function bfb_transformer_options( array $options ): array {
+		if ( isset( $options['mode'] ) && ! in_array( (string) $options['mode'], array( 'strict', 'lenient' ), true ) ) {
+			unset( $options['mode'] );
+		}
+
+		return $options;
 	}
 }
 

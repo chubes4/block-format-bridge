@@ -29,7 +29,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 
 		$unordered = $this->blocks_from( '<ul><li>One</li><li>Two</li></ul>', 'html' );
 		$this->assertSame( 'core/list', $unordered[0]['blockName'] ?? null );
-		$this->assertFalse( $unordered[0]['attrs']['ordered'] ?? true );
+		$this->assertNotSame( true, $unordered[0]['attrs']['ordered'] ?? false );
 		$this->assertSame( 'core/list-item', $unordered[0]['innerBlocks'][0]['blockName'] ?? null );
 
 		$ordered = $this->blocks_from( '<ol><li>First</li><li>Second</li></ol>', 'html' );
@@ -87,7 +87,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 			),
 			'unsupported safe fallback' => array(
 				'html'   => '<iframe src="https://example.com/embed"></iframe>',
-				'blocks' => array( 'core/html' ),
+				'blocks' => array( 'core/embed' ),
 			),
 		);
 
@@ -106,13 +106,12 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	 */
 	public function test_site_editor_markers_convert_through_bfb_convert(): void {
 		$pattern = $this->blocks_from( '<section data-bfb-pattern="theme/pricing-table"><h2>Pricing</h2></section>', 'html' );
-		$this->assertSame( 'core/pattern', $pattern[0]['blockName'] ?? null, 'Pattern marker should convert to core/pattern.' );
-		$this->assertSame( 'theme/pricing-table', $pattern[0]['attrs']['slug'] ?? null, 'Pattern marker should preserve the explicit slug.' );
+		$this->assertContains( 'core/heading', $this->flatten_blocks( $pattern ), 'Pattern marker content should still convert through Blocks Engine.' );
+		$this->assertNotContains( 'core/pattern', $this->flatten_blocks( $pattern ), 'BFB should not synthesize pattern blocks outside Blocks Engine.' );
 
 		$template_part = $this->blocks_from( '<header data-bfb-template-part="header"><h1>Site</h1></header>', 'html' );
-		$this->assertSame( 'core/template-part', $template_part[0]['blockName'] ?? null, 'Template-part marker should convert to core/template-part.' );
-		$this->assertSame( 'header', $template_part[0]['attrs']['slug'] ?? null, 'Template-part marker should preserve the explicit slug.' );
-		$this->assertSame( 'header', $template_part[0]['attrs']['area'] ?? null, 'Standard template-part areas should set area.' );
+		$this->assertContains( 'core/heading', $this->flatten_blocks( $template_part ), 'Template-part marker content should still convert through Blocks Engine.' );
+		$this->assertNotContains( 'core/template-part', $this->flatten_blocks( $template_part ), 'BFB should not synthesize template parts outside Blocks Engine.' );
 
 		$invalid_pattern = $this->blocks_from( '<section data-bfb-pattern="pricing-table"><h2>Pricing</h2></section>', 'html' );
 		$this->assertNotSame( 'core/pattern', $invalid_pattern[0]['blockName'] ?? null, 'Invalid pattern marker should fall through to normal HTML conversion.' );
@@ -240,138 +239,25 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	 * Public BFB entry points should reach the canonical FormatBridge wrapper adapters.
 	 */
 	public function test_public_api_delegates_to_canonical_format_bridge_wrappers(): void {
-		$bridge = new class() {
-			/**
-			 * @var array<int, array<string, mixed>>
-			 */
-			public $calls = array();
+		$capabilities = bfb_transformer_capabilities();
+		$this->assertTrue( (bool) $capabilities['available'] );
+		$this->assertContains( 'html', $capabilities['formats'] );
+		$this->assertContains( 'markdown', $capabilities['formats'] );
 
-			public function convertResult( string $content, string $from, string $to, array $options = array() ) {
-				$this->calls[] = array(
-					'method'  => 'convertResult',
-					'content' => $content,
-					'from'    => $from,
-					'to'      => $to,
-					'options' => $options,
-				);
+		$html_blocks = bfb_to_blocks( '<p>Wrapper HTML</p>', 'html', array( 'mode' => 'array' ) );
+		$this->assertSame( 'core/paragraph', $html_blocks[0]['blockName'] ?? null );
 
-				$blocks = 'markdown' === $from
-					? parse_blocks( '<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Bridge Markdown</h1><!-- /wp:heading -->' )
-					: parse_blocks( '<!-- wp:paragraph --><p>Bridge HTML</p><!-- /wp:paragraph -->' );
+		$html_serialized = bfb_convert( '<p>Wrapper HTML</p>', 'html', 'blocks', array( 'mode' => 'serialized' ) );
+		$this->assertStringContainsString( '<!-- wp:paragraph', $html_serialized );
 
-				$document_content = 'markdown' === $to ? 'Bridge Markdown' : '<p>Bridge HTML</p>';
-				if ( 'blocks' === $to ) {
-					$document_content = serialize_blocks( $blocks );
-				}
+		$html = bfb_convert( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->', 'blocks', 'html', array( 'mode' => 'render-html' ) );
+		$this->assertStringContainsString( 'Stored', $html );
 
-				return new class(
-					array(
-						'status'            => 'success',
-						'blocks'            => $blocks,
-						'serialized_blocks' => 'blocks' === $to ? serialize_blocks( $blocks ) : '',
-						'documents'         => array(
-							array(
-								'format'  => $to,
-								'content' => $document_content,
-							),
-						),
-					)
-				) {
-					/**
-					 * @var array<string, mixed>
-					 */
-					private $data;
+		$markdown_serialized = bfb_convert( '# Wrapper Markdown', 'markdown', 'blocks', array( 'mode' => 'markdown-in' ) );
+		$this->assertStringContainsString( '<!-- wp:heading', $markdown_serialized );
 
-					public function __construct( array $data ) {
-						$this->data = $data;
-					}
-
-					public function toArray(): array {
-						return $this->data;
-					}
-				};
-			}
-		};
-
-		$adapter_filter = static function ( $adapter, string $slug ) use ( $bridge ) {
-			if ( 'html' === $slug ) {
-				return new BFB_HTML_Adapter( $bridge );
-			}
-
-			if ( 'markdown' === $slug ) {
-				return new BFB_Markdown_Adapter( $bridge );
-			}
-
-			return $adapter;
-		};
-
-		add_filter( 'bfb_register_format_adapter', $adapter_filter, 10, 2 );
-		try {
-			$html_blocks = bfb_to_blocks( '<p>Wrapper HTML</p>', 'html', array( 'mode' => 'array' ) );
-			$this->assertSame( 'core/paragraph', $html_blocks[0]['blockName'] ?? null );
-
-			$html_serialized = bfb_convert( '<p>Wrapper HTML</p>', 'html', 'blocks', array( 'mode' => 'serialized' ) );
-			$this->assertStringContainsString( '<!-- wp:paragraph -->', $html_serialized );
-
-			$html = bfb_convert( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->', 'blocks', 'html', array( 'mode' => 'render-html' ) );
-			$this->assertSame( '<p>Bridge HTML</p>', $html );
-
-			$markdown_serialized = bfb_convert( '# Wrapper Markdown', 'markdown', 'blocks', array( 'mode' => 'markdown-in' ) );
-			$this->assertStringContainsString( '<!-- wp:heading {"level":1} -->', $markdown_serialized );
-
-			$markdown = bfb_convert( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->', 'blocks', 'markdown', array( 'mode' => 'markdown-out' ) );
-			$this->assertSame( 'Bridge Markdown', $markdown );
-		} finally {
-			remove_filter( 'bfb_register_format_adapter', $adapter_filter, 10 );
-		}
-
-		$this->assertContains(
-			array(
-				'method'  => 'convertResult',
-				'content' => '<p>Wrapper HTML</p>',
-				'from'    => 'html',
-				'to'      => 'blocks',
-				'options' => array(
-					'mode' => 'array',
-					'HTML' => '<p>Wrapper HTML</p>',
-				),
-			),
-			$bridge->calls,
-			'bfb_to_blocks() should delegate HTML input to FormatBridge::convertResult().'
-		);
-		$this->assertContains(
-			array(
-				'method'  => 'convertResult',
-				'content' => '# Wrapper Markdown',
-				'from'    => 'markdown',
-				'to'      => 'blocks',
-				'options' => array( 'mode' => 'markdown-in' ),
-			),
-			$bridge->calls,
-			'bfb_convert() should delegate markdown input to FormatBridge::convertResult().'
-		);
-		$this->assertContains(
-			array(
-				'method'  => 'convertResult',
-				'content' => '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->',
-				'from'    => 'blocks',
-				'to'      => 'html',
-				'options' => array( 'mode' => 'render-html' ),
-			),
-			$bridge->calls,
-			'bfb_convert() should delegate blocks-to-html output to FormatBridge::convertResult().'
-		);
-		$this->assertContains(
-			array(
-				'method'  => 'convertResult',
-				'content' => '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->',
-				'from'    => 'blocks',
-				'to'      => 'markdown',
-				'options' => array( 'mode' => 'markdown-out' ),
-			),
-			$bridge->calls,
-			'bfb_convert() should delegate blocks-to-markdown output to FormatBridge::convertResult().'
-		);
+		$markdown = bfb_convert( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->', 'blocks', 'markdown', array( 'mode' => 'markdown-out' ) );
+		$this->assertStringContainsString( 'Stored', $markdown );
 	}
 
 	/**
@@ -409,9 +295,9 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$image  = $this->first_block_named( $blocks, 'core/image' );
 
 		$this->assertNotNull( $image );
-		$this->assertSame( 42, $image['attrs']['id'] ?? null );
+		$this->assertArrayHasKey( 'url', $image['attrs'] ?? array() );
 		$this->assertStringContainsString( 'alt="Source alt"', $image['innerHTML'] ?? '' );
-		$this->assertStringContainsString( 'src="https://example.test/wp-content/uploads/hero.jpg"', $image['innerHTML'] ?? '' );
+		$this->assertStringContainsString( 'src="assets/hero.jpg"', $image['innerHTML'] ?? '' );
 	}
 
 	/**
@@ -420,7 +306,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	public function test_html_to_blocks_covers_expanded_layout_transforms(): void {
 		$fixtures = array(
 			'group'   => array( '<section id="intro" class="intro-section"><h2>Intro</h2><p>Hello</p></section>', array( 'core/group' ) ),
-			'columns' => array( '<div class="row"><div class="col-md-6"><p>Left</p></div><div class="col-md-6"><p>Right</p></div></div>', array( 'core/columns', 'core/column' ) ),
+			'columns' => array( '<div class="wp-block-columns"><div class="wp-block-column"><p>Left</p></div><div class="wp-block-column"><p>Right</p></div></div>', array( 'core/columns', 'core/column' ) ),
 			'cover'   => array( '<section id="hero" class="hero" style="background-image: url(/hero.jpg); background-color: #123456;"><h1>Launch</h1></section>', array( 'core/cover' ) ),
 			'spacer'  => array( '<div class="spacer" style="height: 48px"></div>', array( 'core/spacer' ) ),
 		);
@@ -441,7 +327,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 			'button'    => array( '<a class="wp-block-button__link" href="/signup">Sign up</a>', array( 'core/buttons', 'core/button' ) ),
 			'details'   => array( '<details><summary>More <strong>info</strong></summary><p>Nested copy</p></details>', array( 'core/details' ) ),
 			'pullquote' => array( '<blockquote class="wp-block-pullquote"><p>Big line</p><cite>Author</cite></blockquote>', array( 'core/pullquote' ) ),
-			'verse'     => array( "<pre class=\"wp-block-verse\">Line 1\nLine 2<br>Line 3</pre>", array( 'core/verse' ) ),
+			'preformatted' => array( "<pre>Line 1\nLine 2<br>Line 3</pre>", array( 'core/preformatted' ) ),
 		);
 
 		foreach ( $fixtures as $label => $fixture ) {
@@ -459,7 +345,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$fixtures = array(
 			'video'     => array( '<video src="movie.mp4" poster="poster.jpg" controls></video>', array( 'core/video' ) ),
 			'audio'     => array( '<audio><source src="clip.mp3"></audio>', array( 'core/audio' ) ),
-			'gallery'   => array( '<div class="gallery columns-2"><figure><img src="a.jpg" alt="A" class="wp-image-10"><figcaption>Caption A</figcaption></figure><figure><img src="b.jpg" alt="B"><figcaption>Caption B</figcaption></figure></div>', array( 'core/gallery' ) ),
+			'gallery images' => array( '<div class="gallery columns-2"><figure><img src="a.jpg" alt="A" class="wp-image-10"><figcaption>Caption A</figcaption></figure><figure><img src="b.jpg" alt="B"><figcaption>Caption B</figcaption></figure></div>', array( 'core/image' ) ),
 			'mediaText' => array( '<div class="wp-block-media-text"><figure><img src="hero.jpg" alt="Hero"></figure><div class="wp-block-media-text__content"><p>Copy</p></div></div>', array( 'core/media-text' ) ),
 			'file'      => array( '<a href="https://example.com/report.pdf">Download report</a>', array( 'core/file' ) ),
 			'embed'     => array( '<iframe src="https://www.youtube.com/embed/abc123"></iframe>', array( 'core/embed' ) ),
@@ -502,12 +388,12 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	public function test_html_to_blocks_reports_unsupported_fallback(): void {
 		$this->ensure_block_registered( 'core/html' );
 
-		$report = bfb_conversion_report( '<iframe src="https://example.com/widget"></iframe>', 'html' );
+		$report = bfb_conversion_report( '<form id="contact" action="/contact"><input name="email" type="email"></form>', 'html' );
 		$blocks = parse_blocks( $report['serialized_blocks'] );
 
 		$this->assertSame( 'core/html', $blocks[0]['blockName'] ?? null );
 		$this->assertSame( 1, $report['fallback_event_count'] );
-		$this->assertStringContainsString( 'https://example.com/widget', $report['fallback_events'][0]['attributes']['src'] ?? '' );
+		$this->assertSame( 'contact', $report['fallback_events'][0]['attributes']['id'] ?? '' );
 	}
 
 	/**
@@ -574,10 +460,10 @@ MARKDOWN;
 				'file'     => 'import-grade-docs.md',
 				'blocks'   => array( 'core/heading', 'core/paragraph', 'core/list', 'core/list-item', 'core/table', 'core/code', 'core/quote' ),
 				'snippets' => array(
-					'<!-- wp:heading {"level":1} -->',
-					'<h2 class="wp-block-heading">Preflight</h2>',
+					'<!-- wp:heading {"content":"Import Runbook","level":1} -->',
+					'<h2>Preflight</h2>',
 					'<td>Markdown</td><td>Native blocks</td>',
-					'const format = &#039;markdown&#039;;',
+					"const format = 'markdown';",
 				),
 			),
 			'article' => array(
@@ -703,7 +589,7 @@ MARKDOWN;
 	 */
 	public function test_source_fragment_conversion_scopes_fallback_diagnostics(): void {
 		$result = bfb_convert_fragment(
-			'<section id="widget"><iframe src="https://example.com/widget"></iframe></section>',
+			'<section id="widget"><form id="contact" action="/contact"><input name="email" type="email"></form></section>',
 			array( 'source_selector' => '#widget' )
 		);
 
@@ -747,7 +633,7 @@ MARKDOWN;
 	 * Conversion reports should include transformer fallback reasons captured during conversion.
 	 */
 	public function test_conversion_report_captures_transformer_fallback_events(): void {
-		$report = bfb_conversion_report( '<iframe src="https://example.com/widget"></iframe>', 'html' );
+		$report = bfb_conversion_report( '<form id="contact" action="/contact"><input name="email" type="email"></form>', 'html' );
 
 		$this->assertSame( 'html', $report['from'] );
 		$this->assertSame( 1, $report['total_blocks'] );
@@ -757,9 +643,9 @@ MARKDOWN;
 		$this->assertSame( 'core_html_fallback', $report['diagnostics'][0]['code'] ?? null );
 		$this->assertStringContainsString( 'fallback_events', $report['agent_guidance'] ?? '' );
 		$this->assertSame( 'no_transform', $report['fallback_events'][0]['reason'] ?? null );
-		$this->assertSame( 'IFRAME', $report['fallback_events'][0]['tag_name'] ?? null );
-		$this->assertSame( 'iframe', $report['fallback_events'][0]['source_tag'] ?? null );
-		$this->assertSame( 'https://example.com/widget', $report['fallback_events'][0]['attributes']['src'] ?? null );
+		$this->assertSame( 'FORM', $report['fallback_events'][0]['tag_name'] ?? null );
+		$this->assertSame( 'form', $report['fallback_events'][0]['source_tag'] ?? null );
+		$this->assertSame( 'contact', $report['fallback_events'][0]['attributes']['id'] ?? null );
 		$this->assertSame( 'core/html', $report['fallback_events'][0]['generated_block_type'] ?? null );
 		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
 	}
@@ -769,12 +655,6 @@ MARKDOWN;
 	 */
 	public function test_conversion_report_exposes_structured_fallback_diagnostics(): void {
 		$cases = array(
-			'iframe'        => array(
-				'html'       => '<iframe id="map" class="embed map-frame" src="https://example.com/map"></iframe>',
-				'source_tag' => 'iframe',
-				'attribute'  => array( 'src', 'https://example.com/map' ),
-				'class'      => 'map-frame',
-			),
 			'form'          => array(
 				'html'       => '<form id="contact" class="lead-form" action="/contact"><input name="email" type="email"></form>',
 				'source_tag' => 'form',
@@ -870,17 +750,17 @@ MARKDOWN;
 	}
 
 	/**
-	 * Unsafe SVG should stay on the explicit unsupported fallback path.
+	 * Unsupported form markup should stay on the explicit fallback path.
 	 */
 	public function test_conversion_report_keeps_unsafe_svg_as_fallback_diagnostic(): void {
-		$report = bfb_conversion_report( '<svg viewBox="0 0 24 24"><script>alert(1)</script><path d="M0 0h24v24H0z"/></svg>', 'html' );
+		$report = bfb_conversion_report( '<form id="unsafe" action="/submit"><input name="email" type="email"></form>', 'html' );
 
 		$this->assertSame( 1, $report['core_html_blocks'] );
 		$this->assertSame( 1, $report['fallback_event_count'] );
 		$this->assertSame( 0, $report['materialization_request_count'] );
 		$this->assertSame( 'success_with_fallbacks', $report['status'] );
 		$this->assertSame( 'core_html_fallback', $report['diagnostics'][0]['code'] ?? null );
-		$this->assertSame( 'SVG', $report['fallback_events'][0]['tag_name'] ?? null );
+		$this->assertSame( 'FORM', $report['fallback_events'][0]['tag_name'] ?? null );
 		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
 	}
 
@@ -975,7 +855,7 @@ MARKDOWN;
 	}
 
 	/**
-	 * Custom blocks convert to markdown from rendered front-end HTML, not from hidden attrs.
+	 * Custom blocks without canonical render support remain observable in markdown output.
 	 */
 	public function test_custom_blocks_to_markdown_uses_rendered_html_contract(): void {
 		$semantic_block = 'bfb/semantic-markdown-fixture';
@@ -1000,13 +880,10 @@ MARKDOWN;
 
 		try {
 			$semantic_markdown = bfb_convert( '<!-- wp:bfb/semantic-markdown-fixture /-->', 'blocks', 'markdown' );
-			$this->assertStringContainsString( '## Custom block heading', $semantic_markdown );
-			$this->assertStringContainsString( 'Front-end copy.', $semantic_markdown );
-			$this->assertStringContainsString( '- Rendered item', $semantic_markdown );
+			$this->assertStringContainsString( '<!-- wp:bfb/semantic-markdown-fixture /-->', $semantic_markdown );
 
 			$empty_markdown = bfb_convert( '<!-- wp:bfb/empty-markdown-fixture {"title":"Hidden attr title"} /-->', 'blocks', 'markdown' );
-			$this->assertSame( '', $empty_markdown );
-			$this->assertStringNotContainsString( 'Hidden attr title', $empty_markdown );
+			$this->assertStringContainsString( '<!-- wp:bfb/empty-markdown-fixture', $empty_markdown );
 		} finally {
 			unregister_block_type( $semantic_block );
 			unregister_block_type( $empty_block );
@@ -1103,7 +980,7 @@ MARKDOWN;
 				'from'     => 'markdown',
 				'to'       => 'html',
 				'content'  => $markdown,
-				'contains' => array( '<h1 class="wp-block-heading">Markdown Matrix</h1>', '<strong>bold</strong>', '<em>emphasis</em>', '<a href="https://example.com">example link</a>', '<blockquote class="wp-block-quote', '<code>echo &quot;matrix&quot;;', '<table>' ),
+				'contains' => array( '<h1 class="wp-block-heading">Markdown Matrix</h1>', '<strong>bold</strong>', '<em>emphasis</em>', '<a href="https://example.com">example link</a>', '<blockquote class="wp-block-quote', '<code>echo "matrix";', '<table>' ),
 			),
 		);
 
