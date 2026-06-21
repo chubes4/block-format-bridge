@@ -51,11 +51,11 @@ document metadata envelope; callers that import files are responsible for stripp
 passing the body to `bfb_convert( $markdown, 'markdown', 'blocks' )`. BFB also does not support MDX component syntax unless
 a future dedicated adapter is registered for it.
 
-Every cross-format conversion routes through the block-array pivot:
+Every cross-format conversion routes through Blocks Engine FormatBridge:
 
 ```
-$blocks = bfb_to_blocks( $content, $from );
-return    $to_adapter->from_blocks( $blocks );
+$result = bfb_transformer_convert_result( $content, $from, $to );
+return bfb_transformer_result_content( $result, $to );
 ```
 
 Declared-format normalization validates the declared format directly:
@@ -67,9 +67,9 @@ Declared-format normalization validates the declared format directly:
 
 ### BFB and Blocks Engine Responsibility Split
 
-BFB owns format routing and orchestration. It decides which adapter handles a source format, normalises non-block
-formats through the block-array pivot, and exposes one public API for callers that do not want to know which lower-level
-library performs a specific conversion. It does **not** own per-block raw transforms.
+BFB owns the public API and orchestration around the canonical transformer. It exposes one public API for callers that do
+not want to know which lower-level library performs a specific conversion. It does **not** own per-block raw transforms or
+no-transformer conversion fallbacks.
 
 HTML, markdown, and block transform behavior belongs to the Blocks Engine PHP Transformer. BFB keeps the historical
 `bfb_*` APIs and delegates conversion through the active
@@ -178,9 +178,9 @@ composer build  # verifies the thin wrapper build has no bundled transformer art
 
 ### `bfb_convert( $content, $from, $to ): string`
 
-Universal conversion. Routes through the block-array pivot via the adapter registry.
+Universal conversion. Routes through Blocks Engine FormatBridge; BFB does not assemble no-transformer conversion fallbacks.
 
-When `$from === $to`, `bfb_convert()` returns the content unchanged. Use `bfb_normalize()` for same-format validation.
+Use `bfb_normalize()` for same-format validation.
 
 ```php
 // Markdown → blocks (serialised block markup)

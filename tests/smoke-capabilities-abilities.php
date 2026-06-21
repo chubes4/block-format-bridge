@@ -179,8 +179,8 @@ $converted        = $convert_callback(
 		'to'      => 'markdown',
 	)
 );
-bfb_capabilities_smoke_assert( true === $converted['success'], 'Convert ability should return a success envelope.' );
-bfb_capabilities_smoke_assert( 'same' === $converted['content'], 'Convert ability should call bfb_convert().' );
+bfb_capabilities_smoke_assert( false === $converted['success'], 'Convert ability should fail without Blocks Engine FormatBridge.' );
+bfb_capabilities_smoke_assert( 'bfb_conversion_failed' === $converted['error']['code'], 'Convert ability should surface missing FormatBridge as a conversion failure.' );
 
 $normalize_callback = $abilities['block-format-bridge/normalize']['execute_callback'];
 $normalized         = $normalize_callback(

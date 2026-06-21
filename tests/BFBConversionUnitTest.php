@@ -153,12 +153,13 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 
 		add_filter( 'bfb_register_format_adapter', $adapter_filter, 10, 2 );
 		try {
-			bfb_convert( 'probe source', 'probe-options', 'blocks', array( 'mode' => 'fidelity' ) );
+			$result = bfb_convert( 'probe source', 'probe-options', 'blocks', array( 'mode' => 'fidelity' ) );
 		} finally {
 			remove_filter( 'bfb_register_format_adapter', $adapter_filter, 10 );
 		}
 
-		$this->assertSame( array( 'mode' => 'fidelity' ), $probe->received_options, 'Generic adapters should receive public conversion options.' );
+		$this->assertSame( '', $result, 'Custom adapters should not provide no-transformer conversion fallbacks.' );
+		$this->assertSame( array(), $probe->received_options, 'Custom adapters should not receive conversion options when FormatBridge cannot convert the format.' );
 	}
 
 	/**
@@ -685,16 +686,8 @@ MARKDOWN;
 		$this->assertSame( $transformer_result['metrics'], $compat['transformer_metrics'] );
 		$this->assertSame( $transformer_result['coverage'], $compat['coverage'] );
 
-		$compat_no_transformer = bfb_compat_no_transformer_conversion_report_from_blocks( '<p>Fixture.</p>', 'html', $blocks );
-		foreach ( $base_public_keys as $key ) {
-			$this->assertArrayHasKey( $key, $compat_no_transformer, "No-transformer compatibility projection should preserve public key {$key}." );
-		}
-		$this->assertArrayNotHasKey( 'transformer_result', $compat_no_transformer, 'No-transformer compatibility projection should not synthesize canonical transformer metadata.' );
-		$this->assertSame(
-			$compat_no_transformer,
-			bfb_legacy_conversion_report_from_blocks( '<p>Fixture.</p>', 'html', $blocks ),
-			'Legacy helper should remain as a compatibility alias for existing callers.'
-		);
+		$this->assertFalse( function_exists( 'bfb_compat_no_transformer_conversion_report_from_blocks' ) );
+		$this->assertFalse( function_exists( 'bfb_legacy_conversion_report_from_blocks' ) );
 	}
 
 	/**
@@ -707,70 +700,6 @@ MARKDOWN;
 		$this->assertSame( 0, $report['fallback_event_count'] );
 		$this->assertSame( array(), $report['fallback_diagnostics'] );
 		$this->assertSame( '', $report['serialized_blocks'] );
-	}
-
-	/**
-	 * Conversion reports should surface generic downstream materialization requests.
-	 */
-	public function test_conversion_report_surfaces_safe_svg_materialization_metadata(): void {
-		$safe_svg = '<svg viewBox="0 0 24 24" aria-label="Check"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-
-		$pre_result = static function ( $pre_result, string $content ): array {
-			unset( $pre_result );
-
-				do_action(
-					'bfb_materialization_request',
-				array(
-					'id'             => 'svg-icon-check',
-					'kind'           => 'asset',
-					'source'         => 'inline',
-					'classification' => 'safe_svg_icon',
-					'media_type'     => 'image/svg+xml',
-					'filename'       => 'svg-icon-check.svg',
-					'placeholder'    => 'bfb-materialization://svg-icon-check',
-					'payload'        => $content,
-					'alt'            => 'Check',
-					'replacement'    => array(
-						'block_name' => 'core/image',
-						'attrs'      => array(
-							'url' => 'bfb-materialization://svg-icon-check',
-							'alt' => 'Check',
-						),
-					),
-				)
-			);
-
-			return array(
-				array(
-					'blockName'    => 'core/image',
-					'attrs'        => array(
-						'url' => 'bfb-materialization://svg-icon-check',
-						'alt' => 'Check',
-					),
-					'innerBlocks'  => array(),
-					'innerHTML'    => '<figure class="wp-block-image"><img src="bfb-materialization://svg-icon-check" alt="Check"/></figure>',
-					'innerContent' => array( '<figure class="wp-block-image"><img src="bfb-materialization://svg-icon-check" alt="Check"/></figure>' ),
-				),
-			);
-		};
-
-		add_filter( 'bfb_html_to_blocks_pre_result', $pre_result, 10, 2 );
-		try {
-			$report = bfb_conversion_report( $safe_svg, 'html' );
-		} finally {
-			remove_filter( 'bfb_html_to_blocks_pre_result', $pre_result, 10 );
-		}
-
-		$this->assertSame( 1, $report['total_blocks'] );
-		$this->assertSame( 0, $report['core_html_blocks'] );
-		$this->assertSame( 0, $report['fallback_event_count'] );
-		$this->assertSame( 1, $report['materialization_request_count'] );
-		$this->assertSame( 'success_with_materialization_requests', $report['status'] );
-		$this->assertSame( 'materialization_requested', $report['diagnostics'][0]['code'] ?? null );
-		$this->assertSame( 'safe_svg_icon', $report['materialization_requests'][0]['classification'] ?? null );
-		$this->assertSame( 'image/svg+xml', $report['materialization_requests'][0]['media_type'] ?? null );
-		$this->assertStringContainsString( '<svg viewBox=', $report['materialization_requests'][0]['payload'] ?? '' );
-		$this->assertStringNotContainsString( '<!-- wp:html', $report['serialized_blocks'] );
 	}
 
 	/**
