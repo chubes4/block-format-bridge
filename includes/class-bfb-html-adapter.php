@@ -44,6 +44,24 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 	}
 
 	/**
+	 * Convert through the injected or global canonical result surface.
+	 *
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param string               $to      Target format slug.
+	 * @param array<string, mixed> $options Conversion options.
+	 * @return array<string, mixed>|null
+	 */
+	private function convert_result( string $content, string $from, string $to, array $options = array() ): ?array {
+		if ( $this->bridge && method_exists( $this->bridge, 'convertResult' ) ) {
+			$result = $this->bridge->convertResult( $content, $from, $to, $options );
+			return is_object( $result ) && method_exists( $result, 'toArray' ) ? $result->toArray() : ( is_array( $result ) ? $result : null );
+		}
+
+		return function_exists( 'bfb_transformer_convert_result' ) ? bfb_transformer_convert_result( $content, $from, $to, $options ) : null;
+	}
+
+	/**
 	 * @inheritDoc
 	 */
 	public function to_blocks( string $content, array $options = array() ): array {
@@ -79,7 +97,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return bfb_filter_html_to_blocks_result( $pre_result, $content, $options, $args );
 		}
 
-		if ( ! function_exists( 'bfb_transformer_convert_result' ) && ! $this->bridge ) {
+		if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 			do_action(
 				'bfb_diagnostic',
 				'blocks_engine_html_transformer_unavailable',
@@ -90,11 +108,8 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		}
 
 		try {
-			$result = function_exists( 'bfb_transformer_convert_result' ) ? bfb_transformer_convert_result( $content, 'html', 'blocks', $args ) : null;
+			$result = $this->convert_result( $content, 'html', 'blocks', $args );
 			$blocks = is_array( $result ) && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ? $result['blocks'] : null;
-			if ( null === $blocks && $this->bridge ) {
-				$blocks = $this->bridge->toBlocks( $content, 'html', $args );
-			}
 			return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
 		} catch ( Throwable $e ) {
 			do_action(
@@ -120,7 +135,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 			return '';
 		}
 
-		if ( ! function_exists( 'bfb_transformer_convert_result' ) && ! $this->bridge ) {
+		if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 			do_action(
 				'bfb_diagnostic',
 				'blocks_engine_html_transformer_unavailable',
@@ -131,18 +146,12 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		}
 
 		try {
-			if ( function_exists( 'bfb_transformer_convert_result' ) ) {
-				$result = bfb_transformer_convert_result( serialize_blocks( $blocks ), 'blocks', 'html', $options );
-				if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
-					return $result['documents'][0]['content'];
-				}
+			$result = $this->convert_result( serialize_blocks( $blocks ), 'blocks', 'html', $options );
+			if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
+				return $result['documents'][0]['content'];
 			}
 
-			if ( ! $this->bridge ) {
-				return '';
-			}
-
-			return $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'html', $options );
+			return '';
 		} catch ( Throwable $e ) {
 			do_action(
 				'bfb_diagnostic',

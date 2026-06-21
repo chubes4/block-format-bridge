@@ -45,6 +45,24 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 	}
 
 	/**
+	 * Convert through the injected or global canonical result surface.
+	 *
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param string               $to      Target format slug.
+	 * @param array<string, mixed> $options Conversion options.
+	 * @return array<string, mixed>|null
+	 */
+	private function convert_result( string $content, string $from, string $to, array $options = array() ): ?array {
+		if ( $this->bridge && method_exists( $this->bridge, 'convertResult' ) ) {
+			$result = $this->bridge->convertResult( $content, $from, $to, $options );
+			return is_object( $result ) && method_exists( $result, 'toArray' ) ? $result->toArray() : ( is_array( $result ) ? $result : null );
+		}
+
+		return function_exists( 'bfb_transformer_convert_result' ) ? bfb_transformer_convert_result( $content, $from, $to, $options ) : null;
+	}
+
+	/**
 	 * @inheritDoc
 	 */
 	public function to_blocks( string $content, array $options = array() ): array {
@@ -76,12 +94,12 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		}
 
 		try {
-			$result = function_exists( 'bfb_transformer_convert_result' ) ? bfb_transformer_convert_result( $content, 'markdown', 'blocks', $options ) : null;
+			$result = $this->convert_result( $content, 'markdown', 'blocks', $options );
 			if ( is_array( $result ) && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ) {
 				return $result['blocks'];
 			}
 
-			return $this->bridge ? $this->bridge->toBlocks( $content, 'markdown', $options ) : array();
+			return array();
 		} catch ( Throwable $e ) {
 			do_action(
 				'bfb_diagnostic',
@@ -121,15 +139,9 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 
 		try {
 			$markdown = '';
-			if ( function_exists( 'bfb_transformer_convert_result' ) ) {
-				$result = bfb_transformer_convert_result( serialize_blocks( $blocks ), 'blocks', 'markdown', $options );
-				if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
-					$markdown = $result['documents'][0]['content'];
-				}
-			}
-
-			if ( '' === $markdown && $this->bridge ) {
-				$markdown = $this->bridge->convert( serialize_blocks( $blocks ), 'blocks', 'markdown', $options );
+			$result = $this->convert_result( serialize_blocks( $blocks ), 'blocks', 'markdown', $options );
+			if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
+				$markdown = $result['documents'][0]['content'];
 			}
 
 			return (string) apply_filters( 'bfb_markdown_output', $markdown, '', $blocks );

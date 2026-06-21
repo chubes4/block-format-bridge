@@ -206,17 +206,108 @@ if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 	 * @return array<string, mixed>|null Canonical result array, or null when unavailable.
 	 */
 	function bfb_transformer_convert_result( string $content, string $from, string $to, array $options = array() ): ?array {
-		if ( function_exists( 'blocks_engine_php_transformer_convert_format' ) ) {
-			return blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
-		}
+		$options = bfb_transformer_options( $options );
 
 		$bridge = bfb_format_bridge();
-		if ( ! $bridge ) {
+		if ( $bridge ) {
+			$result = $bridge->convertResult( $content, $from, $to, $options );
+			return $result->toArray();
+		}
+
+		if ( ! function_exists( 'blocks_engine_php_transformer_convert_format' ) ) {
 			return null;
 		}
 
-		$result = $bridge->convertResult( $content, $from, $to, $options );
-		return $result->toArray();
+		return blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
+	}
+}
+
+if ( ! function_exists( 'bfb_transformer_options' ) ) {
+	/**
+	 * Map BFB's public options into the canonical FormatBridge option contract.
+	 *
+	 * BFB historically accepted arbitrary `mode` labels from callers. Blocks
+	 * Engine reserves `mode` for normalization and only accepts strict/lenient.
+	 *
+	 * @param array<string, mixed> $options Public BFB conversion options.
+	 * @return array<string, mixed> Canonical transformer options.
+	 */
+	function bfb_transformer_options( array $options ): array {
+		if ( isset( $options['mode'] ) && ! in_array( (string) $options['mode'], array( 'strict', 'lenient' ), true ) ) {
+			unset( $options['mode'] );
+		}
+
+		return $options;
+	}
+}
+
+if ( ! function_exists( 'bfb_transformer_result_content' ) ) {
+	/**
+	 * Extract the primary converted content from a canonical transformer result.
+	 *
+	 * @param array<string, mixed> $result TransformerResult::toArray() data.
+	 * @param string               $to     Target format slug.
+	 * @return string Converted content.
+	 */
+	function bfb_transformer_result_content( array $result, string $to ): string {
+		if ( 'blocks' === $to && isset( $result['serialized_blocks'] ) && is_string( $result['serialized_blocks'] ) ) {
+			return $result['serialized_blocks'];
+		}
+
+		if ( isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
+			return $result['documents'][0]['content'];
+		}
+
+		return '';
+	}
+}
+
+if ( ! function_exists( 'bfb_prepare_transformer_conversion' ) ) {
+	/**
+	 * Preserve BFB's public input filters before delegating to FormatBridge.
+	 *
+	 * @param string               $content Source content.
+	 * @param string               $from    Source format slug.
+	 * @param string               $to      Target format slug.
+	 * @param array<string, mixed> $options Per-call conversion options.
+	 * @return array{content:string,options:array<string,mixed>,pre_result:array<string,mixed>|null}
+	 */
+	function bfb_prepare_transformer_conversion( string $content, string $from, string $to, array $options ): array {
+		$public_options = $options;
+		$pre_result = null;
+
+		if ( 'markdown' === $from ) {
+			$content = (string) apply_filters( 'bfb_markdown_input', $content );
+		}
+
+		if ( 'html' === $from && 'blocks' === $to ) {
+			$args         = array_merge( $options, array( 'HTML' => $content ) );
+			$args         = (array) apply_filters( 'bfb_html_to_blocks_args', $args, $content, $options );
+			$args['HTML'] = $content;
+			$options      = $args;
+
+			$filtered = apply_filters( 'bfb_html_to_blocks_pre_result', null, $content, $public_options, $args );
+			if ( is_array( $filtered ) ) {
+				$pre_result = array(
+					'schema'            => 'block-format-bridge/pre-result/v1',
+					'status'            => 'success',
+					'blocks'            => $filtered,
+					'serialized_blocks' => serialize_blocks( $filtered ),
+					'documents'         => array(
+						array(
+							'format'  => 'blocks',
+							'content' => serialize_blocks( $filtered ),
+						),
+					),
+				);
+			}
+		}
+
+		return array(
+			'content'    => $content,
+			'options'    => $options,
+			'pre_result' => $pre_result,
+		);
 	}
 }
 
@@ -308,14 +399,28 @@ if ( ! function_exists( 'bfb_to_blocks' ) ) {
 	 * @return array<int|string, array{blockName: string|null, attrs: array, innerBlocks: array<array>, innerHTML: string, innerContent: array}> Block array. Empty array on unsupported source.
 	 */
 	function bfb_to_blocks( string $content, string $from, array $options = array() ): array {
-		if ( 'blocks' === $from ) {
+		$prepared = bfb_prepare_transformer_conversion( $content, $from, 'blocks', $options );
+		$result   = $prepared['pre_result'];
+
+		if ( null === $result ) {
+			$result = bfb_transformer_convert_result( $prepared['content'], $from, 'blocks', $prepared['options'] );
+		}
+
+		if ( null === $result && 'blocks' === $from ) {
 			return parse_blocks( $content );
+		}
+
+		if ( is_array( $result ) && 'failed' !== ( $result['status'] ?? '' ) && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ) {
+			$blocks = $result['blocks'];
+			if ( 'html' === $from ) {
+				$blocks = bfb_filter_html_to_blocks_result( $blocks, $content, $options, $prepared['options'] );
+			}
+
+			return $blocks;
 		}
 
 		$from_adapter = bfb_get_adapter( $from );
 		if ( ! $from_adapter ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Matches existing public conversion failure diagnostics.
-			error_log( sprintf( '[Block Format Bridge] No adapter registered for source format "%s".', $from ) );
 			return array();
 		}
 
@@ -346,8 +451,25 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 	 * @return string Converted content. Empty string on failure.
 	 */
 	function bfb_convert( string $content, string $from, string $to, array $options = array() ): string {
-		if ( $from === $to ) {
-			return $content;
+		$prepared = bfb_prepare_transformer_conversion( $content, $from, $to, $options );
+		$result   = $prepared['pre_result'];
+
+		if ( null === $result ) {
+			$result = bfb_transformer_convert_result( $prepared['content'], $from, $to, $prepared['options'] );
+		}
+
+		if ( is_array( $result ) && 'failed' !== ( $result['status'] ?? '' ) ) {
+			if ( 'html' === $from && 'blocks' === $to && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ) {
+				$blocks = bfb_filter_html_to_blocks_result( $result['blocks'], $content, $options, $prepared['options'] );
+				return serialize_blocks( $blocks );
+			}
+
+			$converted = bfb_transformer_result_content( $result, $to );
+			if ( 'markdown' === $to ) {
+				return (string) apply_filters( 'bfb_markdown_output', $converted, '', isset( $result['blocks'] ) && is_array( $result['blocks'] ) ? $result['blocks'] : array() );
+			}
+
+			return $converted;
 		}
 
 		$blocks = bfb_to_blocks( $content, $from, $options );
@@ -362,8 +484,6 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 
 		$to_adapter = bfb_get_adapter( $to );
 		if ( ! $to_adapter ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Matches existing public conversion failure diagnostics.
-			error_log( sprintf( '[Block Format Bridge] No adapter registered for target format "%s".', $to ) );
 			return '';
 		}
 
