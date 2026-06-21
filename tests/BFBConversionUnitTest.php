@@ -246,31 +246,50 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 			 */
 			public $calls = array();
 
-			public function toBlocks( string $content, string $from, array $options = array() ): array {
+			public function convertResult( string $content, string $from, string $to, array $options = array() ) {
 				$this->calls[] = array(
-					'method'  => 'toBlocks',
-					'content' => $content,
-					'from'    => $from,
-					'options' => $options,
-				);
-
-				if ( 'markdown' === $from ) {
-					return parse_blocks( '<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Bridge Markdown</h1><!-- /wp:heading -->' );
-				}
-
-				return parse_blocks( '<!-- wp:paragraph --><p>Bridge HTML</p><!-- /wp:paragraph -->' );
-			}
-
-			public function convert( string $content, string $from, string $to, array $options = array() ): string {
-				$this->calls[] = array(
-					'method'  => 'convert',
+					'method'  => 'convertResult',
 					'content' => $content,
 					'from'    => $from,
 					'to'      => $to,
 					'options' => $options,
 				);
 
-				return 'markdown' === $to ? 'Bridge Markdown' : '<p>Bridge HTML</p>';
+				$blocks = 'markdown' === $from
+					? parse_blocks( '<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Bridge Markdown</h1><!-- /wp:heading -->' )
+					: parse_blocks( '<!-- wp:paragraph --><p>Bridge HTML</p><!-- /wp:paragraph -->' );
+
+				$document_content = 'markdown' === $to ? 'Bridge Markdown' : '<p>Bridge HTML</p>';
+				if ( 'blocks' === $to ) {
+					$document_content = serialize_blocks( $blocks );
+				}
+
+				return new class(
+					array(
+						'status'            => 'success',
+						'blocks'            => $blocks,
+						'serialized_blocks' => 'blocks' === $to ? serialize_blocks( $blocks ) : '',
+						'documents'         => array(
+							array(
+								'format'  => $to,
+								'content' => $document_content,
+							),
+						),
+					)
+				) {
+					/**
+					 * @var array<string, mixed>
+					 */
+					private $data;
+
+					public function __construct( array $data ) {
+						$this->data = $data;
+					}
+
+					public function toArray(): array {
+						return $this->data;
+					}
+				};
 			}
 		};
 
@@ -308,48 +327,50 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 
 		$this->assertContains(
 			array(
-				'method'  => 'toBlocks',
+				'method'  => 'convertResult',
 				'content' => '<p>Wrapper HTML</p>',
 				'from'    => 'html',
+				'to'      => 'blocks',
 				'options' => array(
 					'mode' => 'array',
 					'HTML' => '<p>Wrapper HTML</p>',
 				),
 			),
 			$bridge->calls,
-			'bfb_to_blocks() should delegate HTML input to FormatBridge::toBlocks().'
+			'bfb_to_blocks() should delegate HTML input to FormatBridge::convertResult().'
 		);
 		$this->assertContains(
 			array(
-				'method'  => 'toBlocks',
+				'method'  => 'convertResult',
 				'content' => '# Wrapper Markdown',
 				'from'    => 'markdown',
+				'to'      => 'blocks',
 				'options' => array( 'mode' => 'markdown-in' ),
 			),
 			$bridge->calls,
-			'bfb_convert() should delegate markdown input to FormatBridge::toBlocks().'
+			'bfb_convert() should delegate markdown input to FormatBridge::convertResult().'
 		);
 		$this->assertContains(
 			array(
-				'method'  => 'convert',
+				'method'  => 'convertResult',
 				'content' => '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->',
 				'from'    => 'blocks',
 				'to'      => 'html',
 				'options' => array( 'mode' => 'render-html' ),
 			),
 			$bridge->calls,
-			'bfb_convert() should delegate blocks-to-html output to FormatBridge::convert().'
+			'bfb_convert() should delegate blocks-to-html output to FormatBridge::convertResult().'
 		);
 		$this->assertContains(
 			array(
-				'method'  => 'convert',
+				'method'  => 'convertResult',
 				'content' => '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->',
 				'from'    => 'blocks',
 				'to'      => 'markdown',
 				'options' => array( 'mode' => 'markdown-out' ),
 			),
 			$bridge->calls,
-			'bfb_convert() should delegate blocks-to-markdown output to FormatBridge::convert().'
+			'bfb_convert() should delegate blocks-to-markdown output to FormatBridge::convertResult().'
 		);
 	}
 
