@@ -274,30 +274,59 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	/**
 	 * Resolved asset metadata should flow through BFB into transformer media transforms.
 	 */
-	public function test_asset_metadata_context_enriches_transformer_image_blocks(): void {
-		$serialized = bfb_convert(
-			'<img src="assets/hero.jpg" alt="Source alt" width="1200" height="800">',
-			'html',
-			'blocks',
-			array(
-				'context' => array(
-					'asset_metadata' => array(
-						'assets/hero.jpg' => array(
-							'id'  => 42,
-							'url' => 'https://example.test/wp-content/uploads/hero.jpg',
-						),
+	public function test_asset_metadata_context_delegates_to_transformer_image_parity(): void {
+		$options = array(
+			'context' => array(
+				'asset_metadata' => array(
+					'assets/hero.jpg' => array(
+						'id'  => 42,
+						'url' => 'https://example.test/wp-content/uploads/hero.jpg',
 					),
 				),
-			)
+			),
+		);
+
+		$serialized = bfb_convert(
+			'<main><img src="assets/hero.jpg" alt="Hero alt"></main>',
+			'html',
+			'blocks',
+			$options
 		);
 
 		$blocks = parse_blocks( $serialized );
 		$image  = $this->first_block_named( $blocks, 'core/image' );
 
 		$this->assertNotNull( $image );
-		$this->assertArrayHasKey( 'url', $image['attrs'] ?? array() );
-		$this->assertStringContainsString( 'alt="Source alt"', $image['innerHTML'] ?? '' );
-		$this->assertStringContainsString( 'src="assets/hero.jpg"', $image['innerHTML'] ?? '' );
+		$this->assertSame( 42, $image['attrs']['id'] ?? null );
+		$this->assertSame( 'https://example.test/wp-content/uploads/hero.jpg', $image['attrs']['url'] ?? null );
+		$this->assertSame( 'Hero alt', $image['attrs']['alt'] ?? null );
+		$this->assertStringContainsString( 'src="https://example.test/wp-content/uploads/hero.jpg"', $serialized );
+		$this->assertStringContainsString( 'class="wp-image-42"', $serialized );
+
+		$array_blocks = bfb_to_blocks( '<main><img src="assets/hero.jpg" alt="Hero alt"></main>', 'html', $options );
+		$array_image  = $this->first_block_named( $array_blocks, 'core/image' );
+		$this->assertNotNull( $array_image );
+		$this->assertSame( 42, $array_image['attrs']['id'] ?? null );
+		$this->assertSame( 'https://example.test/wp-content/uploads/hero.jpg', $array_image['attrs']['url'] ?? null );
+	}
+
+	/**
+	 * Spacer parity should be exposed through BFB without local spacer transforms.
+	 */
+	public function test_spacer_html_delegates_to_transformer_block_parity(): void {
+		$serialized = bfb_convert( '<div class="wp-block-spacer" style="height:72px"></div>', 'html', 'blocks' );
+		$blocks     = parse_blocks( $serialized );
+		$spacer     = $this->first_block_named( $blocks, 'core/spacer' );
+
+		$this->assertNotNull( $spacer );
+		$this->assertSame( '72px', $spacer['attrs']['height'] ?? null );
+		$this->assertStringContainsString( '<!-- wp:spacer {"className":"wp-block-spacer","height":"72px"} -->', $serialized );
+		$this->assertStringContainsString( 'style="height:72px"', $serialized );
+
+		$array_blocks = bfb_to_blocks( '<div class="spacer" style="height:4rem"></div>', 'html' );
+		$array_spacer = $this->first_block_named( $array_blocks, 'core/spacer' );
+		$this->assertNotNull( $array_spacer );
+		$this->assertSame( '4rem', $array_spacer['attrs']['height'] ?? null );
 	}
 
 	/**
