@@ -8,11 +8,13 @@ Stable tag: 0.5.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Server-side content format conversion between HTML, WordPress blocks, and Markdown through one deterministic bridge API.
+Legacy BFB compatibility facade over Blocks Engine content format conversion.
 
 == Description ==
 
-Block Format Bridge is a WordPress plugin and Composer package for converting content between HTML, WordPress block markup, and Markdown.
+Block Format Bridge is a legacy WordPress plugin and Composer package that preserves the historical `bfb_*` APIs for converting content between HTML, WordPress block markup, and Markdown.
+
+New consumers should depend on `automattic/blocks-engine-php-transformer` directly and use the canonical Blocks Engine PHP Transformer `FormatBridge` class instead of adding BFB as an active dependency.
 
 The bridge owns format routing and orchestration. It delegates conversion to the canonical Blocks Engine PHP Transformer `FormatBridge` class instead of adding a separate parser or fallback converter.
 
@@ -27,7 +29,9 @@ BFB also includes a thin WP-CLI wrapper and a REST read surface using `?content_
 
 This plugin does not use AI, telemetry, remote services, or external API calls. Conversion runs locally inside WordPress.
 
-== Installation ==
+== Installation For Existing BFB Consumers ==
+
+Install BFB only when you need the historical PHP functions, WP-CLI wrapper, REST read surface, or insert-time normalization hooks.
 
 = WordPress plugin =
 
@@ -37,7 +41,7 @@ This plugin does not use AI, telemetry, remote services, or external API calls. 
 
 = Composer =
 
-BFB is not currently published on Packagist, WordPress.org, or wp-packages.org. Composer consumers can install tagged GitHub releases through a VCS repository:
+BFB is not currently published on Packagist, WordPress.org, or wp-packages.org. Existing BFB consumers that still need the shim can install tagged GitHub releases through a VCS repository:
 
 `
 composer config repositories.bfb vcs https://github.com/chubes4/block-format-bridge
@@ -59,13 +63,9 @@ composer build
 
 == Frequently Asked Questions ==
 
-= Is this plugin already available on WordPress.org? =
+= Is this plugin/package being promoted for new installs? =
 
-No. This `readme.txt` prepares the repository for a future WordPress.org plugin-directory submission, but the plugin has not been submitted from this repository yet.
-
-= Is this package already available on Packagist or wp-packages.org? =
-
-No. GitHub VCS installation is the current Composer path. wp-packages.org mirrors plugins from WordPress.org under `wp-plugin/<slug>`, so BFB will only appear there after a WordPress.org plugin-directory listing exists.
+No. BFB remains a compatibility shim for existing `bfb_*` integrations. New installs should use `automattic/blocks-engine-php-transformer` directly.
 
 = Does the plugin require Blocks Engine PHP Transformer? =
 

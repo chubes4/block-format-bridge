@@ -1,7 +1,7 @@
 {
     "name": "chubes4/block-format-bridge",
     "type": "wordpress-plugin",
-    "description": "WordPress plugin orchestrating bidirectional content format conversion (HTML, Blocks, Markdown) via a unified adapter API.",
+    "description": "Legacy BFB compatibility facade; new consumers should use automattic/blocks-engine-php-transformer directly.",
     "license": "GPL-2.0-or-later",
     "homepage": "https://github.com/chubes4/block-format-bridge",
     "authors": [
