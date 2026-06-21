@@ -95,11 +95,7 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 
 		try {
 			$result = $this->convert_result( $content, 'markdown', 'blocks', $options );
-			if ( is_array( $result ) && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ) {
-				return $result['blocks'];
-			}
-
-			return array();
+			return is_array( $result ) && function_exists( 'bfb_transformer_result_blocks' ) ? bfb_transformer_result_blocks( $result ) : array();
 		} catch ( Throwable $e ) {
 			do_action(
 				'bfb_diagnostic',
@@ -138,11 +134,8 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		}
 
 		try {
-			$markdown = '';
 			$result = $this->convert_result( serialize_blocks( $blocks ), 'blocks', 'markdown', $options );
-			if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
-				$markdown = $result['documents'][0]['content'];
-			}
+			$markdown = is_array( $result ) && function_exists( 'bfb_transformer_result_content' ) ? bfb_transformer_result_content( $result, 'markdown' ) : '';
 
 			return (string) apply_filters( 'bfb_markdown_output', $markdown, '', $blocks );
 		} catch ( Throwable $e ) {

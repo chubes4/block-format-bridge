@@ -262,6 +262,22 @@ if ( ! function_exists( 'bfb_transformer_result_content' ) ) {
 	}
 }
 
+if ( ! function_exists( 'bfb_transformer_result_blocks' ) ) {
+	/**
+	 * Extract parsed blocks from a canonical transformer result.
+	 *
+	 * @param array<string, mixed> $result TransformerResult::toArray() data.
+	 * @return array<int|string, array<string, mixed>> Parsed block array.
+	 */
+	function bfb_transformer_result_blocks( array $result ): array {
+		if ( isset( $result['blocks'] ) && is_array( $result['blocks'] ) ) {
+			return $result['blocks'];
+		}
+
+		return array();
+	}
+}
+
 if ( ! function_exists( 'bfb_prepare_transformer_conversion' ) ) {
 	/**
 	 * Preserve BFB's public input filters before delegating to FormatBridge.

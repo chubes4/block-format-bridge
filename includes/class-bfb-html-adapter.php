@@ -109,8 +109,8 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 
 		try {
 			$result = $this->convert_result( $content, 'html', 'blocks', $args );
-			$blocks = is_array( $result ) && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ? $result['blocks'] : null;
-			return bfb_filter_html_to_blocks_result( is_array( $blocks ) ? $blocks : array(), $content, $options, $args );
+			$blocks = is_array( $result ) && function_exists( 'bfb_transformer_result_blocks' ) ? bfb_transformer_result_blocks( $result ) : array();
+			return bfb_filter_html_to_blocks_result( $blocks, $content, $options, $args );
 		} catch ( Throwable $e ) {
 			do_action(
 				'bfb_diagnostic',
@@ -147,11 +147,7 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 
 		try {
 			$result = $this->convert_result( serialize_blocks( $blocks ), 'blocks', 'html', $options );
-			if ( is_array( $result ) && isset( $result['documents'][0]['content'] ) && is_string( $result['documents'][0]['content'] ) ) {
-				return $result['documents'][0]['content'];
-			}
-
-			return '';
+			return is_array( $result ) && function_exists( 'bfb_transformer_result_content' ) ? bfb_transformer_result_content( $result, 'html' ) : '';
 		} catch ( Throwable $e ) {
 			do_action(
 				'bfb_diagnostic',

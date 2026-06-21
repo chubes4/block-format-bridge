@@ -198,6 +198,63 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Built-in adapters should consume canonical Blocks Engine result fields through BFB's facade helpers.
+	 */
+	public function test_adapter_wrappers_consume_canonical_transformer_result_fields(): void {
+		$bridge = new class() {
+			/**
+			 * @return object
+			 */
+			public function convertResult( string $content, string $from, string $to, array $options = array() ) {
+				unset( $content, $options );
+
+				$blocks = parse_blocks( '<!-- wp:paragraph --><p>Canonical block field</p><!-- /wp:paragraph -->' );
+				$data   = array(
+					'schema'            => 'blocks-engine/transformer-result/v1',
+					'status'            => 'success',
+					'blocks'            => $blocks,
+					'serialized_blocks' => serialize_blocks( $blocks ),
+					'documents'         => array(
+						array(
+							'format'  => $to,
+							'content' => "Canonical {$from} to {$to}",
+						),
+					),
+				);
+
+				return new class( $data ) {
+					/**
+					 * @var array<string, mixed>
+					 */
+					private $data;
+
+					/**
+					 * @param array<string, mixed> $data Canonical result payload.
+					 */
+					public function __construct( array $data ) {
+						$this->data = $data;
+					}
+
+					/**
+					 * @return array<string, mixed>
+					 */
+					public function toArray(): array {
+						return $this->data;
+					}
+				};
+			}
+		};
+
+		$html_adapter     = new BFB_HTML_Adapter( $bridge );
+		$markdown_adapter = new BFB_Markdown_Adapter( $bridge );
+
+		$this->assertSame( 'core/paragraph', $html_adapter->to_blocks( '<p>Source</p>' )[0]['blockName'] ?? null );
+		$this->assertSame( 'Canonical blocks to html', $html_adapter->from_blocks( parse_blocks( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->' ) ) );
+		$this->assertSame( 'core/paragraph', $markdown_adapter->to_blocks( 'Source' )[0]['blockName'] ?? null );
+		$this->assertSame( 'Canonical blocks to markdown', $markdown_adapter->from_blocks( parse_blocks( '<!-- wp:paragraph --><p>Stored</p><!-- /wp:paragraph -->' ) ) );
+	}
+
+	/**
 	 * Resolved asset metadata should flow through BFB into transformer media transforms.
 	 */
 	public function test_asset_metadata_context_delegates_to_transformer_image_parity(): void {
