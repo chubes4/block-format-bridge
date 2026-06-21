@@ -667,6 +667,57 @@ MARKDOWN;
 	}
 
 	/**
+	 * Conversion reports should preserve BFB keys while passing canonical metadata through.
+	 */
+	public function test_conversion_report_preserves_public_keys_and_canonical_metadata(): void {
+		$report = bfb_conversion_report( '<h2>Canonical Report</h2><p>Metadata should pass through.</p>', 'html' );
+
+		$this->assertSame( 'html', $report['from'] );
+		$this->assertSame( 2, $report['total_blocks'] );
+		$this->assertArrayHasKey( 'block_counts', $report );
+		$this->assertArrayHasKey( 'fallbacks', $report );
+		$this->assertArrayHasKey( 'fallback_events', $report );
+		$this->assertArrayHasKey( 'fallback_diagnostics', $report );
+		$this->assertArrayHasKey( 'fallback_event_count', $report );
+		$this->assertArrayHasKey( 'serialized_blocks', $report );
+		$this->assertArrayHasKey( 'status', $report );
+		$this->assertArrayHasKey( 'diagnostics', $report );
+		$this->assertArrayHasKey( 'agent_guidance', $report );
+
+		$this->assertSame( $report['transformer_result']['source_reports'] ?? array(), $report['source_reports'] ?? array() );
+		$this->assertSame( $report['transformer_result']['metrics'], $report['transformer_metrics'] );
+
+		$blocks             = parse_blocks( '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->' );
+		$transformer_result = array(
+			'serialized_blocks' => '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->',
+			'blocks'            => $blocks,
+			'source_reports'    => array(
+				'conversion_report' => array(
+					'schema'         => 'blocks-engine/php-transformer/conversion-report/v1',
+					'source_summary' => array(
+						'block_count' => 1,
+					),
+				),
+			),
+			'metrics'           => array(
+				'block_count' => 1,
+			),
+			'coverage'          => array(
+				array( 'fallback_count' => 0 ),
+			),
+		);
+
+		$compat = bfb_compat_conversion_report_from_transformer_result( '<p>Fixture.</p>', 'html', $blocks, $transformer_result );
+
+		$this->assertSame( 1, $compat['total_blocks'] );
+		$this->assertSame( '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->', $compat['serialized_blocks'] );
+		$this->assertSame( 'blocks-engine/php-transformer/conversion-report/v1', $compat['source_reports']['conversion_report']['schema'] ?? null );
+		$this->assertSame( $transformer_result['source_reports'], $compat['source_reports'] );
+		$this->assertSame( $transformer_result['metrics'], $compat['transformer_metrics'] );
+		$this->assertSame( $transformer_result['coverage'], $compat['coverage'] );
+	}
+
+	/**
 	 * Native reports should keep fallback diagnostics empty.
 	 */
 	public function test_conversion_report_exposes_structured_fallback_diagnostics(): void {
