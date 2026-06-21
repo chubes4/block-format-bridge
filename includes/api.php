@@ -13,7 +13,7 @@
  *   bfb_capabilities()                      — active transformer report
  *   bfb_get_adapter( $slug )                — registry lookup
  *
- * `bfb_convert()` routes through the block pivot via the adapter registry.
+ * `bfb_convert()` routes through the canonical Blocks Engine FormatBridge.
  * `bfb_normalize()` validates already-declared content through the dedicated
  * normalization helpers loaded from includes/normalization.php.
  *
@@ -435,12 +435,7 @@ if ( ! function_exists( 'bfb_to_blocks' ) ) {
 			return $blocks;
 		}
 
-		$from_adapter = bfb_get_adapter( $from );
-		if ( ! $from_adapter ) {
-			return array();
-		}
-
-		return $from_adapter->to_blocks( $content, $options );
+		return array();
 	}
 }
 
@@ -448,17 +443,8 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 	/**
 	 * Convert content from one format to another.
 	 *
-	 * Routing always passes through the block pivot:
-	 *
-	 *   $blocks = bfb_to_blocks( $content, $from, $options );
-	 *   return    $to_adapter->from_blocks( $blocks, $options );
-	 *
-	 * Special cases:
-	 *   - $from === $to                → returns $content unchanged
-	 *   - $from === 'blocks'           → skips the to_blocks() hop and
-	 *                                    treats $content as serialized
-	 *                                    block markup, parsing it first
-	 *   - $to === 'blocks'             → returns serialized block markup
+	 * Routing delegates to the canonical Blocks Engine FormatBridge result
+	 * surface. BFB no longer assembles no-transformer conversion fallbacks.
 	 *
 	 * @param string               $content Source content.
 	 * @param string               $from    Source format slug.
@@ -488,22 +474,7 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 			return $converted;
 		}
 
-		$blocks = bfb_to_blocks( $content, $from, $options );
-		if ( array() === $blocks && 'blocks' !== $from ) {
-			return '';
-		}
-
-		// Render the intermediate into the target format.
-		if ( 'blocks' === $to ) {
-			return serialize_blocks( $blocks );
-		}
-
-		$to_adapter = bfb_get_adapter( $to );
-		if ( ! $to_adapter ) {
-			return '';
-		}
-
-		return $to_adapter->from_blocks( $blocks, $options );
+		return '';
 	}
 }
 
@@ -777,58 +748,6 @@ if ( ! function_exists( 'bfb_compat_conversion_report_from_transformer_result' )
 	}
 }
 
-if ( ! function_exists( 'bfb_compat_no_transformer_conversion_report_from_blocks' ) ) {
-	/**
-	 * Project already-converted blocks into BFB's public report shape without a transformer result.
-	 *
-	 * This compatibility path is kept for callers that intentionally inject
-	 * blocks through BFB's public hooks or run without the canonical transformer
-	 * result surface. Normal conversions should use FormatBridge result data.
-	 *
-	 * @param string            $content                  Source content.
-	 * @param string            $from                     Source format slug.
-	 * @param array<int, array> $blocks                   Converted blocks.
-	 * @param array<int, array> $fallback_events          BFB-compatible fallback events.
-	 * @param array<int, array> $conversion_metadata      Conversion metadata collected from public hooks.
-	 * @param array<int, array> $materialization_requests Materialization requests collected from public hooks.
-	 * @return array<string, mixed> BFB conversion report.
-	 */
-	function bfb_compat_no_transformer_conversion_report_from_blocks( string $content, string $from, array $blocks, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
-		$analysis                                  = bfb_analyze_blocks( $blocks );
-		$analysis['from']                          = $from;
-		$analysis['source_bytes']                  = strlen( $content );
-		$analysis['source_text_bytes']             = bfb_text_bytes( $content );
-		$analysis['fallback_events']               = $fallback_events;
-		$analysis['fallback_diagnostics']          = ! empty( $fallback_events ) ? $fallback_events : $analysis['fallbacks'];
-		$analysis['fallback_event_count']          = count( $fallback_events );
-		$analysis['conversion_metadata']           = $conversion_metadata;
-		$analysis['materialization_requests']      = $materialization_requests;
-		$analysis['materialization_request_count'] = count( $materialization_requests );
-		$analysis['serialized_blocks']             = serialize_blocks( $blocks );
-		$analysis['converted_text_bytes']          = bfb_text_bytes( $analysis['serialized_blocks'] );
-		$analysis['text_retention_ratio']          = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
-
-		return $analysis;
-	}
-}
-
-if ( ! function_exists( 'bfb_legacy_conversion_report_from_blocks' ) ) {
-	/**
-	 * Compatibility alias for the no-transformer report projection helper.
-	 *
-	 * @param string            $content                  Source content.
-	 * @param string            $from                     Source format slug.
-	 * @param array<int, array> $blocks                   Converted blocks.
-	 * @param array<int, array> $fallback_events          BFB-compatible fallback events.
-	 * @param array<int, array> $conversion_metadata      Conversion metadata collected from public hooks.
-	 * @param array<int, array> $materialization_requests Materialization requests collected from public hooks.
-	 * @return array<string, mixed> BFB conversion report.
-	 */
-	function bfb_legacy_conversion_report_from_blocks( string $content, string $from, array $blocks, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
-		return bfb_compat_no_transformer_conversion_report_from_blocks( $content, $from, $blocks, $fallback_events, $conversion_metadata, $materialization_requests );
-	}
-}
-
 if ( ! function_exists( 'bfb_conversion_report' ) ) {
 	/**
 	 * Convert content to blocks and return quality metrics alongside the result.
@@ -866,28 +785,28 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 
 		add_action( 'bfb_conversion_metadata', $metadata_listener, 10, 1 );
 		add_action( 'bfb_materialization_request', $request_listener, 10, 1 );
-		if ( $transformer_report ) {
-			$blocks = isset( $transformer_report['blocks'] ) && is_array( $transformer_report['blocks'] ) ? $transformer_report['blocks'] : array();
-		} else {
-			try {
-				$blocks = bfb_to_blocks( $content, $from, $options );
-			} finally {
-				remove_action( 'bfb_conversion_metadata', $metadata_listener, 10 );
-				remove_action( 'bfb_materialization_request', $request_listener, 10 );
-			}
+		remove_action( 'bfb_conversion_metadata', $metadata_listener, 10 );
+		remove_action( 'bfb_materialization_request', $request_listener, 10 );
+
+		if ( ! $transformer_report ) {
+			$transformer_report = array(
+				'schema'            => 'blocks-engine/php-transformer/result/v1',
+				'status'            => 'failed',
+				'blocks'            => array(),
+				'serialized_blocks' => '',
+				'diagnostics'       => array(
+					array(
+						'code'     => 'blocks_engine_format_bridge_unavailable',
+						'severity' => 'error',
+						'message'  => 'Blocks Engine FormatBridge did not return a conversion result.',
+					),
+				),
+			);
 		}
 
-		if ( $transformer_report ) {
-			$fallback_events = bfb_transformer_fallback_events( $transformer_report );
-			remove_action( 'bfb_conversion_metadata', $metadata_listener, 10 );
-			remove_action( 'bfb_materialization_request', $request_listener, 10 );
-		}
-
-		if ( $transformer_report ) {
-			$analysis = bfb_compat_conversion_report_from_transformer_result( $content, $from, $blocks, $transformer_report, $fallback_events, $conversion_metadata, $materialization_requests );
-		} else {
-			$analysis = bfb_compat_no_transformer_conversion_report_from_blocks( $content, $from, $blocks, $fallback_events, $conversion_metadata, $materialization_requests );
-		}
+		$blocks          = isset( $transformer_report['blocks'] ) && is_array( $transformer_report['blocks'] ) ? $transformer_report['blocks'] : array();
+		$fallback_events = bfb_transformer_fallback_events( $transformer_report );
+		$analysis        = bfb_compat_conversion_report_from_transformer_result( $content, $from, $blocks, $transformer_report, $fallback_events, $conversion_metadata, $materialization_requests );
 
 		$diagnostics = bfb_build_conversion_diagnostics( $analysis );
 

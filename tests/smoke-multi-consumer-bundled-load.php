@@ -332,23 +332,8 @@ try {
 	bfb_smoke_assert( array( '9.9.9' ) === $bfb_loaded_versions, 'bfb_loaded should fire once for the winning version.' );
 	bfb_smoke_assert( 1 === bfb_smoke_hook_count( 'wp_insert_post_data', 'bfb_convert_on_insert' ), 'BFB insert conversion hook should register once.' );
 
-	$scoped_classes = array(
-		'Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge',
-		'Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\HtmlAdapter',
-		'Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\MarkdownAdapter',
-		'Automattic\\BlocksEngine\\PhpTransformer\\HtmlToBlocks\\HtmlTransformer',
-	);
-
-	foreach ( $scoped_classes as $class_name ) {
-		bfb_smoke_assert(
-			class_exists( 'BlockFormatBridge\\Vendor\\' . $class_name, false ),
-			"Scoped transformer {$class_name} should exist after bundled boot."
-		);
-		bfb_smoke_assert(
-			! class_exists( $class_name, false ),
-			"Global transformer {$class_name} should not exist after bundled boot."
-		);
-	}
+	bfb_smoke_assert( null === bfb_format_bridge(), 'BFB should not synthesize a FormatBridge without the external Blocks Engine transformer.' );
+	bfb_smoke_assert( false === bfb_transformer_capabilities()['available'], 'BFB should report the transformer unavailable in this isolated smoke.' );
 } finally {
 	bfb_smoke_remove_path( $temp_root );
 }
