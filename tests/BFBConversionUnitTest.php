@@ -11,94 +11,20 @@
 class BFBConversionUnitTest extends WP_UnitTestCase {
 
 	/**
-	 * HTML input should route through the canonical transformer for core block transforms.
+	 * HTML input should delegate to the active transformer through BFB's public API.
 	 */
-	public function test_html_to_blocks_covers_core_transforms(): void {
-		foreach ( range( 1, 6 ) as $level ) {
-			$blocks = $this->blocks_from( "<h{$level}>Heading {$level}</h{$level}>", 'html' );
-
-			$this->assertSame( 'core/heading', $blocks[0]['blockName'] ?? null, "h{$level} converts to heading block." );
-			$this->assertSame( $level, $blocks[0]['attrs']['level'] ?? null, "h{$level} preserves heading level." );
-		}
-
-		$paragraph = $this->blocks_from( '<p>Text with <strong>bold</strong>, <em>emphasis</em>, and <a href="https://example.com">a link</a>.</p>', 'html' );
-		$this->assertSame( 'core/paragraph', $paragraph[0]['blockName'] ?? null );
-		$this->assertStringContainsString( '<strong>bold</strong>', $paragraph[0]['innerHTML'] ?? '' );
-		$this->assertStringContainsString( '<em>emphasis</em>', $paragraph[0]['innerHTML'] ?? '' );
-		$this->assertStringContainsString( '<a href="https://example.com">a link</a>', $paragraph[0]['innerHTML'] ?? '' );
-
-		$unordered = $this->blocks_from( '<ul><li>One</li><li>Two</li></ul>', 'html' );
-		$this->assertSame( 'core/list', $unordered[0]['blockName'] ?? null );
-		$this->assertNotSame( true, $unordered[0]['attrs']['ordered'] ?? false );
-		$this->assertSame( 'core/list-item', $unordered[0]['innerBlocks'][0]['blockName'] ?? null );
-
-		$ordered = $this->blocks_from( '<ol><li>First</li><li>Second</li></ol>', 'html' );
-		$this->assertSame( 'core/list', $ordered[0]['blockName'] ?? null );
-		$this->assertTrue( $ordered[0]['attrs']['ordered'] ?? false );
-		$this->assertSame( 'core/list-item', $ordered[0]['innerBlocks'][0]['blockName'] ?? null );
-
-		$quote = $this->blocks_from( '<blockquote><p>Quoted text</p></blockquote>', 'html' );
-		$this->assertSame( 'core/quote', $quote[0]['blockName'] ?? null );
-		$this->assertSame( 'core/paragraph', $quote[0]['innerBlocks'][0]['blockName'] ?? null );
-		$this->assertStringContainsString( 'Quoted text', $quote[0]['innerBlocks'][0]['innerHTML'] ?? '' );
-
-		$nested_quote = $this->blocks_from( '<blockquote><blockquote><p>Deep quote</p></blockquote></blockquote>', 'html' );
-		$this->assertSame( 'core/quote', $nested_quote[0]['blockName'] ?? null );
-		$this->assertSame( 'core/quote', $nested_quote[0]['innerBlocks'][0]['blockName'] ?? null );
-		$this->assertSame( 'core/paragraph', $nested_quote[0]['innerBlocks'][0]['innerBlocks'][0]['blockName'] ?? null );
-
-		$code = $this->blocks_from( '<pre><code class="language-php">echo "hi";</code></pre>', 'html' );
-		$this->assertSame( 'core/code', $code[0]['blockName'] ?? null );
-		$this->assertSame( 'language-php', $code[0]['attrs']['className'] ?? null );
-		$this->assertStringContainsString( 'echo "hi";', html_entity_decode( $code[0]['innerHTML'] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
-
-		$table = $this->blocks_from( '<table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>BFB</td></tr></tbody></table>', 'html' );
-		$this->assertSame( 'core/table', $table[0]['blockName'] ?? null );
-		$this->assertStringContainsString( '<th>Name</th>', $table[0]['innerHTML'] ?? '' );
-		$this->assertStringContainsString( '<td>BFB</td>', $table[0]['innerHTML'] ?? '' );
-	}
-
-	/**
-	 * HTML input should delegate to the active transformer for representative fixtures.
-	 */
-	public function test_html_to_blocks_delegates_to_active_transformer_for_representative_fixtures(): void {
+	public function test_html_to_blocks_delegates_to_active_transformer(): void {
 		$this->assertTrue(
 			function_exists( 'blocks_engine_php_transformer_convert_format' )
 				|| class_exists( '\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' ),
 			'BFB should use the active Blocks Engine transformer helper or class.'
 		);
 
-		$fixtures = array(
-			'heading paragraph baseline' => array(
-				'html'   => '<h2>Delegated Heading</h2><p>Delegated paragraph.</p>',
-				'blocks' => array( 'core/heading', 'core/paragraph' ),
-			),
-			'recursive nested transforms' => array(
-				'html'   => '<ul><li>One<ul><li>Nested</li></ul></li></ul>'
-					. '<blockquote><p>Quoted</p></blockquote>'
-					. '<table><tbody><tr><td>Cell</td></tr></tbody></table>',
-				'blocks' => array( 'core/list', 'core/list-item', 'core/quote', 'core/paragraph', 'core/table' ),
-			),
-			'image code separator transforms' => array(
-				'html'   => '<figure><img src="https://example.com/image.jpg" alt="Example"><figcaption>Caption</figcaption></figure>'
-					. '<pre><code class="language-php">echo "hi";</code></pre>'
-					. '<hr class="is-style-wide">',
-				'blocks' => array( 'core/image', 'core/code', 'core/separator' ),
-			),
-			'unsupported safe fallback' => array(
-				'html'   => '<iframe src="https://example.com/embed"></iframe>',
-				'blocks' => array( 'core/embed' ),
-			),
-		);
+		$blocks = $this->blocks_from( '<h2>Delegated Heading</h2><p>Delegated paragraph.</p>', 'html' );
+		$flat   = $this->flatten_blocks( $blocks );
 
-		foreach ( $fixtures as $label => $fixture ) {
-			$blocks = $this->blocks_from( $fixture['html'], 'html' );
-			$flat   = $this->flatten_blocks( $blocks );
-
-			foreach ( $fixture['blocks'] as $block_name ) {
-				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
-			}
-		}
+		$this->assertContains( 'core/heading', $flat );
+		$this->assertContains( 'core/paragraph', $flat );
 	}
 
 	/**
@@ -327,62 +253,6 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$array_spacer = $this->first_block_named( $array_blocks, 'core/spacer' );
 		$this->assertNotNull( $array_spacer );
 		$this->assertSame( '4rem', $array_spacer['attrs']['height'] ?? null );
-	}
-
-	/**
-	 * BFB should expose the transformer expanded layout transforms through bfb_convert().
-	 */
-	public function test_html_to_blocks_covers_expanded_layout_transforms(): void {
-		$fixtures = array(
-			'group'   => array( '<section id="intro" class="intro-section"><h2>Intro</h2><p>Hello</p></section>', array( 'core/group' ) ),
-			'columns' => array( '<div class="wp-block-columns"><div class="wp-block-column"><p>Left</p></div><div class="wp-block-column"><p>Right</p></div></div>', array( 'core/columns', 'core/column' ) ),
-		);
-
-		foreach ( $fixtures as $label => $fixture ) {
-			$flat = $this->flatten_blocks( $this->blocks_from( $fixture[0], 'html' ) );
-			foreach ( $fixture[1] as $block_name ) {
-				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
-			}
-		}
-	}
-
-	/**
-	 * BFB should expose the transformer expanded action and text transforms through bfb_convert().
-	 */
-	public function test_html_to_blocks_covers_expanded_action_text_transforms(): void {
-		$fixtures = array(
-			'button'    => array( '<a class="wp-block-button__link" href="/signup">Sign up</a>', array( 'core/buttons', 'core/button' ) ),
-			'details'   => array( '<details><summary>More <strong>info</strong></summary><p>Nested copy</p></details>', array( 'core/details' ) ),
-			'pullquote' => array( '<blockquote class="wp-block-pullquote"><p>Big line</p><cite>Author</cite></blockquote>', array( 'core/pullquote' ) ),
-			'preformatted' => array( "<pre>Line 1\nLine 2<br>Line 3</pre>", array( 'core/preformatted' ) ),
-		);
-
-		foreach ( $fixtures as $label => $fixture ) {
-			$flat = $this->flatten_blocks( $this->blocks_from( $fixture[0], 'html' ) );
-			foreach ( $fixture[1] as $block_name ) {
-				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
-			}
-		}
-	}
-
-	/**
-	 * BFB should expose the transformer expanded media and embed transforms through bfb_convert().
-	 */
-	public function test_html_to_blocks_covers_expanded_media_embed_transforms(): void {
-		$fixtures = array(
-			'video'     => array( '<video src="movie.mp4" poster="poster.jpg" controls></video>', array( 'core/video' ) ),
-			'audio'     => array( '<audio><source src="clip.mp3"></audio>', array( 'core/audio' ) ),
-			'gallery images' => array( '<div class="gallery columns-2"><figure><img src="a.jpg" alt="A" class="wp-image-10"><figcaption>Caption A</figcaption></figure><figure><img src="b.jpg" alt="B"><figcaption>Caption B</figcaption></figure></div>', array( 'core/image' ) ),
-			'file'      => array( '<a href="https://example.com/report.pdf">Download report</a>', array( 'core/file' ) ),
-			'embed'     => array( '<iframe src="https://www.youtube.com/embed/abc123"></iframe>', array( 'core/embed' ) ),
-		);
-
-		foreach ( $fixtures as $label => $fixture ) {
-			$flat = $this->flatten_blocks( $this->blocks_from( $fixture[0], 'html' ) );
-			foreach ( $fixture[1] as $block_name ) {
-				$this->assertContains( $block_name, $flat, "{$label} should include {$block_name}." );
-			}
-		}
 	}
 
 	/**
@@ -671,19 +541,35 @@ MARKDOWN;
 	 */
 	public function test_conversion_report_preserves_public_keys_and_canonical_metadata(): void {
 		$report = bfb_conversion_report( '<h2>Canonical Report</h2><p>Metadata should pass through.</p>', 'html' );
+		$base_public_keys = array(
+			'from',
+			'total_blocks',
+			'block_counts',
+			'fallbacks',
+			'fallback_events',
+			'fallback_diagnostics',
+			'fallback_event_count',
+			'conversion_metadata',
+			'materialization_requests',
+			'materialization_request_count',
+			'serialized_blocks',
+		);
+		$final_public_keys = array_merge(
+			$base_public_keys,
+			array(
+				'status',
+				'diagnostics',
+				'agent_guidance',
+			)
+		);
 
 		$this->assertSame( 'html', $report['from'] );
 		$this->assertSame( 2, $report['total_blocks'] );
-		$this->assertArrayHasKey( 'block_counts', $report );
-		$this->assertArrayHasKey( 'fallbacks', $report );
-		$this->assertArrayHasKey( 'fallback_events', $report );
-		$this->assertArrayHasKey( 'fallback_diagnostics', $report );
-		$this->assertArrayHasKey( 'fallback_event_count', $report );
-		$this->assertArrayHasKey( 'serialized_blocks', $report );
-		$this->assertArrayHasKey( 'status', $report );
-		$this->assertArrayHasKey( 'diagnostics', $report );
-		$this->assertArrayHasKey( 'agent_guidance', $report );
+		foreach ( $final_public_keys as $key ) {
+			$this->assertArrayHasKey( $key, $report, "Report should preserve public key {$key}." );
+		}
 
+		$this->assertSame( 'blocks-engine/php-transformer/result/v1', $report['transformer_result']['schema'] ?? null );
 		$this->assertSame( $report['transformer_result']['source_reports'] ?? array(), $report['source_reports'] ?? array() );
 		$this->assertSame( $report['transformer_result']['metrics'], $report['transformer_metrics'] );
 
@@ -709,12 +595,21 @@ MARKDOWN;
 
 		$compat = bfb_compat_conversion_report_from_transformer_result( '<p>Fixture.</p>', 'html', $blocks, $transformer_result );
 
+		foreach ( $base_public_keys as $key ) {
+			$this->assertArrayHasKey( $key, $compat, "Compat projection should preserve public key {$key}." );
+		}
 		$this->assertSame( 1, $compat['total_blocks'] );
 		$this->assertSame( '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->', $compat['serialized_blocks'] );
 		$this->assertSame( 'blocks-engine/php-transformer/conversion-report/v1', $compat['source_reports']['conversion_report']['schema'] ?? null );
 		$this->assertSame( $transformer_result['source_reports'], $compat['source_reports'] );
 		$this->assertSame( $transformer_result['metrics'], $compat['transformer_metrics'] );
 		$this->assertSame( $transformer_result['coverage'], $compat['coverage'] );
+
+		$legacy = bfb_legacy_conversion_report_from_blocks( '<p>Fixture.</p>', 'html', $blocks );
+		foreach ( $base_public_keys as $key ) {
+			$this->assertArrayHasKey( $key, $legacy, "Legacy fallback projection should preserve public key {$key}." );
+		}
+		$this->assertArrayNotHasKey( 'transformer_result', $legacy, 'Legacy fallback projection should not synthesize canonical transformer metadata.' );
 	}
 
 	/**

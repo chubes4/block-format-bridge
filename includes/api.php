@@ -761,6 +761,40 @@ if ( ! function_exists( 'bfb_compat_conversion_report_from_transformer_result' )
 	}
 }
 
+if ( ! function_exists( 'bfb_legacy_conversion_report_from_blocks' ) ) {
+	/**
+	 * Project locally converted blocks into BFB's legacy public report shape.
+	 *
+	 * This path is kept only for compatibility when the canonical transformer
+	 * result surface is unavailable or intentionally bypassed by pre-result hooks.
+	 *
+	 * @param string            $content                  Source content.
+	 * @param string            $from                     Source format slug.
+	 * @param array<int, array> $blocks                   Converted blocks.
+	 * @param array<int, array> $fallback_events          BFB-compatible fallback events.
+	 * @param array<int, array> $conversion_metadata      Conversion metadata collected from public hooks.
+	 * @param array<int, array> $materialization_requests Materialization requests collected from public hooks.
+	 * @return array<string, mixed> BFB conversion report.
+	 */
+	function bfb_legacy_conversion_report_from_blocks( string $content, string $from, array $blocks, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
+		$analysis                                  = bfb_analyze_blocks( $blocks );
+		$analysis['from']                          = $from;
+		$analysis['source_bytes']                  = strlen( $content );
+		$analysis['source_text_bytes']             = bfb_text_bytes( $content );
+		$analysis['fallback_events']               = $fallback_events;
+		$analysis['fallback_diagnostics']          = ! empty( $fallback_events ) ? $fallback_events : $analysis['fallbacks'];
+		$analysis['fallback_event_count']          = count( $fallback_events );
+		$analysis['conversion_metadata']           = $conversion_metadata;
+		$analysis['materialization_requests']      = $materialization_requests;
+		$analysis['materialization_request_count'] = count( $materialization_requests );
+		$analysis['serialized_blocks']             = serialize_blocks( $blocks );
+		$analysis['converted_text_bytes']          = bfb_text_bytes( $analysis['serialized_blocks'] );
+		$analysis['text_retention_ratio']          = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
+
+		return $analysis;
+	}
+}
+
 if ( ! function_exists( 'bfb_conversion_report' ) ) {
 	/**
 	 * Convert content to blocks and return quality metrics alongside the result.
@@ -818,19 +852,7 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 		if ( $transformer_report ) {
 			$analysis = bfb_compat_conversion_report_from_transformer_result( $content, $from, $blocks, $transformer_report, $fallback_events, $conversion_metadata, $materialization_requests );
 		} else {
-			$analysis                                  = bfb_analyze_blocks( $blocks );
-			$analysis['from']                          = $from;
-			$analysis['source_bytes']                  = strlen( $content );
-			$analysis['source_text_bytes']             = bfb_text_bytes( $content );
-			$analysis['fallback_events']               = $fallback_events;
-			$analysis['fallback_diagnostics']          = ! empty( $fallback_events ) ? $fallback_events : $analysis['fallbacks'];
-			$analysis['fallback_event_count']          = count( $fallback_events );
-			$analysis['conversion_metadata']           = $conversion_metadata;
-			$analysis['materialization_requests']      = $materialization_requests;
-			$analysis['materialization_request_count'] = count( $materialization_requests );
-			$analysis['serialized_blocks']             = serialize_blocks( $blocks );
-			$analysis['converted_text_bytes']          = bfb_text_bytes( $analysis['serialized_blocks'] );
-			$analysis['text_retention_ratio']          = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
+			$analysis = bfb_legacy_conversion_report_from_blocks( $content, $from, $blocks, $fallback_events, $conversion_metadata, $materialization_requests );
 		}
 
 		$diagnostics = bfb_build_conversion_diagnostics( $analysis );
