@@ -25,12 +25,12 @@
             "type": "package",
             "package": {
                 "name": "automattic/blocks-engine-php-transformer",
-                "version": "dev-trunk",
+                "version": "0.1.0",
                 "type": "library",
                 "source": {
                     "type": "git",
                     "url": "https://github.com/Automattic/blocks-engine.git",
-                    "reference": "trunk"
+                    "reference": "php-transformer-v0.1.0"
                 },
                 "autoload": {
                     "psr-4": {
@@ -46,7 +46,7 @@
         }
     ],
     "require": {
-        "automattic/blocks-engine-php-transformer": "dev-trunk",
+        "automattic/blocks-engine-php-transformer": "0.1.0",
         "php": "^8.1"
     },
     "config": {
