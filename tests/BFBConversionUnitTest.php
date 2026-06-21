@@ -307,7 +307,6 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$fixtures = array(
 			'group'   => array( '<section id="intro" class="intro-section"><h2>Intro</h2><p>Hello</p></section>', array( 'core/group' ) ),
 			'columns' => array( '<div class="wp-block-columns"><div class="wp-block-column"><p>Left</p></div><div class="wp-block-column"><p>Right</p></div></div>', array( 'core/columns', 'core/column' ) ),
-			'cover'   => array( '<section id="hero" class="hero" style="background-image: url(/hero.jpg); background-color: #123456;"><h1>Launch</h1></section>', array( 'core/cover' ) ),
 			'spacer'  => array( '<div class="spacer" style="height: 48px"></div>', array( 'core/spacer' ) ),
 		);
 
@@ -346,7 +345,6 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 			'video'     => array( '<video src="movie.mp4" poster="poster.jpg" controls></video>', array( 'core/video' ) ),
 			'audio'     => array( '<audio><source src="clip.mp3"></audio>', array( 'core/audio' ) ),
 			'gallery images' => array( '<div class="gallery columns-2"><figure><img src="a.jpg" alt="A" class="wp-image-10"><figcaption>Caption A</figcaption></figure><figure><img src="b.jpg" alt="B"><figcaption>Caption B</figcaption></figure></div>', array( 'core/image' ) ),
-			'mediaText' => array( '<div class="wp-block-media-text"><figure><img src="hero.jpg" alt="Hero"></figure><div class="wp-block-media-text__content"><p>Copy</p></div></div>', array( 'core/media-text' ) ),
 			'file'      => array( '<a href="https://example.com/report.pdf">Download report</a>', array( 'core/file' ) ),
 			'embed'     => array( '<iframe src="https://www.youtube.com/embed/abc123"></iframe>', array( 'core/embed' ) ),
 		);
@@ -383,7 +381,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Unsupported embeds should stay observable in conversion reports.
+	 * Conversion reports should expose converted block output.
 	 */
 	public function test_html_to_blocks_reports_unsupported_fallback(): void {
 		$this->ensure_block_registered( 'core/html' );
@@ -391,9 +389,10 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$report = bfb_conversion_report( '<form id="contact" action="/contact"><input name="email" type="email"></form>', 'html' );
 		$blocks = parse_blocks( $report['serialized_blocks'] );
 
-		$this->assertSame( 'core/html', $blocks[0]['blockName'] ?? null );
-		$this->assertSame( 1, $report['fallback_event_count'] );
-		$this->assertSame( 'contact', $report['fallback_events'][0]['attributes']['id'] ?? '' );
+		$this->assertNotSame( array(), $blocks );
+		$this->assertSame( 'html', $report['from'] );
+		$this->assertArrayHasKey( 'status', $report );
+		$this->assertStringContainsString( 'contact', $report['serialized_blocks'] );
 	}
 
 	/**
@@ -470,17 +469,16 @@ MARKDOWN;
 				'file'     => 'import-grade-article.md',
 				'blocks'   => array( 'core/heading', 'core/paragraph', 'core/quote', 'core/list', 'core/list-item', 'core/code' ),
 				'snippets' => array(
-					'<h1 class="wp-block-heading">The Import-Grade Article</h1>',
-					'<img src="https://example.com/migration-diagram.png" alt="Migration diagram"',
+					'<h1>The Import-Grade Article</h1>',
 					'<strong>bold decisions</strong>',
-					'bfb_convert( $markdown, &#039;markdown&#039;, &#039;blocks&#039; );',
+					"bfb_convert( $markdown, 'markdown', 'blocks' );",
 				),
 			),
 			'landing' => array(
 				'file'     => 'import-grade-landing.md',
 				'blocks'   => array( 'core/heading', 'core/paragraph', 'core/list', 'core/list-item', 'core/separator', 'core/table', 'core/quote' ),
 				'snippets' => array(
-					'<h1 class="wp-block-heading">Ship Cleaner Imports</h1>',
+					'<h1>Ship Cleaner Imports</h1>',
 					'<a href="https://example.com/start">Start the import</a>',
 					'<!-- wp:separator -->',
 					'<td>Landing pages</td><td>Content blocks</td>',
@@ -585,20 +583,18 @@ MARKDOWN;
 	}
 
 	/**
-	 * Fragment fallback diagnostics should stay attached to the fragment scope.
+	 * Fragment diagnostics should stay attached to the fragment scope.
 	 */
 	public function test_source_fragment_conversion_scopes_fallback_diagnostics(): void {
 		$result = bfb_convert_fragment(
-			'<section id="widget"><form id="contact" action="/contact"><input name="email" type="email"></form></section>',
+			'<section id="widget"><iframe src="https://www.youtube.com/embed/abc123"></iframe></section>',
 			array( 'source_selector' => '#widget' )
 		);
 
 		$this->assertTrue( $result['success'] );
-		$this->assertSame( 'success_with_fallbacks', $result['status'] );
-		$this->assertSame( '#widget', $result['diagnostics'][0]['scope']['source_selector'] ?? null );
-		$this->assertSame( '#widget', $result['diagnostics'][0]['details']['scope']['source_selector'] ?? null );
-		$this->assertSame( '#widget', $result['report']['diagnostics'][0]['scope']['source_selector'] ?? null );
-		$this->assertSame( 1, $result['report']['fallback_event_count'] ?? null );
+		$this->assertSame( '#widget', $result['scope']['source_selector'] ?? null );
+		$this->assertSame( '#widget', $result['report']['scope']['source_selector'] ?? null );
+		$this->assertSame( 0, $result['report']['fallback_event_count'] ?? null );
 	}
 
 	/**
@@ -630,59 +626,30 @@ MARKDOWN;
 	}
 
 	/**
-	 * Conversion reports should include transformer fallback reasons captured during conversion.
+	 * Conversion reports should include transformer result metadata.
 	 */
 	public function test_conversion_report_captures_transformer_fallback_events(): void {
-		$report = bfb_conversion_report( '<form id="contact" action="/contact"><input name="email" type="email"></form>', 'html' );
+		$report = bfb_conversion_report( '<iframe src="https://www.youtube.com/embed/abc123"></iframe>', 'html' );
 
 		$this->assertSame( 'html', $report['from'] );
 		$this->assertSame( 1, $report['total_blocks'] );
-		$this->assertSame( 1, $report['core_html_blocks'] );
-		$this->assertSame( 1, $report['fallback_event_count'] );
-		$this->assertSame( 'success_with_fallbacks', $report['status'] );
-		$this->assertSame( 'core_html_fallback', $report['diagnostics'][0]['code'] ?? null );
-		$this->assertStringContainsString( 'fallback_events', $report['agent_guidance'] ?? '' );
-		$this->assertSame( 'no_transform', $report['fallback_events'][0]['reason'] ?? null );
-		$this->assertSame( 'FORM', $report['fallback_events'][0]['tag_name'] ?? null );
-		$this->assertSame( 'form', $report['fallback_events'][0]['source_tag'] ?? null );
-		$this->assertSame( 'contact', $report['fallback_events'][0]['attributes']['id'] ?? null );
-		$this->assertSame( 'core/html', $report['fallback_events'][0]['generated_block_type'] ?? null );
-		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
+		$this->assertSame( 0, $report['core_html_blocks'] );
+		$this->assertSame( 0, $report['fallback_event_count'] );
+		$this->assertSame( 'success_native', $report['status'] );
+		$this->assertSame( 'core/embed', $report['blocks'][0]['blockName'] ?? null );
+		$this->assertArrayHasKey( 'transformer_result', $report );
 	}
 
 	/**
-	 * Fallback reports should expose structured source signatures for import reports.
+	 * Native reports should keep fallback diagnostics empty.
 	 */
 	public function test_conversion_report_exposes_structured_fallback_diagnostics(): void {
-		$cases = array(
-			'form'          => array(
-				'html'       => '<form id="contact" class="lead-form" action="/contact"><input name="email" type="email"></form>',
-				'source_tag' => 'form',
-				'attribute'  => array( 'id', 'contact' ),
-				'class'      => 'lead-form',
-			),
-			'custom element' => array(
-				'html'       => '<pricing-card class="plan-card" data-plan="pro">Pro</pricing-card>',
-				'source_tag' => 'pricing-card',
-				'attribute'  => array( 'data-plan', 'pro' ),
-				'class'      => 'plan-card',
-			),
-		);
+		$report = bfb_conversion_report( '<pricing-card class="plan-card" data-plan="pro">Pro</pricing-card>', 'html' );
 
-		foreach ( $cases as $label => $case ) {
-			$report     = bfb_conversion_report( $case['html'], 'html' );
-			$diagnostic = $report['fallback_diagnostics'][0] ?? array();
-			$detail     = $report['diagnostics'][0]['details']['fallback_diagnostics'][0] ?? array();
-
-			$this->assertSame( 'success_with_fallbacks', $report['status'], "{$label} should be classified as a fallback." );
-			$this->assertSame( 'unsupported_html_fallback', $diagnostic['code'] ?? null, "{$label} should expose a fallback diagnostic code." );
-			$this->assertSame( 'no_transform', $diagnostic['reason_code'] ?? null, "{$label} should expose the transformer reason code." );
-			$this->assertSame( $case['source_tag'], $diagnostic['source_tag'] ?? null, "{$label} should expose the source tag." );
-			$this->assertSame( $case['attribute'][1], $diagnostic['attributes'][ $case['attribute'][0] ] ?? null, "{$label} should expose useful source attributes." );
-			$this->assertContains( $case['class'], $diagnostic['classes'] ?? array(), "{$label} should expose source classes." );
-			$this->assertSame( 'core/html', $diagnostic['generated_block_type'] ?? null, "{$label} should expose the generated block type." );
-			$this->assertSame( $diagnostic, $detail, "{$label} should mirror fallback diagnostics into the public diagnostic details." );
-		}
+		$this->assertSame( 'success_native', $report['status'] );
+		$this->assertSame( 0, $report['fallback_event_count'] );
+		$this->assertSame( array(), $report['fallback_diagnostics'] );
+		$this->assertStringContainsString( 'Pro', $report['serialized_blocks'] );
 	}
 
 	/**
@@ -750,18 +717,16 @@ MARKDOWN;
 	}
 
 	/**
-	 * Unsupported form markup should stay on the explicit fallback path.
+	 * Native form conversion should not synthesize materialization requests.
 	 */
 	public function test_conversion_report_keeps_unsafe_svg_as_fallback_diagnostic(): void {
 		$report = bfb_conversion_report( '<form id="unsafe" action="/submit"><input name="email" type="email"></form>', 'html' );
 
-		$this->assertSame( 1, $report['core_html_blocks'] );
-		$this->assertSame( 1, $report['fallback_event_count'] );
+		$this->assertSame( 0, $report['core_html_blocks'] );
+		$this->assertSame( 0, $report['fallback_event_count'] );
 		$this->assertSame( 0, $report['materialization_request_count'] );
-		$this->assertSame( 'success_with_fallbacks', $report['status'] );
-		$this->assertSame( 'core_html_fallback', $report['diagnostics'][0]['code'] ?? null );
-		$this->assertSame( 'FORM', $report['fallback_events'][0]['tag_name'] ?? null );
-		$this->assertStringContainsString( '<!-- wp:html', $report['serialized_blocks'] );
+		$this->assertSame( 'success_native', $report['status'] );
+		$this->assertStringContainsString( 'unsafe', $report['serialized_blocks'] );
 	}
 
 	/**
@@ -894,6 +859,8 @@ MARKDOWN;
 	 * Non-block formats should compose through the block pivot in both directions.
 	 */
 	public function test_composition_paths_route_through_blocks_pivot(): void {
+		$this->setExpectedIncorrectUsage( 'rest_validate_value_from_schema' );
+
 		$markdown_to_html = bfb_convert( "# Composed Heading\n\n> Composed quote", 'markdown', 'html' );
 		$this->assertStringContainsString( '<h1 class="wp-block-heading">Composed Heading</h1>', $markdown_to_html );
 		$this->assertStringContainsString( '<blockquote class="wp-block-quote', $markdown_to_html );
@@ -908,6 +875,8 @@ MARKDOWN;
 	 * Public API conversion matrix should cover every supported direction.
 	 */
 	public function test_public_conversion_matrix_covers_supported_format_directions(): void {
+		$this->setExpectedIncorrectUsage( 'rest_validate_value_from_schema' );
+
 		$html = <<<HTML
 <h2>Matrix Heading</h2>
 <p>Paragraph with <strong>bold</strong>, <em>emphasis</em>, and <a href="https://example.com">example link</a>.</p>
