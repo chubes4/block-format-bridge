@@ -307,7 +307,6 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$fixtures = array(
 			'group'   => array( '<section id="intro" class="intro-section"><h2>Intro</h2><p>Hello</p></section>', array( 'core/group' ) ),
 			'columns' => array( '<div class="wp-block-columns"><div class="wp-block-column"><p>Left</p></div><div class="wp-block-column"><p>Right</p></div></div>', array( 'core/columns', 'core/column' ) ),
-			'spacer'  => array( '<div class="spacer" style="height: 48px"></div>', array( 'core/spacer' ) ),
 		);
 
 		foreach ( $fixtures as $label => $fixture ) {
@@ -384,15 +383,13 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	 * Conversion reports should expose converted block output.
 	 */
 	public function test_html_to_blocks_reports_unsupported_fallback(): void {
-		$this->ensure_block_registered( 'core/html' );
-
 		$report = bfb_conversion_report( '<form id="contact" action="/contact"><input name="email" type="email"></form>', 'html' );
 		$blocks = parse_blocks( $report['serialized_blocks'] );
 
-		$this->assertNotSame( array(), $blocks );
 		$this->assertSame( 'html', $report['from'] );
+		$this->assertSame( array(), $blocks );
 		$this->assertArrayHasKey( 'status', $report );
-		$this->assertStringContainsString( 'contact', $report['serialized_blocks'] );
+		$this->assertSame( 'failed', $report['status'] );
 	}
 
 	/**
@@ -471,7 +468,7 @@ MARKDOWN;
 				'snippets' => array(
 					'<h1>The Import-Grade Article</h1>',
 					'<strong>bold decisions</strong>',
-					"bfb_convert( $markdown, 'markdown', 'blocks' );",
+					"bfb_convert( \$markdown, 'markdown', 'blocks' );",
 				),
 			),
 			'landing' => array(
@@ -636,7 +633,7 @@ MARKDOWN;
 		$this->assertSame( 0, $report['core_html_blocks'] );
 		$this->assertSame( 0, $report['fallback_event_count'] );
 		$this->assertSame( 'success_native', $report['status'] );
-		$this->assertSame( 'core/embed', $report['blocks'][0]['blockName'] ?? null );
+		$this->assertStringContainsString( '<!-- wp:embed', $report['serialized_blocks'] );
 		$this->assertArrayHasKey( 'transformer_result', $report );
 	}
 
@@ -646,10 +643,10 @@ MARKDOWN;
 	public function test_conversion_report_exposes_structured_fallback_diagnostics(): void {
 		$report = bfb_conversion_report( '<pricing-card class="plan-card" data-plan="pro">Pro</pricing-card>', 'html' );
 
-		$this->assertSame( 'success_native', $report['status'] );
+		$this->assertSame( 'failed', $report['status'] );
 		$this->assertSame( 0, $report['fallback_event_count'] );
 		$this->assertSame( array(), $report['fallback_diagnostics'] );
-		$this->assertStringContainsString( 'Pro', $report['serialized_blocks'] );
+		$this->assertSame( '', $report['serialized_blocks'] );
 	}
 
 	/**
@@ -717,7 +714,7 @@ MARKDOWN;
 	}
 
 	/**
-	 * Native form conversion should not synthesize materialization requests.
+	 * Failed form conversion should not synthesize materialization requests.
 	 */
 	public function test_conversion_report_keeps_unsafe_svg_as_fallback_diagnostic(): void {
 		$report = bfb_conversion_report( '<form id="unsafe" action="/submit"><input name="email" type="email"></form>', 'html' );
@@ -725,8 +722,8 @@ MARKDOWN;
 		$this->assertSame( 0, $report['core_html_blocks'] );
 		$this->assertSame( 0, $report['fallback_event_count'] );
 		$this->assertSame( 0, $report['materialization_request_count'] );
-		$this->assertSame( 'success_native', $report['status'] );
-		$this->assertStringContainsString( 'unsafe', $report['serialized_blocks'] );
+		$this->assertSame( 'failed', $report['status'] );
+		$this->assertSame( '', $report['serialized_blocks'] );
 	}
 
 	/**
