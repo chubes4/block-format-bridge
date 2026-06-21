@@ -92,11 +92,6 @@ class BFB_HTML_Adapter implements BFB_Format_Adapter {
 		$args         = (array) apply_filters( 'bfb_html_to_blocks_args', $args, $content, $options );
 		$args['HTML'] = $content;
 
-		$pre_result = apply_filters( 'bfb_html_to_blocks_pre_result', null, $content, $options, $args );
-		if ( is_array( $pre_result ) ) {
-			return bfb_filter_html_to_blocks_result( $pre_result, $content, $options, $args );
-		}
-
 		if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 			do_action(
 				'bfb_diagnostic',

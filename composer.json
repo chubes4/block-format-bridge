@@ -13,7 +13,7 @@
     "scripts": {
         "build": "./build.sh",
         "lint": "php -l block-format-bridge.php && php -l library.php && find includes tests tools -name '*.php' -print0 | xargs -0 -n1 php -l",
-        "smokes": "php tests/smoke-content-normalization.php && php tests/smoke-transformer-capability-discovery-standalone.php && php tests/smoke-transformer-capability-discovery-class.php && php tests/smoke-transformer-composer-install.php"
+        "smokes": "php tests/smoke-content-normalization.php && php tests/smoke-transformer-capability-discovery-class.php && php tests/smoke-transformer-composer-install.php"
     },
     "autoload": {
         "files": [

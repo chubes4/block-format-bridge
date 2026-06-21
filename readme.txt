@@ -14,12 +14,7 @@ Server-side content format conversion between HTML, WordPress blocks, and Markdo
 
 Block Format Bridge is a WordPress plugin and Composer package for converting content between HTML, WordPress block markup, and Markdown.
 
-The bridge owns format routing and orchestration. It composes existing conversion libraries behind one API instead of adding a separate parser:
-
-* HTML to blocks uses `chubes4/html-to-blocks-converter`.
-* Blocks to HTML uses WordPress core block parsing and rendering.
-* Markdown to HTML uses `league/commonmark`.
-* Blocks to Markdown uses rendered HTML plus `league/html-to-markdown`.
+The bridge owns format routing and orchestration. It delegates conversion to the canonical Blocks Engine PHP Transformer `FormatBridge` class instead of adding a separate parser or fallback converter.
 
 The public PHP APIs are:
 
@@ -74,7 +69,7 @@ No. GitHub VCS installation is the current Composer path. wp-packages.org mirror
 
 = Does the plugin require Blocks Engine PHP Transformer? =
 
-Yes. BFB is a thin compatibility wrapper and discovers the active Blocks Engine PHP Transformer helper/classes at runtime.
+Yes. BFB is a thin public API wrapper and requires the active Blocks Engine PHP Transformer `FormatBridge` class at runtime.
 
 = Why does the plugin not include a vendor_prefixed directory? =
 

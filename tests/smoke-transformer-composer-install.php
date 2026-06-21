@@ -110,7 +110,7 @@ $blocks       = bfb_to_blocks( '<h2>Composer transformer</h2><p>Installed runtim
 $serialized   = bfb_convert( '<h2>Composer transformer</h2>', 'html', 'blocks' );
 
 bfb_transformer_composer_assert( true === $capabilities['available'], 'Composer-installed transformer should be available.' );
-bfb_transformer_composer_assert( 'class' === $capabilities['integration'] || 'function' === $capabilities['integration'], 'Transformer should expose a class or helper integration.' );
+bfb_transformer_composer_assert( 'class' === $capabilities['integration'], 'Transformer should expose the FormatBridge class integration.' );
 bfb_transformer_composer_assert( '\\Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge' === $capabilities['bridge_class'], 'FormatBridge class should resolve from Composer autoload.' );
 bfb_transformer_composer_assert( array() !== $blocks, 'HTML should convert to at least one block through the installed transformer.' );
 bfb_transformer_composer_assert( false !== strpos( $serialized, '<!-- wp:' ), 'BFB should serialize converted blocks.' );

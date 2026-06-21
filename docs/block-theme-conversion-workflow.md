@@ -71,15 +71,9 @@ Blocks Engine PHP transformer should not:
 - Select patterns by visual similarity.
 - Generate `theme.json`, Styles, or design-token decisions.
 
-Tracking:
-
-- h2bc #56: https://github.com/chubes4/html-to-blocks-converter/issues/56
-- h2bc #418: https://github.com/chubes4/html-to-blocks-converter/issues/418
-- h2bc #55: https://github.com/chubes4/html-to-blocks-converter/issues/55
-
 ## BFB Responsibilities
 
-BFB owns the public compatibility/API surface and consumer-facing ergonomics.
+BFB owns the public API surface and consumer-facing ergonomics around Blocks Engine FormatBridge.
 
 BFB should expose conversion and capability operations through an ability-first machine surface. The WordPress Abilities
 API is the primitive for agent and automation consumers. WP-CLI and REST should be wrappers around the same conversion
@@ -91,7 +85,7 @@ BFB should:
 - Expose `bfb_convert()`, `bfb_to_blocks()`, and `bfb_normalize()` for PHP callers.
 - Expose ability operations for machine callers, including conversion and capability reporting.
 - Keep WP-CLI ergonomics thin and script-friendly for humans and shell-based tools.
-- Report what the active transformer supports so compiler consumers can plan fallbacks.
+- Report what the active transformer supports so compiler consumers can plan upstream transformer work or compiler-owned decisions.
 - Consume Blocks Engine transformer capabilities instead of duplicating transform internals.
 
 BFB should not:
@@ -141,13 +135,13 @@ conversion.
 
 1. Blocks Engine PHP transformer publishes the core-block inventory and classification map.
 2. Blocks Engine PHP transformer implements deterministic transforms and explicit-marker transforms for safe classes.
-3. BFB exposes the resulting support through compatibility capabilities.
+3. BFB exposes the resulting support through capability reports.
 4. Compiler consumers request the BFB capability report through the Abilities API.
 5. Compiler consumers split work into deterministic fragments and site-intent decisions.
 6. Deterministic fragments go through BFB conversion.
 7. Site-intent decisions are resolved by the compiler, then written as block arrays, serialized block markup, templates,
    template parts, patterns, navigation entities, or `theme.json` as appropriate.
-8. Experiments measure fallback counts, validation failures, editability, and generation cost.
+8. Experiments measure transformer coverage, validation failures, editability, and generation cost.
 
 ## Related Documents
 
