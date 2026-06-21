@@ -190,7 +190,7 @@ if ( ! class_exists( 'BFB_CLI_Command' ) ) {
 			WP_CLI::line( sprintf( 'Blocks: %d', (int) $report['total_blocks'] ) );
 			WP_CLI::line( sprintf( 'Status: %s', isset( $report['status'] ) ? (string) $report['status'] : 'unknown' ) );
 			WP_CLI::line( sprintf( 'core/html blocks: %d', (int) $report['core_html_blocks'] ) );
-			WP_CLI::line( sprintf( 'transformer fallback events: %d', (int) $report['fallback_event_count'] ) );
+			WP_CLI::line( sprintf( 'core/html fallback diagnostics: %d', is_array( $report['fallback_diagnostics'] ?? null ) ? count( $report['fallback_diagnostics'] ) : 0 ) );
 			WP_CLI::line( sprintf( 'text retention: %.2f', isset( $report['text_retention_ratio'] ) ? (float) $report['text_retention_ratio'] : 1.0 ) );
 
 			if ( ! empty( $report['diagnostics'] ) && is_array( $report['diagnostics'] ) ) {

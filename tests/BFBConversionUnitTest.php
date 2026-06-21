@@ -15,9 +15,8 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	 */
 	public function test_html_to_blocks_delegates_to_active_transformer(): void {
 		$this->assertTrue(
-			function_exists( 'blocks_engine_php_transformer_convert_format' )
-				|| class_exists( '\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' ),
-			'BFB should use the active Blocks Engine transformer helper or class.'
+			class_exists( '\Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge' ),
+			'BFB should use the active Blocks Engine FormatBridge class.'
 		);
 
 		$blocks = $this->blocks_from( '<h2>Delegated Heading</h2><p>Delegated paragraph.</p>', 'html' );
@@ -188,7 +187,7 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Compatibility wrappers should not own local converter fallback methods.
+	 * Delegating wrappers should not own local converter fallback methods.
 	 */
 	public function test_adapters_leave_converter_fallbacks_to_format_bridge(): void {
 		$markdown_methods = get_class_methods( BFB_Markdown_Adapter::class );
@@ -196,6 +195,10 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$this->assertNotContains( 'markdown_to_html', $markdown_methods );
 		$this->assertNotContains( 'html_to_markdown', $markdown_methods );
 		$this->assertNotContains( 'register_table_converter', $markdown_methods );
+		$this->assertNull( bfb_transformer_capabilities()['convert_format'] );
+		$this->assertFalse( function_exists( 'bfb_transformer_fallback_events' ) );
+		$this->assertFalse( function_exists( 'bfb_compat_conversion_report_from_transformer_result' ) );
+		$this->assertNotContains( 'bfb_html_to_blocks_pre_result', bfb_capabilities()['hooks']['filters'] );
 	}
 
 	/**
@@ -377,13 +380,13 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	 */
 	public function test_thin_wrapper_does_not_bundle_transformer(): void {
 		$this->assertFileDoesNotExist( BFB_PATH . 'vendor_prefixed/automattic/blocks-engine-php-transformer/src/FormatBridge/FormatBridge.php' );
-		$this->assertFileDoesNotExist( BFB_PATH . 'vendor_prefixed/chubes4/html-to-blocks-converter/library.php' );
+		$this->assertDirectoryDoesNotExist( BFB_PATH . 'vendor_prefixed' );
 	}
 
 	/**
-	 * Markdown input should use CommonMark/GFM, then the same HTML adapter path.
+	 * Markdown input should delegate to Blocks Engine's Markdown coverage.
 	 */
-	public function test_markdown_to_blocks_covers_commonmark_and_gfm_paths(): void {
+	public function test_markdown_to_blocks_covers_blocks_engine_markdown_paths(): void {
 		$markdown = <<<MARKDOWN
 # Markdown Heading
 
@@ -622,7 +625,7 @@ MARKDOWN;
 	 */
 	public function test_conversion_report_preserves_public_keys_and_canonical_metadata(): void {
 		$report = bfb_conversion_report( '<h2>Canonical Report</h2><p>Metadata should pass through.</p>', 'html' );
-		$base_public_keys = array(
+		$public_keys = array(
 			'from',
 			'total_blocks',
 			'block_counts',
@@ -634,19 +637,14 @@ MARKDOWN;
 			'materialization_requests',
 			'materialization_request_count',
 			'serialized_blocks',
-		);
-		$final_public_keys = array_merge(
-			$base_public_keys,
-			array(
-				'status',
-				'diagnostics',
-				'agent_guidance',
-			)
+			'status',
+			'diagnostics',
+			'agent_guidance',
 		);
 
 		$this->assertSame( 'html', $report['from'] );
 		$this->assertSame( 2, $report['total_blocks'] );
-		foreach ( $final_public_keys as $key ) {
+		foreach ( $public_keys as $key ) {
 			$this->assertArrayHasKey( $key, $report, "Report should preserve public key {$key}." );
 		}
 
@@ -654,40 +652,9 @@ MARKDOWN;
 		$this->assertSame( $report['transformer_result']['source_reports'] ?? array(), $report['source_reports'] ?? array() );
 		$this->assertSame( $report['transformer_result']['metrics'], $report['transformer_metrics'] );
 
-		$blocks             = parse_blocks( '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->' );
-		$transformer_result = array(
-			'serialized_blocks' => '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->',
-			'blocks'            => $blocks,
-			'source_reports'    => array(
-				'conversion_report' => array(
-					'schema'         => 'blocks-engine/php-transformer/conversion-report/v1',
-					'source_summary' => array(
-						'block_count' => 1,
-					),
-				),
-			),
-			'metrics'           => array(
-				'block_count' => 1,
-			),
-			'coverage'          => array(
-				array( 'fallback_count' => 0 ),
-			),
-		);
-
-		$compat = bfb_compat_conversion_report_from_transformer_result( '<p>Fixture.</p>', 'html', $blocks, $transformer_result );
-
-		foreach ( $base_public_keys as $key ) {
-			$this->assertArrayHasKey( $key, $compat, "Compat projection should preserve public key {$key}." );
-		}
-		$this->assertSame( 1, $compat['total_blocks'] );
-		$this->assertSame( '<!-- wp:paragraph --><p>Fixture.</p><!-- /wp:paragraph -->', $compat['serialized_blocks'] );
-		$this->assertSame( 'blocks-engine/php-transformer/conversion-report/v1', $compat['source_reports']['conversion_report']['schema'] ?? null );
-		$this->assertSame( $transformer_result['source_reports'], $compat['source_reports'] );
-		$this->assertSame( $transformer_result['metrics'], $compat['transformer_metrics'] );
-		$this->assertSame( $transformer_result['coverage'], $compat['coverage'] );
-
 		$this->assertFalse( function_exists( 'bfb_compat_no_transformer_conversion_report_from_blocks' ) );
 		$this->assertFalse( function_exists( 'bfb_legacy_conversion_report_from_blocks' ) );
+		$this->assertFalse( function_exists( 'bfb_compat_conversion_report_from_transformer_result' ) );
 	}
 
 	/**

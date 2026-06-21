@@ -3,9 +3,9 @@
 A WordPress plugin **and Composer package** for content format conversion and declared-format normalization across HTML,
 Blocks, and Markdown.
 
-The bridge owns no parsing logic of its own. It is a compatibility wrapper around the active Blocks Engine PHP
-Transformer plugin/classes plus WordPress core's block helpers. New formats become available by registering a new adapter;
-the bridge core never grows.
+The bridge owns no parsing logic of its own. It is a public API wrapper around the active Blocks Engine PHP Transformer
+`FormatBridge` class plus WordPress core's block helpers. New formats become available through Blocks Engine support and
+registered adapters; the bridge core never grows local transforms.
 
 > **Status:** `bfb_convert()`, `bfb_normalize()`, insert-time conversion, and REST `?content_format=` are covered by the
 > smoke/Playground test suite.
@@ -73,8 +73,7 @@ no-transformer conversion fallbacks.
 
 HTML, markdown, and block transform behavior belongs to the Blocks Engine PHP Transformer. BFB keeps the historical
 `bfb_*` APIs and delegates conversion through the active
-`Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge` result surface, with
-`blocks_engine_php_transformer_convert_format()` retained as runtime compatibility for helper-only installs.
+`Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge` result surface.
 
 The explicit API path is:
 
@@ -140,8 +139,8 @@ Use `dev-main` only when intentionally tracking unreleased development commits.
 
 ### Blocks Engine Transformer Status
 
-BFB does not depend on a Packagist package or bundle transformer code. Install and activate the canonical Blocks Engine
-PHP Transformer plugin/classes in the host runtime. BFB discovers the active helper/class at runtime.
+BFB does not bundle transformer code. Install and activate the canonical Blocks Engine PHP Transformer plugin/classes in
+the host runtime. BFB requires the active `FormatBridge` class at runtime.
 
 Composer autoloads `library.php`, which registers the full bridge service: adapters, `bfb_convert()`,
 `bfb_normalize()`, `bfb_render_post()`, insert-time conversion, and REST `?content_format=`.
@@ -329,15 +328,9 @@ The public mechanical conversion scope matrix is documented in
 
 ### Custom block Markdown rendering contract
 
-BFB's Blocks → Markdown path is render-output based:
-
-```text
-parse_blocks() -> render_block() -> league/html-to-markdown
-```
-
-That means BFB converts the front-end HTML a block renders. It does not infer Markdown semantics from block comments,
-attributes, editor-only scaffolding, JSON blobs, placeholders, or empty render output. Custom blocks that want useful
-Markdown output should treat their front-end render contract as the source of truth.
+BFB's Blocks → Markdown path delegates to Blocks Engine FormatBridge. BFB does not infer Markdown semantics from block
+comments, attributes, editor-only scaffolding, JSON blobs, placeholders, or empty render output. Custom blocks that want
+useful Markdown output should make that behavior available through the canonical transformer layer.
 
 Custom block expectations:
 
@@ -345,8 +338,8 @@ Custom block expectations:
   tables, links, images, blockquotes, and code blocks.
 - Keep editor-only scaffolding, inspector state, placeholders, and machine JSON out of saved or rendered output unless
   that material should appear in the Markdown.
-- If semantic HTML is not enough for the block's content model, register a block-specific converter through
-  `bfb_html_to_markdown_converter` and let league/html-to-markdown handle that rendered HTML explicitly.
+- If semantic HTML is not enough for the block's content model, add the block-specific conversion behavior to Blocks
+  Engine rather than extending BFB.
 
 For example, a dynamic block that renders `<h2>Release notes</h2><ul><li>Item</li></ul>` can produce meaningful
 Markdown. A block that only renders `<div data-state="{...}"></div>` or an empty placeholder cannot; BFB has no safe
@@ -367,13 +360,9 @@ way to reconstruct the missing author-facing Markdown from the block comment alo
 - **`bfb_skip_insert_conversion( $skip, $data, $postarr, $format ): bool`** — lets storage layers veto BFB's
   insert-time format → blocks normalisation after the source format is resolved. Use this when another plugin owns the
   canonical `post_content` shape, such as a markdown-on-disk store that needs raw markdown to remain raw markdown.
-- **`bfb_markdown_input( $markdown ): string`** — pre-processes Markdown before CommonMark runs.
+- **`bfb_markdown_input( $markdown ): string`** — pre-processes Markdown before BFB delegates to FormatBridge.
 - **`bfb_register_format_adapter( $adapter, $slug ): ?BFB_Format_Adapter`** — lazy adapter registration.
 - **`bfb_rest_supported_post_types( $post_types ): array`** — restricts which CPTs honour `?content_format=`.
-- **`bfb_html_to_markdown_options( $options, $html ): array`** — option array passed to league/html-to-markdown
-  (mirrors `roots/post-content-to-markdown`'s `converter_options`).
-- **`bfb_html_to_markdown_converter( $converter ): void`** — action fired after the html-to-markdown converter is built
-  and before it runs, so consumers can register additional league/html-to-markdown converters.
 - **`bfb_markdown_output( $markdown, $html, $blocks ): string`** — final filter on the markdown produced by
   `from_blocks()`.
 - **`bfb_loaded( $version ): void`** — action fired after the winning BFB package/plugin version initializes.

@@ -71,7 +71,7 @@ class BFB_Markdown_Adapter implements BFB_Format_Adapter {
 		}
 
 		/**
-		 * Pre-process raw markdown before it reaches CommonMark.
+		 * Pre-process raw markdown before it reaches Blocks Engine FormatBridge.
 		 *
 		 * Useful for opinionated transformations that the bridge should
 		 * not encode itself (e.g. linkifying bare domain URLs to

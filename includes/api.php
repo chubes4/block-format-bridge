@@ -86,9 +86,7 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 					'bfb_markdown_input',
 					'bfb_markdown_output',
 					'bfb_html_to_blocks_args',
-					'bfb_html_to_blocks_pre_result',
 					'bfb_html_to_blocks_result',
-					'bfb_html_to_markdown_options',
 				),
 				'actions' => array(
 					'bfb_loaded',
@@ -97,7 +95,6 @@ if ( ! function_exists( 'bfb_capabilities' ) ) {
 					'bfb_conversion_metadata',
 					'bfb_materialization_request',
 					'bfb_insert_conversion_measured',
-					'bfb_html_to_markdown_converter',
 				),
 			),
 			'abilities'   => array(
@@ -159,14 +156,12 @@ if ( ! function_exists( 'bfb_transformer_capabilities' ) ) {
 			)
 		);
 
-		$has_function = function_exists( 'blocks_engine_php_transformer_convert_format' );
-
 		return array(
-			'available'      => $has_function || null !== $bridge,
+			'available'      => null !== $bridge,
 			'version'        => function_exists( 'blocks_engine_php_transformer_version' ) ? blocks_engine_php_transformer_version() : ( defined( 'BLOCKS_ENGINE_PHP_TRANSFORMER_VERSION' ) ? BLOCKS_ENGINE_PHP_TRANSFORMER_VERSION : null ),
 			'path'           => function_exists( 'blocks_engine_php_transformer_path' ) ? blocks_engine_php_transformer_path() : ( defined( 'BLOCKS_ENGINE_PHP_TRANSFORMER_DIR' ) ? BLOCKS_ENGINE_PHP_TRANSFORMER_DIR : null ),
-			'integration'    => $has_function ? 'function' : ( null !== $bridge ? 'class' : null ),
-			'convert_format' => $has_function ? 'blocks_engine_php_transformer_convert_format' : null,
+			'integration'    => null !== $bridge ? 'class' : null,
+			'convert_format' => null,
 			'bridge_class'   => bfb_transformer_class( '\\Automattic\\BlocksEngine\\PhpTransformer\\FormatBridge\\FormatBridge' ),
 			'formats'        => $formats,
 		);
@@ -214,11 +209,7 @@ if ( ! function_exists( 'bfb_transformer_convert_result' ) ) {
 			return $result->toArray();
 		}
 
-		if ( ! function_exists( 'blocks_engine_php_transformer_convert_format' ) ) {
-			return null;
-		}
-
-		return blocks_engine_php_transformer_convert_format( $content, $from, $to, $options );
+		return null;
 	}
 }
 
@@ -286,12 +277,9 @@ if ( ! function_exists( 'bfb_prepare_transformer_conversion' ) ) {
 	 * @param string               $from    Source format slug.
 	 * @param string               $to      Target format slug.
 	 * @param array<string, mixed> $options Per-call conversion options.
-	 * @return array{content:string,options:array<string,mixed>,pre_result:array<string,mixed>|null}
+	 * @return array{content:string,options:array<string,mixed>}
 	 */
 	function bfb_prepare_transformer_conversion( string $content, string $from, string $to, array $options ): array {
-		$public_options = $options;
-		$pre_result = null;
-
 		if ( 'markdown' === $from ) {
 			$content = (string) apply_filters( 'bfb_markdown_input', $content );
 		}
@@ -301,28 +289,11 @@ if ( ! function_exists( 'bfb_prepare_transformer_conversion' ) ) {
 			$args         = (array) apply_filters( 'bfb_html_to_blocks_args', $args, $content, $options );
 			$args['HTML'] = $content;
 			$options      = $args;
-
-			$filtered = apply_filters( 'bfb_html_to_blocks_pre_result', null, $content, $public_options, $args );
-			if ( is_array( $filtered ) ) {
-				$pre_result = array(
-					'schema'            => 'block-format-bridge/pre-result/v1',
-					'status'            => 'success',
-					'blocks'            => $filtered,
-					'serialized_blocks' => serialize_blocks( $filtered ),
-					'documents'         => array(
-						array(
-							'format'  => 'blocks',
-							'content' => serialize_blocks( $filtered ),
-						),
-					),
-				);
-			}
 		}
 
 		return array(
-			'content'    => $content,
-			'options'    => $options,
-			'pre_result' => $pre_result,
+			'content' => $content,
+			'options' => $options,
 		);
 	}
 }
@@ -416,11 +387,7 @@ if ( ! function_exists( 'bfb_to_blocks' ) ) {
 	 */
 	function bfb_to_blocks( string $content, string $from, array $options = array() ): array {
 		$prepared = bfb_prepare_transformer_conversion( $content, $from, 'blocks', $options );
-		$result   = $prepared['pre_result'];
-
-		if ( null === $result ) {
-			$result = bfb_transformer_convert_result( $prepared['content'], $from, 'blocks', $prepared['options'] );
-		}
+		$result   = bfb_transformer_convert_result( $prepared['content'], $from, 'blocks', $prepared['options'] );
 
 		if ( null === $result && 'blocks' === $from ) {
 			return parse_blocks( $content );
@@ -454,11 +421,7 @@ if ( ! function_exists( 'bfb_convert' ) ) {
 	 */
 	function bfb_convert( string $content, string $from, string $to, array $options = array() ): string {
 		$prepared = bfb_prepare_transformer_conversion( $content, $from, $to, $options );
-		$result   = $prepared['pre_result'];
-
-		if ( null === $result ) {
-			$result = bfb_transformer_convert_result( $prepared['content'], $from, $to, $prepared['options'] );
-		}
+		$result   = bfb_transformer_convert_result( $prepared['content'], $from, $to, $prepared['options'] );
 
 		if ( is_array( $result ) && 'failed' !== ( $result['status'] ?? '' ) ) {
 			if ( 'html' === $from && 'blocks' === $to && isset( $result['blocks'] ) && is_array( $result['blocks'] ) ) {
@@ -599,11 +562,6 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 			$args         = (array) apply_filters( 'bfb_html_to_blocks_args', $args, $content, $options );
 			$args['HTML'] = $content;
 
-			$pre_result = apply_filters( 'bfb_html_to_blocks_pre_result', null, $content, $options, $args );
-			if ( is_array( $pre_result ) ) {
-				return null;
-			}
-
 			try {
 				$report = bfb_transformer_convert_result( $content, $from, 'blocks', $args );
 			} catch ( Throwable $e ) {
@@ -653,101 +611,6 @@ if ( ! function_exists( 'bfb_transformer_result_report' ) ) {
 	}
 }
 
-if ( ! function_exists( 'bfb_transformer_fallback_events' ) ) {
-	/**
-	 * Project transformer fallback report entries into BFB's existing event shape.
-	 *
-	 * @param array<string, mixed> $report TransformerResult::toArray() data.
-	 * @return array<int, array<string, mixed>> Normalized fallback events.
-	 */
-	function bfb_transformer_fallback_events( array $report ): array {
-		$fallbacks = isset( $report['fallbacks'] ) && is_array( $report['fallbacks'] ) ? $report['fallbacks'] : array();
-		$events    = array();
-
-		foreach ( $fallbacks as $fallback ) {
-			if ( ! is_array( $fallback ) ) {
-				continue;
-			}
-
-			$html       = isset( $fallback['html'] ) && is_string( $fallback['html'] ) ? $fallback['html'] : '';
-			$tag        = isset( $fallback['tag'] ) && is_scalar( $fallback['tag'] ) ? (string) $fallback['tag'] : '';
-			$reason     = isset( $fallback['reason'] ) && is_scalar( $fallback['reason'] ) ? (string) $fallback['reason'] : 'unknown';
-			$attributes = isset( $fallback['attributes'] ) && is_array( $fallback['attributes'] ) ? bfb_normalize_html_fallback_attributes( $fallback['attributes'] ) : array();
-			$event      = bfb_normalize_html_fallback_diagnostic(
-				$html,
-				array(
-					'reason'   => $reason,
-					'tag_name' => $tag,
-				),
-				array( 'blockName' => 'core/html' )
-			);
-
-			if ( array() !== $attributes ) {
-				$event['attributes'] = $attributes;
-				if ( isset( $attributes['class'] ) ) {
-					$classes          = preg_split( '/\s+/', trim( (string) $attributes['class'] ) );
-					$event['classes'] = is_array( $classes ) ? array_values( array_filter( $classes ) ) : array();
-				}
-			}
-
-			if ( isset( $fallback['selector'] ) && is_scalar( $fallback['selector'] ) ) {
-				$event['selector'] = (string) $fallback['selector'];
-			}
-			if ( isset( $fallback['diagnostic_code'] ) && is_scalar( $fallback['diagnostic_code'] ) ) {
-				$event['diagnostic_code'] = (string) $fallback['diagnostic_code'];
-			}
-			$event['transformer_fallback'] = $fallback;
-
-			$events[] = $event;
-		}
-
-		return $events;
-	}
-}
-
-if ( ! function_exists( 'bfb_compat_conversion_report_from_transformer_result' ) ) {
-	/**
-	 * Project a canonical transformer result into BFB's legacy public report shape.
-	 *
-	 * @param string               $content                  Source content.
-	 * @param string               $from                     Source format slug.
-	 * @param array<int, array>    $blocks                   Converted blocks.
-	 * @param array<string, mixed> $transformer_report       TransformerResult::toArray() data.
-	 * @param array<int, array>    $fallback_events          BFB-compatible fallback events.
-	 * @param array<int, array>    $conversion_metadata      Conversion metadata collected from public hooks.
-	 * @param array<int, array>    $materialization_requests Materialization requests collected from public hooks.
-	 * @return array<string, mixed> BFB conversion report.
-	 */
-	function bfb_compat_conversion_report_from_transformer_result( string $content, string $from, array $blocks, array $transformer_report, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
-		$analysis                                  = bfb_analyze_blocks( $blocks );
-		$analysis['from']                          = $from;
-		$analysis['source_bytes']                  = strlen( $content );
-		$analysis['source_text_bytes']             = bfb_text_bytes( $content );
-		$analysis['fallback_events']               = $fallback_events;
-		$analysis['fallback_diagnostics']          = ! empty( $fallback_events ) ? $fallback_events : $analysis['fallbacks'];
-		$analysis['fallback_event_count']          = count( $fallback_events );
-		$analysis['conversion_metadata']           = $conversion_metadata;
-		$analysis['materialization_requests']      = $materialization_requests;
-		$analysis['materialization_request_count'] = count( $materialization_requests );
-		$analysis['serialized_blocks']             = isset( $transformer_report['serialized_blocks'] ) && is_string( $transformer_report['serialized_blocks'] ) && '' !== $transformer_report['serialized_blocks'] ? $transformer_report['serialized_blocks'] : serialize_blocks( $blocks );
-		$analysis['converted_text_bytes']          = bfb_text_bytes( $analysis['serialized_blocks'] );
-		$analysis['text_retention_ratio']          = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
-		$analysis['transformer_result']            = $transformer_report;
-
-		if ( isset( $transformer_report['metrics'] ) && is_array( $transformer_report['metrics'] ) ) {
-			$analysis['transformer_metrics'] = $transformer_report['metrics'];
-		}
-		if ( isset( $transformer_report['source_reports'] ) && is_array( $transformer_report['source_reports'] ) ) {
-			$analysis['source_reports'] = $transformer_report['source_reports'];
-		}
-		if ( isset( $transformer_report['coverage'] ) && is_array( $transformer_report['coverage'] ) ) {
-			$analysis['coverage'] = $transformer_report['coverage'];
-		}
-
-		return $analysis;
-	}
-}
-
 if ( ! function_exists( 'bfb_conversion_report' ) ) {
 	/**
 	 * Convert content to blocks and return quality metrics alongside the result.
@@ -758,7 +621,6 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 	 * @return array<string, mixed> Conversion report.
 	 */
 	function bfb_conversion_report( string $content, string $from, array $options = array() ): array {
-		$fallback_events          = array();
 		$conversion_metadata      = array();
 		$materialization_requests = array();
 		$transformer_report       = bfb_transformer_result_report( $content, $from, $options );
@@ -804,9 +666,31 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 			);
 		}
 
-		$blocks          = isset( $transformer_report['blocks'] ) && is_array( $transformer_report['blocks'] ) ? $transformer_report['blocks'] : array();
-		$fallback_events = bfb_transformer_fallback_events( $transformer_report );
-		$analysis        = bfb_compat_conversion_report_from_transformer_result( $content, $from, $blocks, $transformer_report, $fallback_events, $conversion_metadata, $materialization_requests );
+		$blocks                                      = isset( $transformer_report['blocks'] ) && is_array( $transformer_report['blocks'] ) ? $transformer_report['blocks'] : array();
+		$analysis                                    = bfb_analyze_blocks( $blocks );
+		$analysis['from']                            = $from;
+		$analysis['source_bytes']                    = strlen( $content );
+		$analysis['source_text_bytes']               = bfb_text_bytes( $content );
+		$analysis['fallback_events']                 = array();
+		$analysis['fallback_diagnostics']            = $analysis['fallbacks'];
+		$analysis['fallback_event_count']            = 0;
+		$analysis['conversion_metadata']             = $conversion_metadata;
+		$analysis['materialization_requests']        = $materialization_requests;
+		$analysis['materialization_request_count']   = count( $materialization_requests );
+		$analysis['serialized_blocks']               = isset( $transformer_report['serialized_blocks'] ) && is_string( $transformer_report['serialized_blocks'] ) && '' !== $transformer_report['serialized_blocks'] ? $transformer_report['serialized_blocks'] : serialize_blocks( $blocks );
+		$analysis['converted_text_bytes']            = bfb_text_bytes( $analysis['serialized_blocks'] );
+		$analysis['text_retention_ratio']            = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
+		$analysis['transformer_result']              = $transformer_report;
+
+		if ( isset( $transformer_report['metrics'] ) && is_array( $transformer_report['metrics'] ) ) {
+			$analysis['transformer_metrics'] = $transformer_report['metrics'];
+		}
+		if ( isset( $transformer_report['source_reports'] ) && is_array( $transformer_report['source_reports'] ) ) {
+			$analysis['source_reports'] = $transformer_report['source_reports'];
+		}
+		if ( isset( $transformer_report['coverage'] ) && is_array( $transformer_report['coverage'] ) ) {
+			$analysis['coverage'] = $transformer_report['coverage'];
+		}
 
 		$diagnostics = bfb_build_conversion_diagnostics( $analysis );
 
