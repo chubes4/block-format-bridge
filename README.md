@@ -1,7 +1,8 @@
 # Block Format Bridge
 
-A WordPress plugin **and Composer package** for content format conversion and declared-format normalization across HTML,
-Blocks, and Markdown.
+A legacy WordPress plugin **and Composer package** that preserves the historical `bfb_*` APIs while delegating content format conversion and declared-format normalization to Blocks Engine.
+
+New consumers should depend on `automattic/blocks-engine-php-transformer` directly and use `Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge`. BFB remains a stable compatibility shim for callers that already depend on the `bfb_*` PHP functions, WP-CLI wrapper, REST read surface, or insert-time normalization hooks.
 
 The bridge owns no parsing logic of its own. It is a public API wrapper around the active Blocks Engine PHP Transformer
 `FormatBridge` class plus WordPress core's block helpers. New formats become available through Blocks Engine support and
@@ -118,24 +119,22 @@ Rules:
 The marker contract belongs in BFB because BFB is the public compatibility/API surface. Runtime HTML-element transforms are
 supplied by Blocks Engine through the public `bfb_convert( $html, 'html', 'blocks' )` path.
 
-## Install
+## Install For Existing BFB Consumers
 
-Install it as a standalone plugin, or bundle it as a Composer package.
+Install BFB only when you need the historical `bfb_*` compatibility surface. New projects should install the canonical Blocks Engine PHP Transformer package directly instead of adding BFB as an active dependency.
 
-Data Machine v0.88.0+ bundles BFB as its content-format substrate. Data Machine-powered sites do not need the standalone
-BFB plugin unless they also want to manage BFB independently.
+Data Machine v0.88.0+ bundles BFB only as a legacy content-format shim. Data Machine-powered sites do not need the standalone BFB plugin unless they also need to manage the compatibility surface independently.
 
 ### Composer via GitHub VCS
 
-BFB has tagged GitHub releases, but it is not currently published on Packagist, WordPress.org, or wp-packages.org. Until
-one of those mirrors exists, Composer consumers should install it from the GitHub VCS repository:
+BFB has tagged GitHub releases, but it is not currently published on Packagist, WordPress.org, or wp-packages.org. Existing BFB consumers that still need the shim can install it from the GitHub VCS repository:
 
 ```bash
 composer config repositories.bfb vcs https://github.com/chubes4/block-format-bridge
 composer require chubes4/block-format-bridge:^0.5
 ```
 
-Use `dev-main` only when intentionally tracking unreleased development commits.
+Use `dev-main` only when intentionally tracking unreleased shim maintenance commits.
 
 ### Blocks Engine Transformer Status
 
@@ -149,20 +148,8 @@ HTML and Markdown conversion require the Blocks Engine PHP Transformer runtime t
 
 ### Publishing status
 
-- **GitHub releases:** available at https://github.com/chubes4/block-format-bridge/releases.
-- **Packagist:** not published yet; publishing there would keep the Composer package name
-  `chubes4/block-format-bridge`.
-- **WordPress.org:** not published yet; `readme.txt` is present to prepare for plugin-directory review, but no submission
-  has been made from this repository.
-- **wp-packages.org:** not published yet. wp-packages.org mirrors WordPress.org plugins as `wp-plugin/<slug>`, so BFB
-  will only appear there after a WordPress.org plugin-directory listing exists.
-
-If BFB is approved on WordPress.org under the `block-format-bridge` slug, the wp-packages.org install path will be:
-
-```bash
-composer config repositories.wp-packages composer https://repo.wp-packages.org
-composer require wp-plugin/block-format-bridge
-```
+- **GitHub releases:** available for existing shim consumers at https://github.com/chubes4/block-format-bridge/releases.
+- **Packagist / WordPress.org / wp-packages.org:** not a priority. New dependency guidance points to `automattic/blocks-engine-php-transformer` instead of publishing or promoting BFB as a standalone package/plugin.
 
 ### Build from source
 
@@ -319,8 +306,7 @@ Resolve a registered adapter directly. Prefer `bfb_to_blocks()` when callers nee
 
 ### Block Theme Compiler Consumers
 
-Static HTML/CSS to block-theme compilers should treat BFB as the format-conversion API surface, not the layer that infers
-block-theme or Site Editor intent. The compiler-facing helper and CLI shape are documented in
+Legacy static HTML/CSS to block-theme compilers that already use BFB should treat it as the compatibility format-conversion API surface, not the layer that infers block-theme or Site Editor intent. New compiler layers should use Blocks Engine directly. The historical compiler-facing helper and CLI shape are documented in
 [`docs/block-theme-compiler-surface.md`](docs/block-theme-compiler-surface.md). The stack workflow across Blocks Engine, BFB, and
 compiler consumers is documented in [`docs/block-theme-conversion-workflow.md`](docs/block-theme-conversion-workflow.md).
 The public mechanical conversion scope matrix is documented in

@@ -2,7 +2,7 @@
 
 Issue: https://github.com/chubes4/block-format-bridge/issues/29
 
-This note defines the Block Format Bridge surface a future static HTML/CSS to block-theme compiler should consume. It is intentionally limited to BFB's boundary: compatibility APIs and format conversion through the block pivot. Block-theme structure, Site Editor behavior, template intent, theme.json generation, and per-block transform behavior belong above BFB or inside Blocks Engine PHP transformer.
+This note records the legacy Block Format Bridge surface for static HTML/CSS to block-theme compilers that already consume BFB. New compiler integrations should use `automattic/blocks-engine-php-transformer` directly. The BFB surface is intentionally limited to compatibility APIs and format conversion through the block pivot. Block-theme structure, Site Editor behavior, template intent, theme.json generation, and per-block transform behavior belong above BFB or inside Blocks Engine PHP transformer.
 
 ## Boundary
 
@@ -22,7 +22,7 @@ HTML / Markdown / future formats
         +--> markdown adapter    -> Markdown
 ```
 
-A site compiler can use BFB for deterministic conversion once it has already decided what belongs in templates, template parts, patterns, posts, or global styles.
+Existing site compilers can use BFB for deterministic conversion once they have already decided what belongs in templates, template parts, patterns, posts, or global styles. New compilers should call Blocks Engine directly.
 
 ## Explicit Site Editor Primitive Markers
 
@@ -74,13 +74,13 @@ Behavior:
 - Unsupported formats return an empty array and log the same style of error as `bfb_convert()`.
 - The helper should be the internal source of truth for `bfb_convert()` once implemented, avoiding two conversion paths.
 
-Use this helper instead of reaching into adapters directly.
+Existing BFB consumers should use this helper instead of reaching into adapters directly.
 
 ### 2. WP-CLI conversion command
 
 BFB exposes a CLI command for non-PHP callers.
 
-Node-based tools such as Studio can already call WordPress through WP-CLI. A command like this would let those tools use the server-side converter without embedding PHP glue:
+Node-based tools such as Studio can already call WordPress through WP-CLI. For legacy BFB integrations, a command like this lets those tools use the server-side shim without embedding PHP glue:
 
 ```bash
 wp bfb convert --from=html --to=blocks < input.html
@@ -98,14 +98,14 @@ The CLI is a thin wrapper around `bfb_convert()` for serialized output and `bfb_
 
 ### 3. Arrays plus serialized markup in one call
 
-BFB should support this as a convenience for compiler workflows, but keep it separate from `bfb_convert()`.
+BFB may keep this as a compatibility convenience for existing compiler workflows, but it should remain separate from `bfb_convert()`.
 
 Compiler consumers often need both representations:
 
 - Block arrays for inspection, splitting, policy checks, and template/pattern assembly.
 - Serialized block markup for writing to WordPress files or `post_content`.
 
-Recommended future helper:
+Legacy helper shape:
 
 ```php
 /**
@@ -141,11 +141,11 @@ For HTML to Blocks, BFB's stable contract should be:
 - BFB does not promise semantic inference beyond the attributes emitted by the active adapter.
 - Per-block mapping rules and fidelity fixes belong in Blocks Engine PHP transformer tests and releases.
 
-That gives compiler consumers a stable integration target without moving transform ownership into BFB.
+That gives existing BFB compiler consumers a stable shim target without moving transform ownership into BFB.
 
 ## Recommended Sequence
 
-1. Document this surface now.
-2. Use `bfb_to_blocks()` when a compiler consumer needs block arrays directly.
-3. Add `bfb_to_block_document()` if callers repeatedly need arrays plus serialized markup from the same source.
-4. Use `wp bfb convert` for non-PHP callers that need server-side conversion.
+1. Keep this surface documented for existing BFB consumers.
+2. Use `bfb_to_blocks()` when an existing BFB consumer needs block arrays directly.
+3. Keep any arrays-plus-markup helper as shim compatibility, not a new transform layer.
+4. Use `wp bfb convert` only for legacy non-PHP callers that already route through BFB.
