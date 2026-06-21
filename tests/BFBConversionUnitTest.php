@@ -255,6 +255,29 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Result helpers should extract only canonical Blocks Engine result fields.
+	 */
+	public function test_canonical_transformer_result_extraction_uses_format_bridge_fields(): void {
+		$blocks = parse_blocks( '<!-- wp:paragraph --><p>Extracted block</p><!-- /wp:paragraph -->' );
+		$result = array(
+			'schema'            => 'blocks-engine/php-transformer/result/v1',
+			'status'            => 'success',
+			'blocks'            => $blocks,
+			'serialized_blocks' => serialize_blocks( $blocks ),
+			'documents'         => array(
+				array(
+					'format'  => 'html',
+					'content' => '<p>Extracted HTML</p>',
+				),
+			),
+		);
+
+		$this->assertSame( $blocks, bfb_transformer_result_blocks( $result ) );
+		$this->assertSame( serialize_blocks( $blocks ), bfb_transformer_result_content( $result, 'blocks' ) );
+		$this->assertSame( '<p>Extracted HTML</p>', bfb_transformer_result_content( $result, 'html' ) );
+	}
+
+	/**
 	 * Resolved asset metadata should flow through BFB into transformer media transforms.
 	 */
 	public function test_asset_metadata_context_delegates_to_transformer_image_parity(): void {
@@ -662,11 +685,16 @@ MARKDOWN;
 		$this->assertSame( $transformer_result['metrics'], $compat['transformer_metrics'] );
 		$this->assertSame( $transformer_result['coverage'], $compat['coverage'] );
 
-		$legacy = bfb_legacy_conversion_report_from_blocks( '<p>Fixture.</p>', 'html', $blocks );
+		$compat_no_transformer = bfb_compat_no_transformer_conversion_report_from_blocks( '<p>Fixture.</p>', 'html', $blocks );
 		foreach ( $base_public_keys as $key ) {
-			$this->assertArrayHasKey( $key, $legacy, "Legacy fallback projection should preserve public key {$key}." );
+			$this->assertArrayHasKey( $key, $compat_no_transformer, "No-transformer compatibility projection should preserve public key {$key}." );
 		}
-		$this->assertArrayNotHasKey( 'transformer_result', $legacy, 'Legacy fallback projection should not synthesize canonical transformer metadata.' );
+		$this->assertArrayNotHasKey( 'transformer_result', $compat_no_transformer, 'No-transformer compatibility projection should not synthesize canonical transformer metadata.' );
+		$this->assertSame(
+			$compat_no_transformer,
+			bfb_legacy_conversion_report_from_blocks( '<p>Fixture.</p>', 'html', $blocks ),
+			'Legacy helper should remain as a compatibility alias for existing callers.'
+		);
 	}
 
 	/**

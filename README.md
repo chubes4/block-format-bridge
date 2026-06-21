@@ -72,15 +72,16 @@ formats through the block-array pivot, and exposes one public API for callers th
 library performs a specific conversion. It does **not** own per-block raw transforms.
 
 HTML, markdown, and block transform behavior belongs to the Blocks Engine PHP Transformer. BFB keeps the historical
-`bfb_*` APIs and delegates conversion through `blocks_engine_php_transformer_convert_format()` when the plugin helper is
-available, falling back to the active `Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge` class.
+`bfb_*` APIs and delegates conversion through the active
+`Automattic\BlocksEngine\PhpTransformer\FormatBridge\FormatBridge` result surface, with
+`blocks_engine_php_transformer_convert_format()` retained as runtime compatibility for helper-only installs.
 
 The explicit API path is:
 
 ```php
 bfb_convert( $html, 'html', 'blocks' )
     -> BFB_HTML_Adapter::to_blocks()
-    -> blocks_engine_php_transformer_convert_format();
+    -> FormatBridge::convertResult();
 ```
 
 The insert/update hook path is split by source format:

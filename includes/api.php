@@ -777,12 +777,13 @@ if ( ! function_exists( 'bfb_compat_conversion_report_from_transformer_result' )
 	}
 }
 
-if ( ! function_exists( 'bfb_legacy_conversion_report_from_blocks' ) ) {
+if ( ! function_exists( 'bfb_compat_no_transformer_conversion_report_from_blocks' ) ) {
 	/**
-	 * Project locally converted blocks into BFB's legacy public report shape.
+	 * Project already-converted blocks into BFB's public report shape without a transformer result.
 	 *
-	 * This path is kept only for compatibility when the canonical transformer
-	 * result surface is unavailable or intentionally bypassed by pre-result hooks.
+	 * This compatibility path is kept for callers that intentionally inject
+	 * blocks through BFB's public hooks or run without the canonical transformer
+	 * result surface. Normal conversions should use FormatBridge result data.
 	 *
 	 * @param string            $content                  Source content.
 	 * @param string            $from                     Source format slug.
@@ -792,7 +793,7 @@ if ( ! function_exists( 'bfb_legacy_conversion_report_from_blocks' ) ) {
 	 * @param array<int, array> $materialization_requests Materialization requests collected from public hooks.
 	 * @return array<string, mixed> BFB conversion report.
 	 */
-	function bfb_legacy_conversion_report_from_blocks( string $content, string $from, array $blocks, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
+	function bfb_compat_no_transformer_conversion_report_from_blocks( string $content, string $from, array $blocks, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
 		$analysis                                  = bfb_analyze_blocks( $blocks );
 		$analysis['from']                          = $from;
 		$analysis['source_bytes']                  = strlen( $content );
@@ -808,6 +809,23 @@ if ( ! function_exists( 'bfb_legacy_conversion_report_from_blocks' ) ) {
 		$analysis['text_retention_ratio']          = bfb_text_retention_ratio( (int) $analysis['source_text_bytes'], (int) $analysis['converted_text_bytes'] );
 
 		return $analysis;
+	}
+}
+
+if ( ! function_exists( 'bfb_legacy_conversion_report_from_blocks' ) ) {
+	/**
+	 * Compatibility alias for the no-transformer report projection helper.
+	 *
+	 * @param string            $content                  Source content.
+	 * @param string            $from                     Source format slug.
+	 * @param array<int, array> $blocks                   Converted blocks.
+	 * @param array<int, array> $fallback_events          BFB-compatible fallback events.
+	 * @param array<int, array> $conversion_metadata      Conversion metadata collected from public hooks.
+	 * @param array<int, array> $materialization_requests Materialization requests collected from public hooks.
+	 * @return array<string, mixed> BFB conversion report.
+	 */
+	function bfb_legacy_conversion_report_from_blocks( string $content, string $from, array $blocks, array $fallback_events = array(), array $conversion_metadata = array(), array $materialization_requests = array() ): array {
+		return bfb_compat_no_transformer_conversion_report_from_blocks( $content, $from, $blocks, $fallback_events, $conversion_metadata, $materialization_requests );
 	}
 }
 
@@ -868,7 +886,7 @@ if ( ! function_exists( 'bfb_conversion_report' ) ) {
 		if ( $transformer_report ) {
 			$analysis = bfb_compat_conversion_report_from_transformer_result( $content, $from, $blocks, $transformer_report, $fallback_events, $conversion_metadata, $materialization_requests );
 		} else {
-			$analysis = bfb_legacy_conversion_report_from_blocks( $content, $from, $blocks, $fallback_events, $conversion_metadata, $materialization_requests );
+			$analysis = bfb_compat_no_transformer_conversion_report_from_blocks( $content, $from, $blocks, $fallback_events, $conversion_metadata, $materialization_requests );
 		}
 
 		$diagnostics = bfb_build_conversion_diagnostics( $analysis );
