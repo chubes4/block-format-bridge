@@ -80,14 +80,13 @@ The explicit API path is:
 
 ```php
 bfb_convert( $html, 'html', 'blocks' )
-    -> BFB_HTML_Adapter::to_blocks()
     -> FormatBridge::convertResult();
 ```
 
 The insert/update hook path is split by source format:
 
 - **BFB priority 5:** `wp_insert_post_data` handles non-HTML source formats, such as Markdown, before WordPress stores
-  the post. The adapter path normalises those formats to block markup.
+  the post. The conversion path normalizes those formats to block markup through `bfb_convert()`.
 
 The path is server-side and deterministic. There is no AI conversion pass in BFB or the transformer.
 
@@ -187,23 +186,23 @@ $md = bfb_convert( '<h1>X</h1>', 'html', 'markdown' );
 // Markdown → HTML (composes via blocks)
 $html = bfb_convert( '# X', 'markdown', 'html' );
 
-// HTML → blocks with importer-neutral per-call context forwarded to transformer args.
+// HTML → blocks with caller-owned per-call context forwarded to transformer args.
 $blocks = bfb_convert(
     '<h1>Hello</h1><p>World</p>',
     'html',
     'blocks',
     array(
         'context' => array(
-            'source' => 'static-site-importer',
-            'mode'   => 'import',
+            'source' => 'site-compiler',
+            'mode'   => 'fragment',
         ),
     )
 );
 ```
 
 The optional fourth argument is a generic per-call options array. For HTML → Blocks, BFB forwards those options alongside
-the reserved `HTML` argument passed to the active transformer, so downstream tools can pass structured `context` without
-BFB gaining importer-specific API.
+the reserved `HTML` argument passed to the active transformer, so callers can pass structured `context` without BFB
+depending on any importer, compiler, or conversion package other than the Blocks Engine PHP Transformer.
 
 ### `bfb_to_blocks( $content, $from ): array`
 
@@ -221,7 +220,7 @@ foreach ( $blocks as $block ) {
 Contract:
 
 - `from === 'blocks'` parses serialized block markup with `parse_blocks()`.
-- Other formats resolve through `bfb_get_adapter( $from )` and call the adapter's `to_blocks()` method.
+- Other supported formats route through Blocks Engine PHP Transformer's `FormatBridge` result surface.
 - Unsupported source formats return an empty array and log the same style of error as `bfb_convert()`.
 
 ### WP-CLI: `wp bfb convert`

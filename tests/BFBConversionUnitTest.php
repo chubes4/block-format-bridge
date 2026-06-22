@@ -46,9 +46,9 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Conversion options should flow from the public API into adapters and transformer args.
+	 * Conversion options should flow from the public API into transformer args.
 	 */
-	public function test_conversion_options_flow_to_adapters_and_transformer_args(): void {
+	public function test_conversion_options_flow_to_public_api_and_transformer_args(): void {
 		$html = '<h2>Options Heading</h2><p>Options paragraph.</p>';
 
 		$default = bfb_convert( $html, 'html', 'blocks' );
@@ -88,8 +88,8 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 				'blocks',
 				array(
 					'context' => array(
-						'source' => 'static-site-importer',
-						'mode'   => 'import',
+						'source' => 'site-compiler',
+						'mode'   => 'fragment',
 					),
 					'mode'    => 'fidelity',
 				)
@@ -99,12 +99,12 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		}
 
 		$this->assertNotSame( '', $with_options, '4-argument conversion should produce serialized blocks.' );
-		$this->assertIsArray( $seen_args, 'HTML adapter should expose transformer arguments.' );
+		$this->assertIsArray( $seen_args, 'BFB should expose transformer arguments.' );
 		$this->assertSame( 'fidelity', $seen_args['args']['mode'] ?? null, 'Mode option should be forwarded to transformer args.' );
 		$this->assertSame(
 			array(
-				'source' => 'static-site-importer',
-				'mode'   => 'import',
+				'source' => 'site-compiler',
+				'mode'   => 'fragment',
 			),
 			$seen_args['args']['context'] ?? null,
 			'Generic conversion context should be forwarded to transformer args.'
@@ -113,13 +113,13 @@ class BFBConversionUnitTest extends WP_UnitTestCase {
 		$this->assertSame(
 			array(
 				'context' => array(
-					'source' => 'static-site-importer',
-					'mode'   => 'import',
+					'source' => 'site-compiler',
+					'mode'   => 'fragment',
 				),
 				'mode'    => 'fidelity',
 			),
 			$seen_args['options'] ?? null,
-			'HTML adapter should receive public conversion options.'
+			'BFB should receive public conversion options.'
 		);
 
 		$probe = new class() implements BFB_Format_Adapter {

@@ -70,7 +70,7 @@ function bfb_to_blocks( string $content, string $from ): array;
 Behavior:
 
 - `from === 'blocks'` parses serialized block markup with `parse_blocks()`.
-- Other formats resolve through `bfb_get_adapter( $from )` and call `to_blocks()`.
+- Other supported formats route through Blocks Engine PHP Transformer's `FormatBridge` result surface.
 - Unsupported formats return an empty array and log the same style of error as `bfb_convert()`.
 - The helper should be the internal source of truth for `bfb_convert()` once implemented, avoiding two conversion paths.
 
